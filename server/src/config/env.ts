@@ -16,10 +16,15 @@ if (!mongodbDbName.trim()) {
   throw new Error('MONGODB_DB_NAME cannot be empty')
 }
 
+const jwtSecret = process.env.JWT_SECRET ?? 'fallback_secret'
+const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET ?? 'fallback_refresh_secret'
+
 export const env = {
   port,
   clientOrigin: process.env.CLIENT_ORIGIN ?? 'http://localhost:5173',
   nodeEnv: process.env.NODE_ENV ?? 'development',
   mongodbUri,
   mongodbDbName,
+  jwtSecret,
+  jwtRefreshSecret
 } as const
