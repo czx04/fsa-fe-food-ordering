@@ -1,6 +1,9 @@
+//import dns from 'node:dns'
 import { app } from './app.js'
 import { connectDatabase, disconnectDatabase } from './config/database.js'
 import { env } from './config/env.js'
+
+//dns.setServers(['1.1.1.1', '8.8.8.8'])
 
 let server: ReturnType<typeof app.listen> | undefined
 let isShuttingDown = false
