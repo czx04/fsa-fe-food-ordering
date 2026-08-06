@@ -18,7 +18,7 @@ const start = async () => {
 
 const closeServer = () =>
   new Promise<void>((resolve, reject) => {
-    if (!server) {
+    if (!server || !server.listening) {
       resolve()
       return
     }

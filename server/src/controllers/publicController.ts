@@ -1,11 +1,15 @@
 import { Request, Response } from 'express'
-import { Category } from '../models/Category.js'
-import { Restaurant } from '../models/Restaurant.js'
 import { MenuItem } from '../models/MenuItem.js'
+import {
+  listCuisineCategories,
+  listPublicRestaurants,
+  parseRestaurantQuery,
+  PublicRestaurantQueryError,
+} from '../services/publicRestaurantService.js'
 
 export const getCategories = async (req: Request, res: Response): Promise<void> => {
   try {
-    const categories = await Category.find({ isActive: true }).sort({ displayOrder: 1 })
+    const categories = await listCuisineCategories()
     res.json(categories)
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server khi lấy danh mục' })
@@ -14,14 +18,14 @@ export const getCategories = async (req: Request, res: Response): Promise<void> 
 
 export const getRestaurants = async (req: Request, res: Response): Promise<void> => {
   try {
-    const limit = parseInt(req.query.limit as string) || 6
-    const restaurants = await Restaurant.find({ isActive: true })
-      .populate('categories', 'name')
-      .sort({ rating: -1 })
-      .limit(limit)
-
-    res.json(restaurants)
+    const query = parseRestaurantQuery(req.query)
+    const result = await listPublicRestaurants(query)
+    res.json(result)
   } catch (error) {
+    if (error instanceof PublicRestaurantQueryError) {
+      res.status(400).json({ message: error.message, errors: error.errors })
+      return
+    }
     res.status(500).json({ message: 'Lỗi server khi lấy danh sách nhà hàng' })
   }
 }

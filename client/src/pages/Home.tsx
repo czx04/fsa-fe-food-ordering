@@ -48,7 +48,7 @@ export const Home = () => {
           api.get('/public/menu-items?limit=4'),
         ])
         setCategories(catRes.data)
-        setRestaurants(resRes.data)
+        setRestaurants(Array.isArray(resRes.data) ? resRes.data : resRes.data.data)
         setMenuItems(menuRes.data)
       } catch (error) {
         console.error('Lỗi tải dữ liệu trang chủ:', error)

@@ -6,6 +6,7 @@ import { Login } from './pages/Login'
 import { Home } from './pages/Home'
 import { AdminDashboard } from './pages/AdminDashboard'
 import { OwnerDashboard } from './pages/OwnerDashboard'
+import { Restaurants } from './pages/Restaurants'
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
           {/* Protected Routes for Everyone */}
           <Route element={<ProtectedLayout />}>
             <Route path="/home" element={<Home />} />
+            <Route path="/restaurants" element={<Restaurants />} />
           </Route>
           
           {/* Protected Routes for Admin */}

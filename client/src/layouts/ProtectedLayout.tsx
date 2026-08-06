@@ -1,4 +1,4 @@
-import { Outlet, Navigate, Link } from 'react-router-dom'
+import { Outlet, Navigate, Link, NavLink } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 interface ProtectedLayoutProps {
@@ -26,9 +26,9 @@ export const ProtectedLayout = ({ allowedRoles }: ProtectedLayoutProps) => {
         <div className="container topbar-inner">
           <Link className="brand" to="/home">MămMăm</Link>
           <nav className="nav">
-            <Link to="/home" className="active">Trang chủ</Link>
-            <Link to="/restaurants">Nhà hàng</Link>
-            <Link to="/orders">Đơn hàng</Link>
+            <NavLink to="/home">Trang chủ</NavLink>
+            <NavLink to="/restaurants">Nhà hàng</NavLink>
+            <NavLink to="/orders">Đơn hàng</NavLink>
           </nav>
           <div className="nav-actions">
             <button className="icon-btn">⌕</button>

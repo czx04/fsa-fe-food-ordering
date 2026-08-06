@@ -2,7 +2,7 @@ import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
 import { env } from '../config/env.js'
 import { User } from '../models/User.js'
-import { Category } from '../models/Category.js'
+import { CuisineCategory } from '../models/CuisineCategory.js'
 import { Restaurant } from '../models/Restaurant.js'
 import { MenuItem } from '../models/MenuItem.js'
 
@@ -18,13 +18,20 @@ const connectDB = async () => {
   }
 }
 
+const everyDay = (open: string, close: string) =>
+  Array.from({ length: 7 }, (_, dayOfWeek) => ({
+    dayOfWeek,
+    isClosed: false,
+    slots: [{ open, close }],
+  }))
+
 const seedData = async () => {
   try {
     await connectDB()
 
     console.log('Clearing existing data...')
     await User.deleteMany({})
-    await Category.deleteMany({})
+    await CuisineCategory.deleteMany({})
     await Restaurant.deleteMany({})
     await MenuItem.deleteMany({})
 
@@ -64,50 +71,71 @@ const seedData = async () => {
     })
 
     console.log('Creating categories...')
-    const catPho = await Category.create({ name: 'Phở & Bún', imageUrl: '/assets/noodles.jpg', displayOrder: 1 })
-    const catCom = await Category.create({ name: 'Cơm Văn Phòng', imageUrl: '/assets/chicken.jpg', displayOrder: 2 })
-    const catAnVat = await Category.create({ name: 'Ăn Vặt Vỉa Hè', imageUrl: '/assets/burger.jpg', displayOrder: 3 })
-    const catTraSua = await Category.create({ name: 'Trà Sữa & Cafe', imageUrl: '/assets/drink.jpg', displayOrder: 4 })
-    const catHealthy = await Category.create({ name: 'Healthy & Salad', imageUrl: '/assets/salad.jpg', displayOrder: 5 })
-    const catPizza = await Category.create({ name: 'Pizza & Âu', imageUrl: '/assets/pizza.jpg', displayOrder: 6 })
+    const catPho = await CuisineCategory.create({ name: 'Phở & Bún', slug: 'pho-bun', imageUrl: '/assets/noodles.jpg', displayOrder: 1 })
+    const catCom = await CuisineCategory.create({ name: 'Cơm Văn Phòng', slug: 'com-van-phong', imageUrl: '/assets/chicken.jpg', displayOrder: 2 })
+    const catAnVat = await CuisineCategory.create({ name: 'Ăn Vặt Vỉa Hè', slug: 'an-vat-via-he', imageUrl: '/assets/burger.jpg', displayOrder: 3 })
+    await CuisineCategory.create({ name: 'Trà Sữa & Cafe', slug: 'tra-sua-cafe', imageUrl: '/assets/drink.jpg', displayOrder: 4 })
+    await CuisineCategory.create({ name: 'Healthy & Salad', slug: 'healthy-salad', imageUrl: '/assets/salad.jpg', displayOrder: 5 })
+    const catPizza = await CuisineCategory.create({ name: 'Pizza & Âu', slug: 'pizza-au', imageUrl: '/assets/pizza.jpg', displayOrder: 6 })
 
     console.log('Creating restaurants...')
     // Owner 1 has 2 restaurants
     const res1 = await Restaurant.create({
       ownerId: owner1._id,
+      cuisineCategoryIds: [catPho._id],
       name: 'Phở Thìn Lò Đúc',
-      address: '13 Lò Đúc, Q. Hai Bà Trưng, Hà Nội',
+      slug: 'pho-thin-lo-duc',
+      description: 'Đặc sản phở bò Hà Nội với nước dùng đậm đà.',
+      address: { line1: '13 Lò Đúc', ward: 'Phường Phạm Đình Hổ', district: 'Quận Hai Bà Trưng', city: 'Hà Nội' },
       phone: '0901234567',
-      coverImage: '/assets/noodles.jpg',
-      rating: 4.9,
-      openTime: '06:00',
-      closeTime: '21:00',
-      categories: [catPho._id],
+      logoUrl: '/assets/noodles.jpg',
+      coverUrl: '/assets/noodles.jpg',
+      openingHours: everyDay('06:00', '21:00'),
+      delivery: { fee: 15000, minMinutes: 20, maxMinutes: 30 },
+      priceRange: 'budget',
+      approvalStatus: 'approved',
+      operationStatus: 'open',
+      ratingSummary: { average: 4.9, count: 320 },
+      stats: { completedOrderCount: 520, totalItemSold: 840 },
     })
 
     const res2 = await Restaurant.create({
       ownerId: owner1._id,
+      cuisineCategoryIds: [catCom._id, catAnVat._id],
       name: 'Cơm Rang Dưa Bò Bà Yến',
-      address: '24 Tôn Thất Tùng, Q. Đống Đa, Hà Nội',
+      slug: 'com-rang-dua-bo-ba-yen',
+      description: 'Cơm rang nóng hổi phục vụ nhanh cho bữa trưa và tối.',
+      address: { line1: '24 Tôn Thất Tùng', ward: 'Phường Khương Thượng', district: 'Quận Đống Đa', city: 'Hà Nội' },
       phone: '0902345678',
-      coverImage: '/assets/chicken.jpg',
-      rating: 4.7,
-      openTime: '10:00',
-      closeTime: '22:00',
-      categories: [catCom._id, catAnVat._id],
+      logoUrl: '/assets/chicken.jpg',
+      coverUrl: '/assets/chicken.jpg',
+      openingHours: everyDay('10:00', '22:00'),
+      delivery: { fee: 12000, minMinutes: 20, maxMinutes: 30 },
+      priceRange: 'budget',
+      approvalStatus: 'approved',
+      operationStatus: 'open',
+      ratingSummary: { average: 4.7, count: 240 },
+      stats: { completedOrderCount: 410, totalItemSold: 680 },
     })
 
     // Owner 2 has 1 restaurant
     const res3 = await Restaurant.create({
       ownerId: owner2._id,
+      cuisineCategoryIds: [catPizza._id],
       name: "Pizza 4P's Tràng Tiền",
-      address: '43 Tràng Tiền, Q. Hoàn Kiếm, Hà Nội',
+      slug: 'pizza-4ps-trang-tien',
+      description: 'Pizza nướng lò củi cùng phô mai nhà làm.',
+      address: { line1: '43 Tràng Tiền', ward: 'Phường Tràng Tiền', district: 'Quận Hoàn Kiếm', city: 'Hà Nội' },
       phone: '0903456789',
-      coverImage: '/assets/pizza.jpg',
-      rating: 4.8,
-      openTime: '10:00',
-      closeTime: '22:30',
-      categories: [catPizza._id],
+      logoUrl: '/assets/pizza.jpg',
+      coverUrl: '/assets/pizza.jpg',
+      openingHours: everyDay('10:00', '22:30'),
+      delivery: { fee: 0, minMinutes: 25, maxMinutes: 35 },
+      priceRange: 'premium',
+      approvalStatus: 'approved',
+      operationStatus: 'open',
+      ratingSummary: { average: 4.8, count: 560 },
+      stats: { completedOrderCount: 920, totalItemSold: 1480 },
     })
 
     console.log('Creating menu items...')
