@@ -5,19 +5,26 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "mock-api": "json-server --watch db.json --port 3001",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b --pretty false"
   },
   "dependencies": {
+    "axios": "^1.19.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.2"
   },
   "devDependencies": {
     "@types/node": "^26.1.2",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
+    "autoprefixer": "^10.4.19",
+    "json-server": "^0.17.4",
     "@vitejs/plugin-react": "^6.0.5",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.4",
     "typescript": "^7.0.2",
     "vite": "^8.2.0"
   }
