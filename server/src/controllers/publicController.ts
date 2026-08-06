@@ -1,11 +1,11 @@
 import { Request, Response } from 'express'
-import { Category } from '../models/Category.js'
+import { CuisineCategory } from '../models/CuisineCategory.js'
 import { Restaurant } from '../models/Restaurant.js'
 import { MenuItem } from '../models/MenuItem.js'
 
 export const getCategories = async (req: Request, res: Response): Promise<void> => {
   try {
-    const categories = await Category.find({ isActive: true }).sort({ displayOrder: 1 })
+    const categories = await CuisineCategory.find({ isActive: true }).sort({ displayOrder: 1 })
     res.json(categories)
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server khi lấy danh mục' })
@@ -14,9 +14,9 @@ export const getCategories = async (req: Request, res: Response): Promise<void> 
 
 export const getRestaurants = async (req: Request, res: Response): Promise<void> => {
   try {
-    const limit = parseInt(req.query.limit as string) || 6
+    const limit = Number.parseInt(req.query.limit as string) || 6
     const restaurants = await Restaurant.find({ isActive: true })
-      .populate('categories', 'name')
+      .populate('cuisineCategoryIds', 'name slug')
       .sort({ rating: -1 })
       .limit(limit)
 

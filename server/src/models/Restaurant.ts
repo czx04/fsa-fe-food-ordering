@@ -10,7 +10,7 @@ export interface IRestaurant extends Document {
   openTime: string // e.g. "08:00"
   closeTime: string // e.g. "22:00"
   isActive: boolean
-  categories: mongoose.Types.ObjectId[]
+  cuisineCategoryIds: mongoose.Types.ObjectId[]
   createdAt: Date
   updatedAt: Date
 }
@@ -26,7 +26,7 @@ const restaurantSchema = new Schema<IRestaurant>(
     openTime: { type: String, required: true },
     closeTime: { type: String, required: true },
     isActive: { type: Boolean, default: true },
-    categories: [{ type: Schema.Types.ObjectId, ref: 'Category' }],
+    cuisineCategoryIds: [{ type: Schema.Types.ObjectId, ref: 'CuisineCategory' }],
   },
   { timestamps: true }
 )
