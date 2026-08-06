@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose'
+import mongoose, { Document, Schema } from 'mongoose'
 
 export interface ICuisineCategory extends Document {
   name: string
@@ -14,18 +14,19 @@ export interface ICuisineCategory extends Document {
 const cuisineCategorySchema = new Schema<ICuisineCategory>(
   {
     name: { type: String, required: true, trim: true },
-    slug: { type: String, required: true, unique: true, trim: true },
-    description: { type: String },
-    imageUrl: { type: String },
-    isActive: { type: Boolean, default: true },
+    slug: { type: String, required: true, trim: true, lowercase: true },
+    description: { type: String, default: null, trim: true },
+    imageUrl: { type: String, default: null, trim: true },
     displayOrder: { type: Number, default: 0 },
+    isActive: { type: Boolean, default: true },
   },
-  {
-    timestamps: true,
-    collection: 'cuisineCategories',
-  }
+  { timestamps: true }
 )
 
+cuisineCategorySchema.index({ slug: 1 }, { unique: true })
 cuisineCategorySchema.index({ isActive: 1, displayOrder: 1 })
 
-export const CuisineCategory = mongoose.model<ICuisineCategory>('CuisineCategory', cuisineCategorySchema)
+export const CuisineCategory = mongoose.model<ICuisineCategory>(
+  'CuisineCategory',
+  cuisineCategorySchema
+)

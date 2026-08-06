@@ -6,6 +6,7 @@ import { AdminDashboard } from "../pages/AdminDashboard";
 import { Home } from "../pages/Home";
 import { Login } from "../pages/Login";
 import { OwnerDashboard } from "../pages/OwnerDashboard";
+import { Restaurants } from "../pages/Restaurants";
 import CartPage from "../pages/CartPage";
 import CheckoutPage from "../pages/CheckoutPage";
 import PaymentSuccessPage from "../pages/PaymentSuccessPage";
@@ -27,6 +28,7 @@ function AppRoutes() {
           {/* Protected Routes for Everyone */}
           <Route element={<ProtectedLayout />}>
             <Route path="/home" element={<Home />} />
+            <Route path="/restaurants" element={<Restaurants />} />
           </Route>
 
           {/* Protected Routes for Admin */}
