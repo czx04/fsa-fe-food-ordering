@@ -1,0 +1,374 @@
+{
+  "users": [
+    {
+      "_id": "66b0e0c0e0c0e0c0e0c0e0c1",
+      "fullName": "Nguyễn Văn A",
+      "email": "customer.a@example.com",
+      "phone": "0901234567",
+      "passwordHash": "hashed_password_customer_a",
+      "role": "customer",
+      "status": "active",
+      "addresses": [
+        {
+          "_id": "66b0e0c0e0c0e0c0e0c0e0d1",
+          "label": "Nhà riêng",
+          "recipientName": "Nguyễn Văn A",
+          "phone": "0901234567",
+          "line1": "123 Đường ABC",
+          "ward": "Phường 1",
+          "district": "Quận 1",
+          "city": "TP. Hồ Chí Minh",
+          "location": { "type": "Point", "coordinates": [106.699, 10.776] },
+          "isDefault": true
+        }
+      ],
+      "createdAt": "2024-08-01T10:00:00Z",
+      "updatedAt": "2024-08-01T10:00:00Z"
+    },
+    {
+      "_id": "66b0e0c0e0c0e0c0e0c0e0c2",
+      "fullName": "Trần Thị B",
+      "email": "owner.b@example.com",
+      "phone": "0907654321",
+      "passwordHash": "hashed_password_owner_b",
+      "role": "restaurant_owner",
+      "status": "active",
+      "createdAt": "2024-08-01T10:05:00Z",
+      "updatedAt": "2024-08-01T10:05:00Z"
+    }
+  ],
+  "cuisineCategories": [
+    {
+      "_id": "66b0e0c0e0c0e0c0e0c0e0e1",
+      "name": "Món Việt",
+      "slug": "mon-viet",
+      "isActive": true,
+      "createdAt": "2024-08-01T10:10:00Z",
+      "updatedAt": "2024-08-01T10:10:00Z"
+    },
+    {
+      "_id": "66b0e0c0e0c0e0c0e0c0e0e2",
+      "name": "Món Âu",
+      "slug": "mon-au",
+      "isActive": true,
+      "createdAt": "2024-08-01T10:11:00Z",
+      "updatedAt": "2024-08-01T10:11:00Z"
+    }
+  ],
+  "restaurants": [
+    {
+      "_id": "66b0e0c0e0c0e0c0e0c0e0c3",
+      "ownerId": "66b0e0c0e0c0e0c0e0c0e0c2",
+      "cuisineCategoryIds": ["66b0e0c0e0c0e0c0e0c0e0e2"],
+      "name": "Nhà hàng Pizza Ngon",
+      "slug": "nha-hang-pizza-ngon",
+      "description": "Chuyên các loại pizza Ý truyền thống.",
+      "phone": "02812345678",
+      "address": {
+        "line1": "456 Đường XYZ",
+        "ward": "Phường 2",
+        "district": "Quận 1",
+        "city": "TP. Hồ Chí Minh",
+        "location": { "type": "Point", "coordinates": [106.7, 10.777] }
+      },
+      "openingHours": [
+        {
+          "dayOfWeek": 1,
+          "isClosed": false,
+          "slots": [{ "open": "09:00", "close": "22:00" }]
+        },
+        {
+          "dayOfWeek": 2,
+          "isClosed": false,
+          "slots": [{ "open": "09:00", "close": "22:00" }]
+        },
+        {
+          "dayOfWeek": 3,
+          "isClosed": false,
+          "slots": [{ "open": "09:00", "close": "22:00" }]
+        },
+        {
+          "dayOfWeek": 4,
+          "isClosed": false,
+          "slots": [{ "open": "09:00", "close": "22:00" }]
+        },
+        {
+          "dayOfWeek": 5,
+          "isClosed": false,
+          "slots": [{ "open": "09:00", "close": "22:00" }]
+        },
+        {
+          "dayOfWeek": 6,
+          "isClosed": false,
+          "slots": [{ "open": "10:00", "close": "23:00" }]
+        },
+        { "dayOfWeek": 0, "isClosed": true, "slots": [] }
+      ],
+      "delivery": {
+        "fee": 25000,
+        "minMinutes": 30,
+        "maxMinutes": 45,
+        "maxDistanceKm": 5
+      },
+      "priceRange": "mid",
+      "approvalStatus": "approved",
+      "operationStatus": "open",
+      "ratingSummary": {
+        "average": 4.5,
+        "count": 10,
+        "distribution": { "1": 0, "2": 0, "3": 1, "4": 3, "5": 6 }
+      },
+      "stats": { "completedOrderCount": 100, "totalItemSold": 250 },
+      "createdAt": "2024-08-01T10:15:00Z",
+      "updatedAt": "2024-08-01T10:15:00Z"
+    }
+  ],
+  "menuCategories": [
+    {
+      "_id": "66b0e0c0e0c0e0c0e0c0e0f1",
+      "restaurantId": "66b0e0c0e0c0e0c0e0c0e0c3",
+      "name": "Pizza",
+      "displayOrder": 1,
+      "isVisible": true,
+      "createdAt": "2024-08-01T10:20:00Z",
+      "updatedAt": "2024-08-01T10:20:00Z"
+    },
+    {
+      "_id": "66b0e0c0e0c0e0c0e0c0e0f2",
+      "restaurantId": "66b0e0c0e0c0e0c0e0c0e0c3",
+      "name": "Đồ uống",
+      "displayOrder": 2,
+      "isVisible": true,
+      "createdAt": "2024-08-01T10:21:00Z",
+      "updatedAt": "2024-08-01T10:21:00Z"
+    }
+  ],
+  "menuItems": [
+    {
+      "_id": "66b0e0c0e0c0e0c0e0c0e101",
+      "restaurantId": "66b0e0c0e0c0e0c0e0c0e0c3",
+      "menuCategoryId": "66b0e0c0e0c0e0c0e0c0e0f1",
+      "name": "Pizza Hải Sản",
+      "slug": "pizza-hai-san",
+      "shortDescription": "Pizza với tôm, mực, ngao tươi ngon.",
+      "description": "Pizza hải sản với đế bánh giòn, phô mai Mozzarella, sốt cà chua và các loại hải sản tươi sống.",
+      "ingredients": ["Bột mì", "Phô mai", "Tôm", "Mực", "Ngao"],
+      "imageUrls": ["/images/pizza-hai-san.jpg"],
+      "basePrice": 180000,
+      "salePrice": null,
+      "isAvailable": true,
+      "isVisible": true,
+      "soldCount": 50,
+      "optionGroups": [
+        {
+          "_id": "66b0e0c0e0c0e0c0e0c0e111",
+          "name": "Kích thước",
+          "minSelect": 1,
+          "maxSelect": 1,
+          "required": true,
+          "options": [
+            {
+              "_id": "66b0e0c0e0c0e0c0e0c0e112",
+              "name": "Nhỏ (20cm)",
+              "priceDelta": 0,
+              "isAvailable": true
+            },
+            {
+              "_id": "66b0e0c0e0c0e0c0e0c0e113",
+              "name": "Vừa (25cm)",
+              "priceDelta": 30000,
+              "isAvailable": true
+            },
+            {
+              "_id": "66b0e0c0e0c0e0c0e0c0e114",
+              "name": "Lớn (30cm)",
+              "priceDelta": 60000,
+              "isAvailable": true
+            }
+          ]
+        }
+      ],
+      "createdAt": "2024-08-01T10:25:00Z",
+      "updatedAt": "2024-08-01T10:25:00Z"
+    },
+    {
+      "_id": "66b0e0c0e0c0e0c0e0c0e102",
+      "restaurantId": "66b0e0c0e0c0e0c0e0c0e0c3",
+      "menuCategoryId": "66b0e0c0e0c0e0c0e0c0e0f2",
+      "name": "Coca-Cola",
+      "slug": "coca-cola",
+      "shortDescription": "Nước giải khát có ga",
+      "description": "Nước ngọt Coca-Cola lon 330ml.",
+      "ingredients": ["Nước", "Đường", "CO2"],
+      "imageUrls": ["/images/coca-cola.jpg"],
+      "basePrice": 20000,
+      "salePrice": null,
+      "isAvailable": true,
+      "isVisible": true,
+      "soldCount": 120,
+      "optionGroups": [],
+      "createdAt": "2024-08-01T10:26:00Z",
+      "updatedAt": "2024-08-01T10:26:00Z"
+    }
+  ],
+  "carts": [
+    {
+      "_id": "66b0e0c0e0c0e0c0e0c0e121",
+      "customerId": "66b0e0c0e0c0e0c0e0c0e0c1",
+      "restaurantId": "66b0e0c0e0c0e0c0e0c0e0c3",
+      "items": [
+        {
+          "_id": "66b0e0c0e0c0e0c0e0c0e122",
+          "menuItemId": "66b0e0c0e0c0e0c0e0c0e101",
+          "quantity": 1,
+          "note": "Ít hành",
+          "selectedOptions": [
+            {
+              "groupId": "66b0e0c0e0c0e0c0e0c0e111",
+              "optionId": "66b0e0c0e0c0e0c0e0c0e113",
+              "groupName": "Kích thước",
+              "optionName": "Vừa (25cm)",
+              "priceDelta": 30000
+            }
+          ],
+          "displaySnapshot": {
+            "name": "Pizza Hải Sản",
+            "imageUrl": "/images/pizza-hai-san.jpg",
+            "unitPrice": 180000
+          },
+          "addedAt": "2024-08-05T09:00:00Z"
+        },
+        {
+          "_id": "66b0e0c0e0c0e0c0e0c0e123",
+          "menuItemId": "66b0e0e0e0c0e0c0e0c0e102",
+          "quantity": 2,
+          "note": null,
+          "selectedOptions": [],
+          "displaySnapshot": {
+            "name": "Coca-Cola",
+            "imageUrl": "/images/coca-cola.jpg",
+            "unitPrice": 20000
+          },
+          "addedAt": "2024-08-05T09:05:00Z"
+        }
+      ],
+      "expiresAt": "2024-08-05T10:00:00Z",
+      "createdAt": "2024-08-05T09:00:00Z",
+      "updatedAt": "2024-08-05T09:05:00Z"
+    }
+  ],
+  "coupons": [
+    {
+      "_id": "66b0e0c0e0c0e0c0e0c0e131",
+      "code": "GIAM10K",
+      "name": "Giảm 10.000 VNĐ cho đơn hàng",
+      "description": "Áp dụng cho đơn hàng từ 100.000 VNĐ",
+      "discountType": "fixed",
+      "discountValue": 10000,
+      "maxDiscountAmount": null,
+      "minOrderAmount": 100000,
+      "startsAt": "2024-08-01T00:00:00Z",
+      "endsAt": "2024-08-31T23:59:59Z",
+      "totalUsageLimit": 100,
+      "usageLimitPerCustomer": 1,
+      "usedCount": 0,
+      "scope": {
+        "type": "global",
+        "restaurantIds": [],
+        "cuisineCategoryIds": []
+      },
+      "createdBy": "66b0e0c0e0c0e0c0e0c0e0c2",
+      "status": "active",
+      "createdAt": "2024-08-01T09:00:00Z",
+      "updatedAt": "2024-08-01T09:00:00Z"
+    }
+  ],
+  "orders": [
+    {
+      "_id": "66b0e0c0e0c0e0c0e0c0e141",
+      "orderNumber": "FD-20240805-1A2B3C",
+      "checkoutKey": "some-unique-checkout-key",
+      "customerId": "66b0e0c0e0c0e0c0e0c0e0c1",
+      "restaurantId": "66b0e0c0e0c0e0c0e0c0e0c3",
+      "customerSnapshot": {
+        "fullName": "Nguyễn Văn A",
+        "email": "customer.a@example.com",
+        "phone": "0901234567"
+      },
+      "restaurantSnapshot": {
+        "name": "Nhà hàng Pizza Ngon",
+        "phone": "02812345678",
+        "logoUrl": null,
+        "addressText": "456 Đường XYZ, Phường 2, Quận 1, TP. Hồ Chí Minh"
+      },
+      "recipient": {
+        "fullName": "Nguyễn Văn A",
+        "phone": "0901234567",
+        "addressText": "123 Đường ABC, Phường 1, Quận 1, TP. Hồ Chí Minh",
+        "ward": "Phường 1",
+        "district": "Quận 1",
+        "city": "TP. Hồ Chí Minh",
+        "location": { "type": "Point", "coordinates": [106.699, 10.776] },
+        "note": "Giao hàng sau 5h chiều"
+      },
+      "items": [
+        {
+          "menuItemId": "66b0e0c0e0c0e0c0e0c0e101",
+          "name": "Pizza Hải Sản",
+          "imageUrl": "/images/pizza-hai-san.jpg",
+          "quantity": 1,
+          "baseUnitPrice": 180000,
+          "selectedOptions": [
+            {
+              "groupId": "66b0e0c0e0c0e0c0e0c0e111",
+              "optionId": "66b0e0c0e0c0e0c0e0c0e113",
+              "groupName": "Kích thước",
+              "optionName": "Vừa (25cm)",
+              "priceDelta": 30000
+            }
+          ],
+          "finalUnitPrice": 210000,
+          "lineTotal": 210000,
+          "note": "Ít hành"
+        },
+        {
+          "menuItemId": "66b0e0e0e0c0e0c0e0c0e102",
+          "name": "Coca-Cola",
+          "imageUrl": "/images/coca-cola.jpg",
+          "quantity": 2,
+          "baseUnitPrice": 20000,
+          "selectedOptions": [],
+          "finalUnitPrice": 20000,
+          "lineTotal": 40000,
+          "note": null
+        }
+      ],
+      "couponId": "66b0e0c0e0c0e0c0e0c0e131",
+      "couponSnapshot": {
+        "code": "GIAM10K",
+        "discountType": "fixed",
+        "discountValue": 10000
+      },
+      "pricing": {
+        "subtotal": 250000,
+        "deliveryFee": 25000,
+        "discountAmount": 10000,
+        "grandTotal": 265000,
+        "currency": "VND"
+      },
+      "paymentMethod": "cod",
+      "paymentStatus": "paid",
+      "orderStatus": "delivered",
+      "statusHistory": [
+        { "to": "pending", "changedAt": "2024-08-04T10:00:00Z" },
+        { "to": "confirmed", "changedAt": "2024-08-04T10:05:00Z" },
+        { "to": "preparing", "changedAt": "2024-08-04T10:15:00Z" },
+        { "to": "delivering", "changedAt": "2024-08-04T10:45:00Z" },
+        { "to": "delivered", "changedAt": "2024-08-04T11:00:00Z" }
+      ],
+      "placedAt": "2024-08-04T10:00:00Z",
+      "deliveredAt": "2024-08-04T11:00:00Z"
+    }
+  ],
+  "paymentAttempts": []
+}

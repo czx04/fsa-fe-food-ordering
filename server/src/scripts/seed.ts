@@ -2,9 +2,11 @@ import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
 import { env } from '../config/env.js'
 import { User } from '../models/User.js'
-import { Category } from '../models/Category.js'
+import { CuisineCategory } from '../models/CuisineCategory.js'
 import { Restaurant } from '../models/Restaurant.js'
 import { MenuItem } from '../models/MenuItem.js'
+import { MenuCategory } from '../models/MenuCategory.js'
+
 
 const connectDB = async () => {
   try {
@@ -24,9 +26,10 @@ const seedData = async () => {
 
     console.log('Clearing existing data...')
     await User.deleteMany({})
-    await Category.deleteMany({})
+    await CuisineCategory.deleteMany({})
     await Restaurant.deleteMany({})
     await MenuItem.deleteMany({})
+    await MenuCategory.deleteMany({})
 
     console.log('Creating users...')
     const passwordHash = await bcrypt.hash('password123', 10)
@@ -63,13 +66,13 @@ const seedData = async () => {
       role: 'customer',
     })
 
-    console.log('Creating categories...')
-    const catPho = await Category.create({ name: 'Phở & Bún', imageUrl: '/assets/noodles.jpg', displayOrder: 1 })
-    const catCom = await Category.create({ name: 'Cơm Văn Phòng', imageUrl: '/assets/chicken.jpg', displayOrder: 2 })
-    const catAnVat = await Category.create({ name: 'Ăn Vặt Vỉa Hè', imageUrl: '/assets/burger.jpg', displayOrder: 3 })
-    const catTraSua = await Category.create({ name: 'Trà Sữa & Cafe', imageUrl: '/assets/drink.jpg', displayOrder: 4 })
-    const catHealthy = await Category.create({ name: 'Healthy & Salad', imageUrl: '/assets/salad.jpg', displayOrder: 5 })
-    const catPizza = await Category.create({ name: 'Pizza & Âu', imageUrl: '/assets/pizza.jpg', displayOrder: 6 })
+    console.log('Creating cuisine categories...')
+    const catPho = await CuisineCategory.create({ name: 'Phở & Bún', slug: 'pho-bun', imageUrl: '/assets/noodles.jpg', displayOrder: 1 })
+    const catCom = await CuisineCategory.create({ name: 'Cơm Văn Phòng', slug: 'com-van-phong', imageUrl: '/assets/chicken.jpg', displayOrder: 2 })
+    const catAnVat = await CuisineCategory.create({ name: 'Ăn Vặt Vỉa Hè', slug: 'an-vat-via-he', imageUrl: '/assets/burger.jpg', displayOrder: 3 })
+    const catTraSua = await CuisineCategory.create({ name: 'Trà Sữa & Cafe', slug: 'tra-sua-cafe', imageUrl: '/assets/drink.jpg', displayOrder: 4 })
+    const catHealthy = await CuisineCategory.create({ name: 'Healthy & Salad', slug: 'healthy-salad', imageUrl: '/assets/salad.jpg', displayOrder: 5 })
+    const catPizza = await CuisineCategory.create({ name: 'Pizza & Âu', slug: 'pizza-au', imageUrl: '/assets/pizza.jpg', displayOrder: 6 })
 
     console.log('Creating restaurants...')
     // Owner 1 has 2 restaurants
@@ -82,7 +85,7 @@ const seedData = async () => {
       rating: 4.9,
       openTime: '06:00',
       closeTime: '21:00',
-      categories: [catPho._id],
+      cuisineCategoryIds: [catPho._id],
     })
 
     const res2 = await Restaurant.create({
@@ -94,7 +97,7 @@ const seedData = async () => {
       rating: 4.7,
       openTime: '10:00',
       closeTime: '22:00',
-      categories: [catCom._id, catAnVat._id],
+      cuisineCategoryIds: [catCom._id, catAnVat._id],
     })
 
     // Owner 2 has 1 restaurant
@@ -107,45 +110,74 @@ const seedData = async () => {
       rating: 4.8,
       openTime: '10:00',
       closeTime: '22:30',
-      categories: [catPizza._id],
+      cuisineCategoryIds: [catPizza._id],
     })
+
+    console.log('Creating menu categories...')
+    const menuCatPho1 = await MenuCategory.create({ restaurantId: res1._id, name: 'Phở Bò Hà Nội', displayOrder: 1 })
+    const menuCatPho2 = await MenuCategory.create({ restaurantId: res1._id, name: 'Món thêm', displayOrder: 2 })
+
+    const menuCatCom1 = await MenuCategory.create({ restaurantId: res2._id, name: 'Cơm Rang', displayOrder: 1 })
+    const menuCatCom2 = await MenuCategory.create({ restaurantId: res2._id, name: 'Món Xào', displayOrder: 2 })
+    const menuCatCom3 = await MenuCategory.create({ restaurantId: res2._id, name: 'Canh', displayOrder: 3 })
+
+    const menuCatPizza1 = await MenuCategory.create({ restaurantId: res3._id, name: 'Pizza Nướng Củi', displayOrder: 1 })
+    const menuCatPizza2 = await MenuCategory.create({ restaurantId: res3._id, name: 'Mì Ý & Salad', displayOrder: 2 })
 
     console.log('Creating menu items...')
     // Menu items for res1 (Phở Thìn)
-    const phoTypes = ['Phở Tái Lăn', 'Phở Nạm Gầu', 'Phở Bắp Bò', 'Phở Đặc Biệt', 'Quẩy Giòn']
+    const phoTypes = ['Phở Tái Lăn', 'Phở Nạm Gầu', 'Phở Bắp Bò', 'Phở Đặc Biệt']
     for (let i = 0; i < phoTypes.length; i++) {
       await MenuItem.create({
         restaurantId: res1._id,
+        menuCategoryId: menuCatPho1._id,
         name: phoTypes[i],
         description: 'Đặc sản phở Hà Nội với nước dùng đậm đà',
         price: 60000 + i * 10000,
         imageUrl: '/assets/noodles.jpg',
       })
     }
+    await MenuItem.create({
+      restaurantId: res1._id,
+      menuCategoryId: menuCatPho2._id,
+      name: 'Quẩy Giòn',
+      description: 'Quẩy nóng giòn ăn kèm phở',
+      price: 10000,
+      imageUrl: '/assets/noodles.jpg',
+    })
 
     // Menu items for res2 (Cơm Rang)
-    const comTypes = ['Cơm Rang Dưa Bò', 'Cơm Đảo Gà Rang', 'Cơm Rang Hải Sản', 'Canh Cải Thăn Băm', 'Bò Lúc Lắc Khoai Tây']
-    for (let i = 0; i < comTypes.length; i++) {
-      await MenuItem.create({
-        restaurantId: res2._id,
-        name: comTypes[i],
-        description: 'Cơm chuẩn vị văn phòng, nóng hổi',
-        price: 55000 + i * 5000,
-        imageUrl: '/assets/chicken.jpg',
-      })
-    }
+    await MenuItem.create({ restaurantId: res2._id, menuCategoryId: menuCatCom1._id, name: 'Cơm Rang Dưa Bò', description: 'Cơm chuẩn vị văn phòng, nóng hổi', price: 55000, imageUrl: '/assets/chicken.jpg' })
+    await MenuItem.create({ restaurantId: res2._id, menuCategoryId: menuCatCom1._id, name: 'Cơm Đảo Gà Rang', description: 'Cơm chuẩn vị văn phòng, nóng hổi', price: 60000, imageUrl: '/assets/chicken.jpg' })
+    await MenuItem.create({ restaurantId: res2._id, menuCategoryId: menuCatCom1._id, name: 'Cơm Rang Hải Sản', description: 'Cơm chuẩn vị văn phòng, nóng hổi', price: 65000, imageUrl: '/assets/chicken.jpg' })
+    await MenuItem.create({ restaurantId: res2._id, menuCategoryId: menuCatCom3._id, name: 'Canh Cải Thăn Băm', description: 'Canh nóng cho bữa cơm', price: 25000, imageUrl: '/assets/chicken.jpg' })
+    await MenuItem.create({ restaurantId: res2._id, menuCategoryId: menuCatCom2._id, name: 'Bò Lúc Lắc Khoai Tây', description: 'Bò xào đậm đà', price: 80000, imageUrl: '/assets/chicken.jpg' })
 
     // Menu items for res3 (Pizza 4P's)
-    const pizzaTypes = ['Pizza Margherita', 'Pizza 4 Phô Mai', 'Pizza Gà Teriyaki', 'Mì Ý Hải Sản', 'Salad Dầu Giấm']
-    for (let i = 0; i < pizzaTypes.length; i++) {
-      await MenuItem.create({
-        restaurantId: res3._id,
-        name: pizzaTypes[i],
-        description: 'Đồ âu chuẩn vị, nướng lò củi',
-        price: 150000 + i * 20000,
-        imageUrl: '/assets/pizza.jpg',
-      })
-    }
+    await MenuItem.create({
+      restaurantId: res3._id,
+      menuCategoryId: menuCatPizza1._id,
+      name: 'Pizza Margherita',
+      description: 'Đồ âu chuẩn vị, nướng lò củi',
+      price: 150000,
+      imageUrl: '/assets/pizza.jpg',
+    })
+    await MenuItem.create({
+      restaurantId: res3._id,
+      menuCategoryId: menuCatPizza1._id,
+      name: 'Pizza 4 Phô Mai',
+      description: 'Đồ âu chuẩn vị, nướng lò củi',
+      price: 180000,
+      imageUrl: '/assets/pizza.jpg',
+    })
+    await MenuItem.create({
+      restaurantId: res3._id,
+      menuCategoryId: menuCatPizza2._id,
+      name: 'Mì Ý Hải Sản',
+      description: 'Đồ âu chuẩn vị, nướng lò củi',
+      price: 200000,
+      imageUrl: '/assets/pizza.jpg',
+    })
 
     console.log('Seeding completed successfully!')
     process.exit(0)
@@ -156,3 +188,4 @@ const seedData = async () => {
 }
 
 seedData()
+

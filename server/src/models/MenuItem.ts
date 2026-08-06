@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose'
 
 export interface IMenuItem extends Document {
   restaurantId: mongoose.Types.ObjectId
+  menuCategoryId: mongoose.Types.ObjectId
   name: string
   description?: string
   price: number
@@ -15,6 +16,7 @@ export interface IMenuItem extends Document {
 const menuItemSchema = new Schema<IMenuItem>(
   {
     restaurantId: { type: Schema.Types.ObjectId, ref: 'Restaurant', required: true },
+    menuCategoryId: { type: Schema.Types.ObjectId, ref: 'MenuCategory', required: true },
     name: { type: String, required: true, trim: true },
     description: { type: String },
     price: { type: Number, required: true, min: 0 },
