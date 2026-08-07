@@ -1,5 +1,5 @@
 import { Types } from 'mongoose';
-import { Cart, ICart } from '../models/Cart';
+import { Cart, ICart } from '../models/Cart.js';
 
 /**
  * Finds a cart by user ID, populating menu item details.
