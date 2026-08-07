@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import { AuthProvider } from "../context/AuthContext";
+import { AuthProvider } from "../contexts/AuthContext";
 import { ProtectedLayout } from "../layouts/ProtectedLayout";
 import { PublicLayout } from "../layouts/PublicLayout";
 import { AdminDashboard } from "../pages/AdminDashboard";
@@ -25,10 +25,16 @@ function AppRoutes() {
             <Route path="/login" element={<Login />} />
           </Route>
 
-          {/* Protected Routes for Everyone */}
+          {/* Protected Routes for Customer */}
           <Route element={<ProtectedLayout />}>
             <Route path="/home" element={<Home />} />
             <Route path="/restaurants" element={<Restaurants />} />
+            <Route path="/cart" element={<CartPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/payment/success" element={<PaymentSuccessPage />} />
+            <Route path="/payment/failed" element={<PaymentFailedPage />} />
+            <Route path="/orders" element={<OrderHistoryPage />} />
+            <Route path="/order/:id" element={<OrderDetailPage />} />
           </Route>
 
           {/* Protected Routes for Admin */}
@@ -42,13 +48,6 @@ function AppRoutes() {
           >
             <Route path="/owner" element={<OwnerDashboard />} />
           </Route>
-
-          <Route path="/cart" element={<CartPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/payment/success" element={<PaymentSuccessPage />} />
-          <Route path="/payment/failed" element={<PaymentFailedPage />} />
-          <Route path="/orders" element={<OrderHistoryPage />} />
-          <Route path="/order/:id" element={<OrderDetailPage />} />
 
           {/* Fallback 404 */}
           <Route

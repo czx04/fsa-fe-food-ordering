@@ -1,5 +1,8 @@
 import { Link, useParams } from "react-router-dom";
-import db from "../../db.json";
+import { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { OrderDetail } from "../types/order";
+import { mockApi } from "../utils/mock-api";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("vi-VN", {
@@ -23,9 +26,40 @@ const statusTranslations: { [key: string]: string } = {
 
 function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
-  // For static prototype, we find the order. In a real app, you'd fetch this.
-  const order = db.orders.find((o) => o._id === id);
+  const [order, setOrder] = useState<OrderDetail>();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const { user } = useAuth();
 
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        if (id) {
+          const orderResponse = await mockApi.get(`/orders?_id=${id}`);
+          // json-server query returns an array, we need the first element
+          setOrder(orderResponse.data[0]);
+          console.log(orderResponse.data);
+        } else {
+          setError("Không tìm thấy ID đơn hàng.");
+        }
+      } catch (error) {
+        console.error("Lỗi tải dữ liệu trang đơn hàng:", error);
+        setError("Không thể tải chi tiết đơn hàng. Vui lòng thử lại.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [id]);
+  if (loading) {
+    return (
+      <main className="container mx-auto p-4">
+        <p>Đang tải chi tiết đơn hàng...</p>
+      </main>
+    );
+  }
   if (!order) {
     return (
       <main className="container mx-auto p-4">

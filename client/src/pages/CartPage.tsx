@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
-import db from "../../db.json";
+import { useState, useEffect } from "react";
+import { Cart, Restaurant, Coupon } from "../types/cart";
+import { mockApi } from "../utils/mock-api";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("vi-VN", {
@@ -9,10 +11,51 @@ const formatCurrency = (amount: number) => {
 };
 
 function CartPage() {
-  // Using mock data from db.json
-  const cart = db.carts[0];
-  const restaurant = db.restaurants.find((r) => r._id === cart?.restaurantId);
-  const coupon = db.coupons[0];
+  const [cart, setCart] = useState<Cart>();
+  const [restaurant, setRestaurant] = useState<Restaurant>();
+  const [coupon, setCoupon] = useState<Coupon>();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Mock: Lấy giỏ hàng đầu tiên. Trong ứng dụng thật, bạn sẽ lấy giỏ hàng của user đang đăng nhập.
+        const cartResponse = await mockApi.get("/carts");
+        const currentCart = cartResponse.data[0];
+        setCart(currentCart);
+
+        // The cart contains the restaurant ID. We need to fetch the cart first.
+        if (currentCart?.restaurantId) {
+          const [restaurantQueryResponse, couponResponse] = await Promise.all([
+            // json-server không tìm thấy /resource/:id với _id, ta cần query bằng ?_id=...
+            mockApi.get(`/restaurants?_id=${currentCart.restaurantId}`),
+            // Mock: lấy coupon đầu tiên trong db, vì /coupons/1 không tồn tại.
+            mockApi.get("/coupons"),
+          ]);
+          // Kết quả của query là một mảng, ta lấy phần tử đầu tiên
+          setRestaurant(restaurantQueryResponse.data[0]);
+          setCoupon(couponResponse.data[0]);
+        }
+      } catch (error) {
+        console.error("Lỗi tải dữ liệu trang giỏ hàng:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <main className="container mx-auto p-4">
+        <h1 className="text-3xl font-bold mb-4">Giỏ hàng của bạn</h1>
+        <p>Đang tải thông tin giỏ hàng...</p>
+      </main>
+    );
+  }
+
   if (!cart || !restaurant) {
     return (
       <main className="container mx-auto p-4">

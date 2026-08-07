@@ -1,25 +1,28 @@
-import { Outlet, Navigate, Link } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { Outlet, Navigate, Link } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 export const PublicLayout = () => {
-  const { isAuthenticated, user, isLoading } = useAuth()
+  const { isAuthenticated, user, isLoading } = useAuth();
 
   if (isLoading) {
-    return <div>Loading...</div>
+    return <div>Loading...</div>;
   }
 
   if (isAuthenticated) {
     // Nếu đã login, chặn không cho vào trang Login/Register, đẩy vào Dashboard/Home
-    if (user?.role === 'admin') return <Navigate to="/admin" replace />
-    if (user?.role === 'restaurant_owner') return <Navigate to="/owner" replace />
-    return <Navigate to="/home" replace />
+    if (user?.role === "admin") return <Navigate to="/admin" replace />;
+    if (user?.role === "restaurant_owner")
+      return <Navigate to="/owner" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   return (
     <div className="layout-public">
       <header className="topbar">
         <div className="container topbar-inner">
-          <Link className="brand" to="/">MămMăm</Link>
+          <Link className="brand" to="/">
+            MămMăm
+          </Link>
         </div>
       </header>
 
@@ -36,5 +39,5 @@ export const PublicLayout = () => {
         </div>
       </footer>
     </div>
-  )
-}
+  );
+};
