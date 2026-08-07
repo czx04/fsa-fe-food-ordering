@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import bcrypt from 'bcryptjs'
+import bcrypt from 'bcrypt'
 import { env } from '../config/env.js'
 import { User } from '../models/User.js'
 import { CuisineCategory } from '../models/CuisineCategory.js'

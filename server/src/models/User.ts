@@ -29,6 +29,8 @@ export interface IUser extends Document {
   avatarUrl?: string | null
   dateOfBirth?: Date | null
   emailVerifiedAt?: Date | null
+  emailVerificationToken?: string | null
+  emailVerificationExpires?: Date | null
   termsAcceptedAt: Date
   failedLoginCount: number
   lockedUntil?: Date | null
@@ -83,12 +85,14 @@ const UserSchema = new Schema<IUser>(
     status: {
       type: String,
       enum: ['active', 'locked', 'pending_verification'],
-      default: 'active', // LOGIC: Đổi về 'active' theo yêu cầu (tạm thời chưa làm tính năng EmailVerification)
+      default: 'pending_verification',
       required: true,
     },
     avatarUrl: { type: String, default: null },
     dateOfBirth: { type: Date, default: null },
     emailVerifiedAt: { type: Date, default: null },
+    emailVerificationToken: { type: String, default: null, select: false },
+    emailVerificationExpires: { type: Date, default: null, select: false },
     termsAcceptedAt: { type: Date, default: Date.now },
     failedLoginCount: { type: Number, default: 0 },
     lockedUntil: { type: Date, default: null },
