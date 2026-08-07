@@ -1,5 +1,8 @@
-import { Link } from "react-router-dom";
-import db from "../../db.json";
+import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Cart, Restaurant, Address } from "../types/cart";
+import { CreateOrderPayload } from "../types/order";
+import { mockApi } from "../utils/mock-api";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("vi-VN", {
@@ -9,16 +12,92 @@ const formatCurrency = (amount: number) => {
 };
 
 function CheckoutPage() {
-  const cart = db.carts[0];
-  const restaurant = db.restaurants.find((r) => r._id === cart?.restaurantId);
-  const user = db.users[0];
-  const defaultAddress = user?.addresses?.find((a) => a.isDefault);
+  const [cart, setCart] = useState<Cart>();
+  const [restaurant, setRestaurant] = useState<Restaurant>();
+  const [defaultAddress, setDefaultAddress] = useState<Address>();
+  const [loading, setLoading] = useState(true);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
-  if (!cart || !restaurant || !user || !defaultAddress) {
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Mock: Lấy giỏ hàng đầu tiên. Trong ứng dụng thật, bạn sẽ lấy giỏ hàng của user đang đăng nhập.
+        const cartResponse = await mockApi.get("/carts");
+        const currentCart = cartResponse.data[0];
+        setCart(currentCart);
+
+        // The cart contains the restaurant ID. We need to fetch the cart first.
+        if (currentCart?.restaurantId && currentCart?.customerId) {
+          const [restaurantQueryResponse, userQueryResponse] =
+            await Promise.all([
+              // json-server không tìm thấy /resource/:id với _id, ta cần query bằng ?_id=...
+              mockApi.get(`/restaurants?_id=${currentCart.restaurantId}`),
+              // Lấy thông tin user từ customerId trong giỏ hàng
+              mockApi.get(`/users?_id=${currentCart.customerId}`),
+            ]);
+
+          const restaurantData = restaurantQueryResponse.data[0];
+          const userData = userQueryResponse.data[0];
+
+          setRestaurant(restaurantData);
+
+          if (userData?.addresses?.length > 0) {
+            const defaultAddr =
+              userData.addresses.find((addr: any) => addr.isDefault) ||
+              userData.addresses[0];
+            setDefaultAddress(defaultAddr);
+          }
+        }
+      } catch (error) {
+        console.error("Lỗi tải dữ liệu trang thanh toán:", error);
+        setError("Không thể tải thông tin thanh toán. Vui lòng thử lại.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const handlePlaceOrder = async () => {
+    setIsPlacingOrder(true);
+    setError("");
+    try {
+      const payload: CreateOrderPayload = { paymentMethod: "COD" };
+      const response = await mockApi.post("/orders", payload);
+      const newOrder = response.data;
+      // Chuyển hướng đến trang thành công với ID và mã đơn hàng
+      navigate(
+        `/payment/success?orderId=${newOrder._id}&orderNumber=${newOrder.orderNumber}`,
+      );
+    } catch (err) {
+      console.error("Lỗi đặt hàng:", err);
+      setError("Đặt hàng thất bại. Vui lòng thử lại.");
+      navigate("/payment/failed");
+    } finally {
+      setIsPlacingOrder(false);
+    }
+  };
+
+  if (loading) {
     return (
       <main className="container mx-auto p-4">
         <h1 className="text-3xl font-bold mb-4">Thanh toán</h1>
-        <p>Không thể tải thông tin thanh toán. Vui lòng thử lại.</p>
+        <p>Đang tải thông tin thanh toán...</p>
+      </main>
+    );
+  }
+
+  if (!cart || !restaurant || !defaultAddress) {
+    return (
+      <main className="container mx-auto p-4">
+        <h1 className="text-3xl font-bold mb-4">Thanh toán</h1>
+        <p>
+          {error || "Không thể tải thông tin thanh toán. Vui lòng thử lại."}
+        </p>
         <Link to="/cart" className="text-orange-500 hover:underline mt-4 block">
           Quay về giỏ hàng
         </Link>
@@ -44,6 +123,7 @@ function CheckoutPage() {
       <div className="container mx-auto px-4">
         <div className="mb-6">
           <h1 className="text-4xl font-bold text-gray-800 mt-1">Thanh toán</h1>
+          {error && <p className="text-red-500 mt-2">{error}</p>}
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
@@ -197,12 +277,13 @@ function CheckoutPage() {
                 của chúng tôi.
               </p>
 
-              <Link
-                to="/payment/success"
-                className="w-full bg-orange-500 text-white text-center py-3 rounded-md text-lg font-semibold hover:bg-orange-600 transition-colors duration-200 block"
+              <button
+                onClick={handlePlaceOrder}
+                disabled={isPlacingOrder || !cart?.items.length}
+                className="w-full bg-orange-500 text-white text-center py-3 rounded-md text-lg font-semibold hover:bg-orange-600 transition-colors duration-200 block disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                Đặt hàng
-              </Link>
+                {isPlacingOrder ? "Đang xử lý..." : "Đặt hàng"}
+              </button>
             </div>
           </div>
         </div>

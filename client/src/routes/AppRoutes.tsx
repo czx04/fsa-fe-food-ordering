@@ -1,5 +1,5 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { AuthProvider } from "../context/AuthContext";
+import { AuthProvider } from "../contexts/AuthContext";
 import { MainLayout } from "../layouts/MainLayout";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import { PublicRoute } from "../components/PublicRoute";
@@ -41,7 +41,9 @@ function AppRoutes() {
             </Route>
 
             {/* Protected Routes for Restaurant Owner */}
-            <Route element={<ProtectedRoute allowedRoles={["restaurant_owner"]} />}>
+            <Route
+              element={<ProtectedRoute allowedRoles={["restaurant_owner"]} />}
+            >
               <Route path="/owner" element={<OwnerDashboard />} />
             </Route>
 
@@ -60,8 +62,12 @@ function AppRoutes() {
               path="*"
               element={
                 <div className="flex flex-col items-center justify-center min-h-[60vh]">
-                  <h2 className="text-4xl font-black text-slate-800 mb-2">404</h2>
-                  <p className="text-slate-500 font-medium">Trang không tồn tại</p>
+                  <h2 className="text-4xl font-black text-slate-800 mb-2">
+                    404
+                  </h2>
+                  <p className="text-slate-500 font-medium">
+                    Trang không tồn tại
+                  </p>
                 </div>
               }
             />
