@@ -10,6 +10,8 @@ import { Register } from "../pages/Register";
 import { ForgotPassword } from "../pages/ForgotPassword";
 import { OwnerDashboard } from "../pages/OwnerDashboard";
 import { Restaurants } from "../pages/Restaurants";
+import { RestaurantDetail } from "../pages/RestaurantDetail";
+import { DishDetail } from "../pages/DishDetail";
 import CartPage from "../pages/CartPage";
 import CheckoutPage from "../pages/CheckoutPage";
 import PaymentSuccessPage from "../pages/PaymentSuccessPage";
@@ -27,6 +29,8 @@ function AppRoutes() {
             <Route path="/" element={<Home />} />
             <Route path="/home" element={<Home />} />
             <Route path="/restaurants" element={<Restaurants />} />
+            <Route path="/restaurants/:restaurantSlug" element={<RestaurantDetail />} />
+            <Route path="/restaurants/:restaurantSlug/menu-items/:itemSlug" element={<DishDetail />} />
 
             {/* Auth Routes (Guest Only - Redirects to /home if logged in) */}
             <Route element={<PublicRoute />}>
