@@ -10,6 +10,7 @@ export interface ICart extends Document {
   userId: mongoose.Types.ObjectId
   restaurantId: mongoose.Types.ObjectId // Giỏ hàng thường giới hạn trong 1 nhà hàng
   items: ICartItem[]
+  total: number
   createdAt: Date
   updatedAt: Date
 }
@@ -25,6 +26,7 @@ const cartSchema = new Schema<ICart>(
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     restaurantId: { type: Schema.Types.ObjectId, ref: 'Restaurant', required: true },
     items: [cartItemSchema],
+    total: { type: Number, required: true, default: 0 },
   },
   { timestamps: true }
 )
