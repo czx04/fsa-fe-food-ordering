@@ -665,6 +665,7 @@
   .field input:focus,
   .field select:focus,
   .field textarea:focus {
+    border-color: var(--orange);
   }
   .payment-option.active {
     border-color: var(--orange);
