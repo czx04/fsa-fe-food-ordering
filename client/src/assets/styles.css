@@ -142,6 +142,202 @@ h3 { font-size: 18px; line-height: 1.35; }
 .options { display: grid; gap: 10px; margin: 20px 0; }
 .option { background: #fff; border: 1px solid var(--line); border-radius: 11px; padding: 13px 14px; display: flex; justify-content: space-between; }
 
+  .restaurant-cover {
+    height: 320px;
+    position: relative;
+    overflow: hidden;
+  }
+  .restaurant-cover > img {
+    height: 100%;
+    filter: brightness(0.66);
+  }
+  .restaurant-cover .overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: end;
+    color: #fff;
+    background: linear-gradient(0deg, rgba(13, 24, 17, 0.72), transparent 75%);
+    padding-bottom: 38px;
+  }
+  .restaurant-profile {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 20px;
+  }
+  .restaurant-profile h1 {
+    font-size: 38px;
+    margin-bottom: 8px;
+  }
+  .restaurant-info {
+    display: flex;
+    gap: 28px;
+    font-size: 12px;
+  }
+  .status-open {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #187a3d;
+    background: #e5f8eb;
+    border-radius: 999px;
+    padding: 7px 11px;
+    font-size: 11px;
+    font-weight: 800;
+  }
+  .status-open::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    background: #29b55c;
+    border-radius: 50%;
+  }
+  .detail-layout {
+    display: grid;
+    grid-template-columns: 1fr 330px;
+    gap: 30px;
+    align-items: start;
+  }
+  .menu-tabs {
+    display: flex;
+    gap: 24px;
+    position: sticky;
+    top: 74px;
+    z-index: 20;
+    background: #fff;
+    border-bottom: 1px solid var(--line);
+  }
+  .menu-tabs a {
+    padding: 18px 2px 14px;
+    font-weight: 700;
+    font-size: 12px;
+    border-bottom: 3px solid transparent;
+  }
+  .menu-tabs a.active {
+    color: var(--orange);
+    border-color: var(--orange);
+  }
+  .menu-list {
+    display: grid;
+    gap: 14px;
+  }
+  .menu-item {
+    display: grid;
+    grid-template-columns: 125px 1fr auto;
+    gap: 16px;
+    align-items: center;
+    padding: 13px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+  }
+  .menu-item img {
+    width: 125px;
+    height: 96px;
+    border-radius: 10px;
+  }
+  .menu-item h3 {
+    margin: 0 0 5px;
+    font-size: 15px;
+  }
+  .menu-item .add {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    background: var(--orange);
+    color: #fff;
+    border-radius: 9px;
+  }
+  .basket-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    padding: 12px 0;
+    border-bottom: 1px dashed var(--line);
+  }
+  .bill-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 12px 0;
+    color: var(--muted);
+  }
+  .bill-total {
+    color: var(--ink);
+    font-size: 17px;
+    font-weight: 800;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+  }
+  .dish-photo {
+    height: 470px;
+    border-radius: 50% 50% 22% 50%;
+    box-shadow: var(--shadow);
+  }
+  .qty {
+    display: inline-flex;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .qty button,
+  .qty span {
+    width: 40px;
+    height: 40px;
+    border: 0;
+    background: transparent;
+    display: grid;
+    place-items: center;
+  }
+  .options {
+    display: grid;
+    gap: 10px;
+    margin: 20px 0;
+  }
+  .option {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    padding: 13px 14px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .field {
+    display: grid;
+    gap: 7px;
+  }
+  .field.full {
+    grid-column: 1/-1;
+  }
+  .field label {
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .field input,
+  .field select,
+  .field textarea {
+    width: 100%;
+    border: 1px solid #dfe7e1;
+    border-radius: 10px;
+    padding: 12px 13px;
+    outline: none;
+    background: #fff;
+  }
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
+    border-color: var(--orange);
+  }
+  .payment-option.active {
+    border-color: var(--orange);
+    background: var(--orange-soft);
+  }
 .surface { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 24px; box-shadow: 0 5px 18px rgba(34,63,43,.035); }
 .cart-layout, .checkout-layout { display: grid; grid-template-columns: 1fr 360px; gap: 28px; align-items: start; }
 .cart-item { display: grid; grid-template-columns: 90px 1fr auto auto; gap: 18px; align-items: center; padding: 17px 0; border-bottom: 1px solid var(--line); }
@@ -154,7 +350,7 @@ h3 { font-size: 18px; line-height: 1.35; }
 .field.full { grid-column: 1/-1; }
 .field label { font-size: 12px; font-weight: 700; }
 .field input, .field select, .field textarea { width: 100%; border: 1px solid #dfe7e1; border-radius: 10px; padding: 12px 13px; outline: none; background: #fff; }
-.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(46,174,98,.1); }
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(46,174,98,.1); }
 .payment-option { display: flex; align-items: center; gap: 12px; border: 1px solid var(--line); padding: 14px; border-radius: 11px; margin: 10px 0; }
 .payment-option.active { border-color: var(--orange); background: var(--orange-soft); }
 
