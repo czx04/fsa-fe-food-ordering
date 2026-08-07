@@ -62,10 +62,20 @@ function OrderHistoryPage() {
         setOrders(data);
       } catch (error) {
         console.error("Lỗi tải dữ liệu lịch sử đơn hàng:", error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchOrders();
   }, []);
+
+  if (loading) {
+    return (
+      <main className="container mx-auto p-4">
+        <p>Đang tải lịch sử đơn hàng...</p>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gray-50 py-8">
