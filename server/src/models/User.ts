@@ -51,7 +51,7 @@ const AddressSchema = new Schema<IUserAddress>(
     city: { type: String, required: true },
     location: {
       type: { type: String, enum: ['Point'], default: 'Point' },
-      coordinates: { type: [Number], default: [0, 0] },
+      coordinates: { type: [Number], required: false },
     },
     isDefault: { type: Boolean, default: false },
   },
@@ -69,7 +69,11 @@ const UserSchema = new Schema<IUser>(
       trim: true,
     },
     phone: { type: String, required: true, unique: true, trim: true },
-    passwordHash: { type: String, required: true },
+    passwordHash: {
+      type: String,
+      required: true,
+      select: false, // BẢO MẬT: Ẩn mặc định khi query
+    },
     role: {
       type: String,
       enum: ['customer', 'restaurant_owner', 'admin'],
@@ -79,7 +83,7 @@ const UserSchema = new Schema<IUser>(
     status: {
       type: String,
       enum: ['active', 'locked', 'pending_verification'],
-      default: 'active',
+      default: 'active', // LOGIC: Đổi về 'active' theo yêu cầu (tạm thời chưa làm tính năng EmailVerification)
       required: true,
     },
     avatarUrl: { type: String, default: null },
@@ -89,7 +93,11 @@ const UserSchema = new Schema<IUser>(
     failedLoginCount: { type: Number, default: 0 },
     lockedUntil: { type: Date, default: null },
     lastLoginAt: { type: Date, default: null },
-    refreshTokens: { type: [String], default: [] },
+    refreshTokens: {
+      type: [String],
+      default: [],
+      select: false, // BẢO MẬT: Ẩn mặc định khi query
+    },
     addresses: { type: [AddressSchema], default: [] },
     deletedAt: { type: Date, default: null },
   },
@@ -98,7 +106,9 @@ const UserSchema = new Schema<IUser>(
   }
 )
 
-// Index cho tìm kiếm và lọc
+// Index cho tìm kiếm và lọc cơ bản
 UserSchema.index({ role: 1, status: 1 })
+// Index hỗ trợ tìm kiếm khoảng cách theo địa chỉ
+UserSchema.index({ 'addresses.location': '2dsphere' })
 
 export const User = mongoose.model<IUser>('User', UserSchema)
