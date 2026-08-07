@@ -1,5 +1,20 @@
 import { Link } from "react-router-dom";
-import db from "../../db.json";
+import { useEffect, useState } from "react";
+
+import { mockApi } from "../utils/mock-api";
+
+interface Order {
+  _id: string;
+  orderNumber: string;
+  placedAt: string;
+  restaurantSnapshot: {
+    name: string;
+  };
+  pricing: {
+    grandTotal: number;
+  };
+  orderStatus: string;
+}
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("vi-VN", {
@@ -34,7 +49,33 @@ const statusTranslations: { [key: string]: string } = {
 };
 
 function OrderHistoryPage() {
-  const orders = db.orders;
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // const orders = db.orders;
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await mockApi.get("/orders");
+        const data = response.data;
+        setOrders(data);
+      } catch (error) {
+        console.error("Lỗi tải dữ liệu lịch sử đơn hàng:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrders();
+  }, []);
+
+  if (loading) {
+    return (
+      <main className="container mx-auto p-4">
+        <p>Đang tải lịch sử đơn hàng...</p>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gray-50 py-8">

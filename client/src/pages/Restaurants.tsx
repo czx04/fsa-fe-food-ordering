@@ -4,192 +4,207 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../utils/api'
 
 interface CuisineCategory {
-  _id: string
-  name: string
-  slug: string
+  _id: string;
+  name: string;
+  slug: string;
 }
 
 interface Restaurant {
-  _id: string
-  name: string
-  slug: string
-  description: string
-  coverUrl: string | null
-  coverImage: string | null
-  address: string
+  _id: string;
+  name: string;
+  slug: string;
+  description: string;
+  coverUrl: string | null;
+  coverImage: string | null;
+  address: string;
   addressDetails: {
-    district: string
-    city: string
+    district: string;
+    city: string;
     location?: {
-      type: 'Point'
-      coordinates: [number, number]
-    }
-  }
+      type: "Point";
+      coordinates: [number, number];
+    };
+  };
   location?: {
-    type: 'Point'
-    coordinates: [number, number]
-  } | null
-  cuisineCategories: CuisineCategory[]
-  priceRange: 'budget' | 'mid' | 'premium'
+    type: "Point";
+    coordinates: [number, number];
+  } | null;
+  cuisineCategories: CuisineCategory[];
+  priceRange: "budget" | "mid" | "premium";
   delivery: {
-    fee: number
-    minMinutes: number
-    maxMinutes: number
-  }
+    fee: number;
+    minMinutes: number;
+    maxMinutes: number;
+  };
   ratingSummary: {
-    average: number
-    count: number
-  }
-  isOpenNow: boolean
+    average: number;
+    count: number;
+  };
+  isOpenNow: boolean;
 }
 
 interface RestaurantResponse {
-  data: Restaurant[]
+  data: Restaurant[];
   pagination: {
-    page: number
-    limit: number
-    total: number
-    totalPages: number
-  }
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 const PRICE_OPTIONS = [
-  { value: 'budget', label: 'Dưới 100.000đ' },
-  { value: 'mid', label: '100.000đ – 200.000đ' },
-  { value: 'premium', label: 'Trên 200.000đ' },
-] as const
+  { value: "budget", label: "Dưới 100.000đ" },
+  { value: "mid", label: "100.000đ – 200.000đ" },
+  { value: "premium", label: "Trên 200.000đ" },
+] as const;
 
-const RATING_OPTIONS = [4.5, 4, 3.5]
+const RATING_OPTIONS = [4.5, 4, 3.5];
 
 const CONTAINER_CLASS =
-  'mx-auto w-[calc(100%-2.5rem)] max-w-[1180px] max-[760px]:w-[calc(100%-1.5rem)]'
+  "mx-auto w-[calc(100%-2.5rem)] max-w-[1180px] max-[760px]:w-[calc(100%-1.5rem)]";
 const FORM_CONTROL_CLASS =
-  'h-[42px] min-w-[155px] rounded-[9px] border border-[#e7ece8] bg-white px-3 text-[#17201a] outline-none transition focus:border-[#2eae62] focus:ring-4 focus:ring-[#2eae62]/10 max-[760px]:w-full'
+  "h-[42px] min-w-[155px] rounded-[9px] border border-[#e7ece8] bg-white px-3 text-[#17201a] outline-none transition focus:border-[#2eae62] focus:ring-4 focus:ring-[#2eae62]/10 max-[760px]:w-full";
 const PRIMARY_BUTTON_CLASS =
   'inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[10px] border-0 bg-[#ff5a1f] px-5 py-[11px] font-bold text-white transition hover:-translate-y-px hover:bg-[#e94e16] focus:outline-none focus:ring-4 focus:ring-[#ff5a1f]/20'
 const OUTLINE_BUTTON_CLASS =
-  'inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-[#e7ece8] bg-white px-5 py-[11px] font-bold text-[#17201a] transition hover:-translate-y-px hover:border-[#ff5a1f] focus:outline-none focus:ring-4 focus:ring-[#ff5a1f]/10'
+  "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-[#e7ece8] bg-white px-5 py-[11px] font-bold text-[#17201a] transition hover:-translate-y-px hover:border-[#ff5a1f] focus:outline-none focus:ring-4 focus:ring-[#ff5a1f]/10";
 const FILTER_LABEL_CLASS =
-  'my-[9px] flex cursor-pointer items-center gap-[9px] text-xs text-[#68736c]'
+  "my-[9px] flex cursor-pointer items-center gap-[9px] text-xs text-[#68736c]";
 const PAGINATION_BUTTON_CLASS =
-  'grid h-[38px] w-[38px] cursor-pointer place-items-center rounded-[9px] border border-[#e7ece8] bg-white font-bold text-[#17201a] transition hover:border-[#ff5a1f] hover:text-[#ff5a1f] disabled:cursor-not-allowed disabled:opacity-40'
+  "grid h-[38px] w-[38px] cursor-pointer place-items-center rounded-[9px] border border-[#e7ece8] bg-white font-bold text-[#17201a] transition hover:border-[#ff5a1f] hover:text-[#ff5a1f] disabled:cursor-not-allowed disabled:opacity-40";
 
-const formatMoney = (value: number) => `${new Intl.NumberFormat('vi-VN').format(value)}đ`
+const formatMoney = (value: number) =>
+  `${new Intl.NumberFormat("vi-VN").format(value)}đ`;
 
 const getMapPosition = (restaurant: Restaurant) => {
-  const coordinates = restaurant.location?.coordinates ?? restaurant.addressDetails.location?.coordinates
-  if (!coordinates) return { left: '50%', top: '50%' }
-  const [lng, lat] = coordinates
-  const left = Math.min(92, Math.max(8, ((lng - 106.684) / 0.022) * 84 + 8))
-  const top = Math.min(88, Math.max(12, ((10.789 - lat) / 0.018) * 76 + 12))
-  return { left: `${left}%`, top: `${top}%` }
-}
+  const coordinates =
+    restaurant.location?.coordinates ??
+    restaurant.addressDetails.location?.coordinates;
+  if (!coordinates) return { left: "50%", top: "50%" };
+  const [lng, lat] = coordinates;
+  const left = Math.min(92, Math.max(8, ((lng - 106.684) / 0.022) * 84 + 8));
+  const top = Math.min(88, Math.max(12, ((10.789 - lat) / 0.018) * 76 + 12));
+  return { left: `${left}%`, top: `${top}%` };
+};
 
 export const Restaurants = () => {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const [categories, setCategories] = useState<CuisineCategory[]>([])
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([])
-  const [pagination, setPagination] = useState<RestaurantResponse['pagination']>({
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [categories, setCategories] = useState<CuisineCategory[]>([]);
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [pagination, setPagination] = useState<
+    RestaurantResponse["pagination"]
+  >({
     page: 1,
     limit: 12,
     total: 0,
     totalPages: 0,
-  })
-  const [draftSearch, setDraftSearch] = useState(searchParams.get('q') ?? '')
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [showMap, setShowMap] = useState(false)
-  const [showMobileFilters, setShowMobileFilters] = useState(false)
-  const [favorites, setFavorites] = useState<Set<string>>(new Set())
+  });
+  const [draftSearch, setDraftSearch] = useState(searchParams.get("q") ?? "");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [showMap, setShowMap] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
   const selectedCuisines = useMemo(
-    () => (searchParams.get('cuisine') ?? '').split(',').filter(Boolean),
-    [searchParams]
-  )
-  const district = searchParams.get('district') ?? ''
-  const city = searchParams.get('city') ?? 'TP.HCM'
-  const openOnly = searchParams.get('openNow') !== 'false'
+    () => (searchParams.get("cuisine") ?? "").split(",").filter(Boolean),
+    [searchParams],
+  );
+  const district = searchParams.get("district") ?? "";
+  const city = searchParams.get("city") ?? "TP.HCM";
+  const openOnly = searchParams.get("openNow") !== "false";
 
   useEffect(() => {
-    let active = true
+    let active = true;
     api
-      .get<CuisineCategory[]>('/public/categories')
+      .get<CuisineCategory[]>("/public/categories")
       .then((response) => {
-        if (active) setCategories(response.data)
+        if (active) setCategories(response.data);
       })
       .catch(() => {
-        if (active) setError('Không thể tải danh mục ẩm thực.')
-      })
+        if (active) setError("Không thể tải danh mục ẩm thực.");
+      });
     return () => {
-      active = false
-    }
-  }, [])
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
-    let active = true
+    let active = true;
     const fetchRestaurants = async () => {
-      setLoading(true)
-      setError('')
+      setLoading(true);
+      setError("");
       try {
-        const params = new URLSearchParams(searchParams)
-        if (!params.has('sort')) params.set('sort', 'popular_desc')
-        if (!params.has('openNow')) params.set('openNow', 'true')
-        if (!params.has('limit')) params.set('limit', '9')
-        const response = await api.get<RestaurantResponse>('/public/restaurants', { params })
-        if (!active) return
-        setRestaurants(response.data.data)
-        setPagination(response.data.pagination)
+        const params = new URLSearchParams(searchParams);
+        if (!params.has("sort")) params.set("sort", "popular_desc");
+        if (!params.has("openNow")) params.set("openNow", "true");
+        if (!params.has("limit")) params.set("limit", "9");
+        const response = await api.get<RestaurantResponse>(
+          "/public/restaurants",
+          { params },
+        );
+        if (!active) return;
+        setRestaurants(response.data.data);
+        setPagination(response.data.pagination);
       } catch {
-        if (active) setError('Không thể tải danh sách nhà hàng. Vui lòng thử lại.')
+        if (active)
+          setError("Không thể tải danh sách nhà hàng. Vui lòng thử lại.");
       } finally {
-        if (active) setLoading(false)
+        if (active) setLoading(false);
       }
-    }
-    void fetchRestaurants()
+    };
+    void fetchRestaurants();
     return () => {
-      active = false
-    }
-  }, [searchParams])
+      active = false;
+    };
+  }, [searchParams]);
 
   const updateParams = (updates: Record<string, string | null>) => {
-    const next = new URLSearchParams(searchParams)
+    const next = new URLSearchParams(searchParams);
     Object.entries(updates).forEach(([key, value]) => {
-      if (!value) next.delete(key)
-      else next.set(key, value)
-    })
-    if (!Object.hasOwn(updates, 'page')) next.set('page', '1')
-    setSearchParams(next)
-  }
+      if (!value) next.delete(key);
+      else next.set(key, value);
+    });
+    if (!Object.hasOwn(updates, "page")) next.set("page", "1");
+    setSearchParams(next);
+  };
 
   const submitSearch = (event: FormEvent) => {
-    event.preventDefault()
-    updateParams({ q: draftSearch.trim() || null })
-  }
+    event.preventDefault();
+    updateParams({ q: draftSearch.trim() || null });
+  };
 
   const toggleCuisine = (slug: string) => {
     const next = selectedCuisines.includes(slug)
       ? selectedCuisines.filter((item) => item !== slug)
-      : [...selectedCuisines, slug]
-    updateParams({ cuisine: next.length > 0 ? next.join(',') : null })
-  }
+      : [...selectedCuisines, slug];
+    updateParams({ cuisine: next.length > 0 ? next.join(",") : null });
+  };
 
   const toggleFavorite = (id: string) => {
     setFavorites((current) => {
-      const next = new Set(current)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const resetFilters = () => {
-    setDraftSearch('')
-    setSearchParams({ sort: 'popular_desc', openNow: 'true', page: '1' })
-  }
+    setDraftSearch("");
+    setSearchParams({ sort: "popular_desc", openNow: "true", page: "1" });
+  };
 
-  const pageNumbers = Array.from({ length: pagination.totalPages }, (_, index) => index + 1).filter(
-    (page) => page === 1 || page === pagination.totalPages || Math.abs(page - pagination.page) <= 1
-  )
+  const pageNumbers = Array.from(
+    { length: pagination.totalPages },
+    (_, index) => index + 1,
+  ).filter(
+    (page) =>
+      page === 1 ||
+      page === pagination.totalPages ||
+      Math.abs(page - pagination.page) <= 1,
+  );
 
   return (
     <main className="min-h-screen bg-[#f7faf7] text-[#17201a]">
@@ -203,8 +218,8 @@ export const Restaurants = () => {
           </h1>
           <p className="mb-0 text-[#68736c]">
             {loading
-              ? 'Đang tìm những lựa chọn phù hợp...'
-              : `${pagination.total} nhà hàng${openOnly ? ' đang mở' : ''}${district ? ` tại ${district}, ${city}` : ` tại ${city}`}`}
+              ? "Đang tìm những lựa chọn phù hợp..."
+              : `${pagination.total} nhà hàng${openOnly ? " đang mở" : ""}${district ? ` tại ${district}, ${city}` : ` tại ${city}`}`}
           </p>
         </div>
       </section>
@@ -224,10 +239,13 @@ export const Restaurants = () => {
             />
             <select
               className={FORM_CONTROL_CLASS}
-              value={district ? `${district}|${city}` : ''}
+              value={district ? `${district}|${city}` : ""}
               onChange={(event) => {
-                const [nextDistrict, nextCity] = event.target.value.split('|')
-                updateParams({ district: nextDistrict || null, city: nextCity || null })
+                const [nextDistrict, nextCity] = event.target.value.split("|");
+                updateParams({
+                  district: nextDistrict || null,
+                  city: nextCity || null,
+                });
               }}
               aria-label="Khu vực"
             >
@@ -237,7 +255,7 @@ export const Restaurants = () => {
             </select>
             <select
               className={FORM_CONTROL_CLASS}
-              value={searchParams.get('sort') ?? 'popular_desc'}
+              value={searchParams.get("sort") ?? "popular_desc"}
               onChange={(event) => updateParams({ sort: event.target.value })}
               aria-label="Sắp xếp"
             >
@@ -247,7 +265,10 @@ export const Restaurants = () => {
               <option value="price_asc">Giá thấp trước</option>
               <option value="newest">Mới nhất</option>
             </select>
-            <button className={`${PRIMARY_BUTTON_CLASS} max-[760px]:w-full`} type="submit">
+            <button
+              className={`${PRIMARY_BUTTON_CLASS} max-[760px]:w-full`}
+              type="submit"
+            >
               Tìm kiếm
             </button>
           </form>
@@ -257,13 +278,13 @@ export const Restaurants = () => {
             type="button"
             onClick={() => setShowMobileFilters((value) => !value)}
           >
-            ☷ {showMobileFilters ? 'Ẩn bộ lọc' : 'Hiện bộ lọc'}
+            ☷ {showMobileFilters ? "Ẩn bộ lọc" : "Hiện bộ lọc"}
           </button>
 
           <div className="grid grid-cols-[260px_minmax(0,1fr)] items-start gap-[26px] max-[760px]:grid-cols-1">
             <aside
               className={`sticky top-[92px] rounded-2xl border border-[#e7ece8] bg-white p-[18px] max-[760px]:static ${
-                showMobileFilters ? 'max-[760px]:block' : 'max-[760px]:hidden'
+                showMobileFilters ? "max-[760px]:block" : "max-[760px]:hidden"
               }`}
             >
               <div className="flex items-center justify-between gap-2.5">
@@ -298,8 +319,10 @@ export const Restaurants = () => {
                       className="h-4 w-4 accent-[#ff5a1f]"
                       type="radio"
                       name="price"
-                      checked={searchParams.get('priceRange') === option.value}
-                      onChange={() => updateParams({ priceRange: option.value })}
+                      checked={searchParams.get("priceRange") === option.value}
+                      onChange={() =>
+                        updateParams({ priceRange: option.value })
+                      }
                     />
                     {option.label}
                   </label>
@@ -313,8 +336,10 @@ export const Restaurants = () => {
                       className="h-4 w-4 accent-[#ff5a1f]"
                       type="radio"
                       name="rating"
-                      checked={searchParams.get('minRating') === String(rating)}
-                      onChange={() => updateParams({ minRating: String(rating) })}
+                      checked={searchParams.get("minRating") === String(rating)}
+                      onChange={() =>
+                        updateParams({ minRating: String(rating) })
+                      }
                     />
                     ★ {rating} sao trở lên
                   </label>
@@ -326,7 +351,9 @@ export const Restaurants = () => {
                     className="h-4 w-4 accent-[#ff5a1f]"
                     type="checkbox"
                     checked={openOnly}
-                    onChange={(event) => updateParams({ openNow: String(event.target.checked) })}
+                    onChange={(event) =>
+                      updateParams({ openNow: String(event.target.checked) })
+                    }
                   />
                   Chỉ quán đang mở
                 </label>
@@ -334,9 +361,11 @@ export const Restaurants = () => {
                   <input
                     className="h-4 w-4 accent-[#ff5a1f]"
                     type="checkbox"
-                    checked={searchParams.get('freeDelivery') === 'true'}
+                    checked={searchParams.get("freeDelivery") === "true"}
                     onChange={(event) =>
-                      updateParams({ freeDelivery: event.target.checked ? 'true' : null })
+                      updateParams({
+                        freeDelivery: event.target.checked ? "true" : null,
+                      })
                     }
                   />
                   Miễn phí giao hàng
@@ -348,18 +377,20 @@ export const Restaurants = () => {
               <div className="mb-4 flex items-center justify-between gap-4">
                 <div>
                   <b>{pagination.total} kết quả</b>
-                  <div className="text-xs text-[#68736c]">Kết quả phù hợp nhất với bạn</div>
+                  <div className="text-xs text-[#68736c]">
+                    Kết quả phù hợp nhất với bạn
+                  </div>
                 </div>
                 <button
                   className={`inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border px-[13px] py-2 text-xs font-bold transition hover:-translate-y-px focus:outline-none focus:ring-4 focus:ring-[#ff5a1f]/10 ${
                     showMap
-                      ? 'border-[#ff5a1f] bg-[#fff0e9] text-[#ff5a1f]'
-                      : 'border-[#e7ece8] bg-white text-[#17201a]'
+                      ? "border-[#ff5a1f] bg-[#fff0e9] text-[#ff5a1f]"
+                      : "border-[#e7ece8] bg-white text-[#17201a]"
                   }`}
                   type="button"
                   onClick={() => setShowMap((value) => !value)}
                 >
-                  {showMap ? '▦ Danh sách' : '☷ Bản đồ'}
+                  {showMap ? "▦ Danh sách" : "☷ Bản đồ"}
                 </button>
               </div>
 
@@ -431,12 +462,14 @@ export const Restaurants = () => {
                         <button
                           type="button"
                           className={`absolute right-3 top-3 grid h-[34px] w-[34px] cursor-pointer place-items-center rounded-full border border-white/75 bg-white/90 p-0 text-lg transition hover:scale-105 ${
-                            favorites.has(restaurant._id) ? 'bg-white text-[#e34444]' : 'text-[#17201a]'
+                            favorites.has(restaurant._id)
+                              ? "bg-white text-[#e34444]"
+                              : "text-[#17201a]"
                           }`}
                           onClick={() => toggleFavorite(restaurant._id)}
-                          aria-label={`${favorites.has(restaurant._id) ? 'Bỏ yêu thích' : 'Yêu thích'} ${restaurant.name}`}
+                          aria-label={`${favorites.has(restaurant._id) ? "Bỏ yêu thích" : "Yêu thích"} ${restaurant.name}`}
                         >
-                          {favorites.has(restaurant._id) ? '♥' : '♡'}
+                          {favorites.has(restaurant._id) ? "♥" : "♡"}
                         </button>
                       </div>
                       <div className="flex flex-1 flex-col p-4">
@@ -444,26 +477,41 @@ export const Restaurants = () => {
                           <h3 className="mb-[5px] text-[15px] font-bold leading-snug transition hover:text-[#ff5a1f]">{restaurant.name}</h3>
                         </Link>
                         <p className="mb-0 min-h-[19px] text-xs text-[#68736c]">
-                          {restaurant.cuisineCategories.map((category) => category.name).join(' • ')}
+                          {restaurant.cuisineCategories
+                            .map((category) => category.name)
+                            .join(" • ")}
                         </p>
                         <p className="mb-2.5 mt-[7px] min-h-[38px] text-xs text-[#68736c]">
                           📍 {restaurant.address}
                         </p>
                         <div className="flex flex-wrap gap-2.5 text-[11px] text-[#68736c]">
-                          <span className="font-bold text-[#e69b00]">★ {restaurant.ratingSummary.average.toFixed(1)}</span>
-                          <span>◷ {restaurant.delivery.minMinutes}–{restaurant.delivery.maxMinutes} phút</span>
-                          <span>₫ {PRICE_OPTIONS.find((option) => option.value === restaurant.priceRange)?.label}</span>
+                          <span className="font-bold text-[#e69b00]">
+                            ★ {restaurant.ratingSummary.average.toFixed(1)}
+                          </span>
+                          <span>
+                            ◷ {restaurant.delivery.minMinutes}–
+                            {restaurant.delivery.maxMinutes} phút
+                          </span>
+                          <span>
+                            ₫{" "}
+                            {
+                              PRICE_OPTIONS.find(
+                                (option) =>
+                                  option.value === restaurant.priceRange,
+                              )?.label
+                            }
+                          </span>
                         </div>
                         <div className="mt-auto flex items-center justify-between gap-3 pt-6">
                           <span
                             className={`text-xs ${
                               restaurant.delivery.fee === 0
-                                ? 'font-bold text-[#167a3e]'
-                                : 'text-[#68736c]'
+                                ? "font-bold text-[#167a3e]"
+                                : "text-[#68736c]"
                             }`}
                           >
                             {restaurant.delivery.fee === 0
-                              ? 'Miễn phí giao hàng'
+                              ? "Miễn phí giao hàng"
                               : `Phí giao ${formatMoney(restaurant.delivery.fee)}`}
                           </span>
                           <Link to={`/restaurants/${restaurant.slug}`} className="shrink-0 font-bold text-[#ff5a1f]">Xem quán →</Link>
@@ -477,48 +525,63 @@ export const Restaurants = () => {
               {!loading && !error && restaurants.length === 0 && (
                 <div className="rounded-2xl border border-[#e7ece8] bg-white px-6 py-12 text-center text-[#68736c]">
                   <span className="mb-3 block text-[52px]">🍽️</span>
-                  <h3 className="mb-2 text-lg font-bold text-[#17201a]">Chưa tìm thấy nhà hàng phù hợp</h3>
+                  <h3 className="mb-2 text-lg font-bold text-[#17201a]">
+                    Chưa tìm thấy nhà hàng phù hợp
+                  </h3>
                   <p>Hãy thử đổi từ khóa hoặc bỏ bớt bộ lọc.</p>
-                  <button type="button" className={OUTLINE_BUTTON_CLASS} onClick={resetFilters}>
+                  <button
+                    type="button"
+                    className={OUTLINE_BUTTON_CLASS}
+                    onClick={resetFilters}
+                  >
                     Xóa bộ lọc
                   </button>
                 </div>
               )}
 
               {!loading && !error && pagination.totalPages > 1 && (
-                <nav className="mt-[34px] flex justify-center gap-2" aria-label="Phân trang nhà hàng">
+                <nav
+                  className="mt-[34px] flex justify-center gap-2"
+                  aria-label="Phân trang nhà hàng"
+                >
                   <button
                     className={PAGINATION_BUTTON_CLASS}
                     type="button"
                     disabled={pagination.page === 1}
-                    onClick={() => updateParams({ page: String(pagination.page - 1) })}
+                    onClick={() =>
+                      updateParams({ page: String(pagination.page - 1) })
+                    }
                   >
                     ‹
                   </button>
                   {pageNumbers.map((page, index) => {
-                    const previous = pageNumbers[index - 1]
+                    const previous = pageNumbers[index - 1];
                     return (
                       <span className="flex items-center gap-2" key={page}>
-                        {previous && page - previous > 1 && <span className="text-[#68736c]">…</span>}
+                        {previous && page - previous > 1 && (
+                          <span className="text-[#68736c]">…</span>
+                        )}
                         <button
                           type="button"
                           className={`${PAGINATION_BUTTON_CLASS} ${
                             page === pagination.page
-                              ? 'border-[#ff5a1f] bg-[#ff5a1f] text-white hover:text-white'
-                              : ''
+                              ? "border-[#ff5a1f] bg-[#ff5a1f] text-white hover:text-white"
+                              : ""
                           }`}
                           onClick={() => updateParams({ page: String(page) })}
                         >
                           {page}
                         </button>
                       </span>
-                    )
+                    );
                   })}
                   <button
                     className={PAGINATION_BUTTON_CLASS}
                     type="button"
                     disabled={pagination.page === pagination.totalPages}
-                    onClick={() => updateParams({ page: String(pagination.page + 1) })}
+                    onClick={() =>
+                      updateParams({ page: String(pagination.page + 1) })
+                    }
                   >
                     ›
                   </button>
@@ -529,5 +592,5 @@ export const Restaurants = () => {
         </div>
       </section>
     </main>
-  )
-}
+  );
+};

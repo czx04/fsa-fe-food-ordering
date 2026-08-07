@@ -1,6 +1,10 @@
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 function PaymentSuccessPage() {
+  const [searchParams] = useSearchParams();
+  const orderId = searchParams.get("orderId");
+  const orderNumber = searchParams.get("orderNumber");
+
   return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="bg-white p-8 md:p-12 rounded-lg shadow-xl text-center max-w-md w-full">
@@ -24,18 +28,20 @@ function PaymentSuccessPage() {
         </h1>
         <p className="text-gray-600 mb-6">
           Cảm ơn bạn đã đặt hàng. Đơn hàng{" "}
-          <span className="font-semibold text-gray-800">
-            #FD-20240805-1A2B3C
-          </span>{" "}
+          {orderNumber && (
+            <span className="font-semibold text-gray-800">#{orderNumber}</span>
+          )}{" "}
           của bạn đang được xử lý.
         </p>
         <div className="space-y-4">
-          <Link
-            to="/order/66b0e0c0e0c0e0c0e0c0e141"
-            className="w-full bg-orange-500 text-white py-3 rounded-md font-semibold hover:bg-orange-600 transition-colors duration-200 block"
-          >
-            Xem chi tiết đơn hàng
-          </Link>
+          {orderId && (
+            <Link
+              to={`/order/${orderId}`}
+              className="w-full bg-orange-500 text-white py-3 rounded-md font-semibold hover:bg-orange-600 transition-colors duration-200 block"
+            >
+              Xem chi tiết đơn hàng
+            </Link>
+          )}
           <Link
             to="/"
             className="w-full bg-gray-200 text-gray-800 py-3 rounded-md font-semibold hover:bg-gray-300 transition-colors duration-200 block"

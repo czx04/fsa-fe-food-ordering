@@ -1,33 +1,46 @@
-import { useAuth } from '../context/AuthContext'
-import { Link } from 'react-router-dom'
+import { useAuth } from "../contexts/AuthContext";
+import { Link } from "react-router-dom";
 
 export const OwnerDashboard = () => {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuth();
 
   return (
-    <div style={{ padding: '60px 20px', textAlign: 'center', maxWidth: '600px', margin: '0 auto' }}>
-      <div style={{ fontSize: '64px', marginBottom: '16px' }}>🏪</div>
+    <div
+      style={{
+        padding: "60px 20px",
+        textAlign: "center",
+        maxWidth: "600px",
+        margin: "0 auto",
+      }}
+    >
+      <div style={{ fontSize: "64px", marginBottom: "16px" }}>🏪</div>
       <h2>Restaurant Owner Dashboard</h2>
-      <p className="muted" style={{ fontSize: '18px', margin: '12px 0 24px' }}>
-        Xin chào <b>{user?.fullName || 'Chủ nhà hàng'}</b> ({user?.email})!
+      <p className="muted" style={{ fontSize: "18px", margin: "12px 0 24px" }}>
+        Xin chào <b>{user?.fullName || "Chủ nhà hàng"}</b> ({user?.email})!
       </p>
-      
-      <div style={{ 
-        background: '#fff3cd', 
-        color: '#856404', 
-        padding: '16px 24px', 
-        borderRadius: '12px', 
-        fontWeight: 600,
-        marginBottom: '32px',
-        border: '1px solid #ffeeba'
-      }}>
+
+      <div
+        style={{
+          background: "#fff3cd",
+          color: "#856404",
+          padding: "16px 24px",
+          borderRadius: "12px",
+          fontWeight: 600,
+          marginBottom: "32px",
+          border: "1px solid #ffeeba",
+        }}
+      >
         🚧 Feature under construction (Đang phát triển)
       </div>
 
-      <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-        <Link className="btn btn-outline" to="/home">Về trang chủ</Link>
-        <button className="btn" onClick={logout}>Đăng xuất</button>
+      <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+        <Link className="btn btn-outline" to="/home">
+          Về trang chủ
+        </Link>
+        <button className="btn" onClick={logout}>
+          Đăng xuất
+        </button>
       </div>
     </div>
-  )
-}
+  );
+};

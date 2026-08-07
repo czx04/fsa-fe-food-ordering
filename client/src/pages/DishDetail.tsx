@@ -12,7 +12,7 @@ import { Link, useParams } from 'react-router-dom'
 
 import { LoginModal } from '../components/LoginModal'
 import { RestaurantChangeModal } from '../components/RestaurantChangeModal'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../contexts/AuthContext'
 import { api } from '../utils/api'
 import {
   addStoredCartItem,
