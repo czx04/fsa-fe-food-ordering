@@ -59,7 +59,7 @@ export const addItemToCart = async (
     const newCartItems = [{
       menuItemId: new Types.ObjectId(menuItemId),
       quantity,
-      price: menuItem.price,
+      price: menuItem.salePrice ?? menuItem.basePrice,
     }];
     const newCart = await cartRepository.createCart(
       new Types.ObjectId(userId),
