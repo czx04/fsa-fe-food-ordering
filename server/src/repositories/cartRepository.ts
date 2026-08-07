@@ -7,7 +7,7 @@ import { Cart, ICart } from '../models/Cart.js';
  * @returns A promise that resolves to the user's cart or null if not found.
  */
 export const findCartByUserId = async (userId: string | Types.ObjectId): Promise<ICart | null> => {
-  return Cart.findOne({ userId }).populate('items.menuItemId', 'name price');
+  return Cart.findOne({ userId }).populate('items.menuItemId', 'name basePrice salePrice');
 };
 
 /**
