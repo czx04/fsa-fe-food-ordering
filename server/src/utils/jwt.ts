@@ -6,6 +6,7 @@ export const generateTokens = (user: IUser) => {
   const payload = {
     userId: user._id,
     role: user.role,
+    status: user.status,
   }
 
   const accessToken = jwt.sign(payload, env.jwtSecret, {
@@ -21,7 +22,7 @@ export const generateTokens = (user: IUser) => {
 
 export const verifyAccessToken = (token: string) => {
   try {
-    return jwt.verify(token, env.jwtSecret) as { userId: string; role: string }
+    return jwt.verify(token, env.jwtSecret) as { userId: string; role: string; status?: string }
   } catch (error) {
     return null
   }
@@ -29,8 +30,9 @@ export const verifyAccessToken = (token: string) => {
 
 export const verifyRefreshToken = (token: string) => {
   try {
-    return jwt.verify(token, env.jwtRefreshSecret) as { userId: string; role: string }
+    return jwt.verify(token, env.jwtRefreshSecret) as { userId: string; role: string; status?: string }
   } catch (error) {
     return null
   }
 }
+
