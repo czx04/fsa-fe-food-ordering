@@ -78,9 +78,11 @@ export const addItemToCart = async (
   }
 
   // Update existing cart
-  const itemIndex = cart.items.findIndex(
-    (item) => item.menuItemId.toString() === menuItemId
-  );
+  const itemIndex = cart.items.findIndex((item) => {
+    const menuItemValue = item.menuItemId as unknown as Types.ObjectId | { _id: Types.ObjectId };
+    const menuItemObjectId = menuItemValue instanceof Types.ObjectId ? menuItemValue : menuItemValue._id;
+    return menuItemObjectId.toString() === menuItemId;
+  });
 
   if (itemIndex > -1) {
     // Item exists, update quantity
