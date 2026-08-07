@@ -36,6 +36,13 @@ export const addItemToCart = async (
 ): Promise<ICart> => {
   const { menuItemId, quantity, restaurantId } = cartData;
 
+  if (!Types.ObjectId.isValid(menuItemId) || !Types.ObjectId.isValid(restaurantId)) {
+    throw createError(400, 'Invalid menuItemId or restaurantId');
+  }
+
+  if (!Number.isInteger(quantity) || quantity <= 0) {
+    throw createError(400, 'Quantity must be a positive integer');
+  }
   const menuItem = await MenuItem.findById(menuItemId);
   if (!menuItem) {
     throw createError(404, 'Menu item not found');
