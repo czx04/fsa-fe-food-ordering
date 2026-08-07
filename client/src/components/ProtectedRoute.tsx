@@ -1,5 +1,5 @@
-import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { Navigate, Outlet } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 interface ProtectedRouteProps {
   allowedRoles?: string[];
@@ -23,8 +23,12 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-4">
-        <h2 className="text-2xl font-bold text-slate-800 mb-2">403 - Không có quyền truy cập</h2>
-        <p className="text-slate-500 mb-4">Bạn không có quyền truy cập vào trang này.</p>
+        <h2 className="text-2xl font-bold text-slate-800 mb-2">
+          403 - Không có quyền truy cập
+        </h2>
+        <p className="text-slate-500 mb-4">
+          Bạn không có quyền truy cập vào trang này.
+        </p>
       </div>
     );
   }
