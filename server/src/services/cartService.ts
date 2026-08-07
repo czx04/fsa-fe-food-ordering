@@ -157,8 +157,8 @@ export const removeCartItem = async (
   if (cart.items.length === 0) {
     // If cart is empty, delete it
     await cartRepository.deleteCartByUserId(userId);
-    // Return a representation of an empty cart without saving it
-    return { ...cart.toObject(), items: [], total: 0 };
+    cart.total = 0;
+    return cart;
   }
 
 
