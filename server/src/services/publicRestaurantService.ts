@@ -181,7 +181,9 @@ const isTimeInSlot = (time: string, open: string, close: string) => {
   return time >= open || time <= close
 }
 
-export const isRestaurantOpenNow = (restaurant: RestaurantRecord) => {
+export const isRestaurantOpenNow = (
+  restaurant: Pick<RestaurantRecord, 'operationStatus' | 'openingHours'>
+) => {
   if (restaurant.operationStatus !== 'open') return false
   const current = getVietnamTime()
   const today = restaurant.openingHours.find((entry) => entry.dayOfWeek === current.dayOfWeek)

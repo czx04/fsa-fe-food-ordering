@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { useSearchParams } from "react-router-dom";
-import { api } from "../utils/api";
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
+
+import { api } from '../utils/api'
 
 interface CuisineCategory {
   _id: string;
@@ -65,7 +66,7 @@ const CONTAINER_CLASS =
 const FORM_CONTROL_CLASS =
   "h-[42px] min-w-[155px] rounded-[9px] border border-[#e7ece8] bg-white px-3 text-[#17201a] outline-none transition focus:border-[#2eae62] focus:ring-4 focus:ring-[#2eae62]/10 max-[760px]:w-full";
 const PRIMARY_BUTTON_CLASS =
-  "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[10px] border-0 bg-[#ff5a1f] px-5 py-[11px] font-bold text-white shadow-[0_8px_20px_rgba(255,90,31,.18)] transition hover:-translate-y-px focus:outline-none focus:ring-4 focus:ring-[#ff5a1f]/20";
+  'inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[10px] border-0 bg-[#ff5a1f] px-5 py-[11px] font-bold text-white transition hover:-translate-y-px hover:bg-[#e94e16] focus:outline-none focus:ring-4 focus:ring-[#ff5a1f]/20'
 const OUTLINE_BUTTON_CLASS =
   "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-[#e7ece8] bg-white px-5 py-[11px] font-bold text-[#17201a] transition hover:-translate-y-px hover:border-[#ff5a1f] focus:outline-none focus:ring-4 focus:ring-[#ff5a1f]/10";
 const FILTER_LABEL_CLASS =
@@ -406,10 +407,9 @@ export const Restaurants = () => {
 
               {!loading && !error && showMap && restaurants.length > 0 && (
                 <div
-                  className="relative min-h-[560px] overflow-hidden rounded-[18px] border border-[#e7ece8] bg-[linear-gradient(135deg,#e7f6ea,#f8f3df)] shadow-[0_8px_24px_rgba(34,63,43,.08)] max-[760px]:min-h-[460px]"
+                  className="relative min-h-[560px] overflow-hidden rounded-[18px] border border-[#dce8df] bg-[#edf6ee] shadow-[0_8px_24px_rgba(34,63,43,.08)] max-[760px]:min-h-[460px]"
                   aria-label="Bản đồ nhà hàng"
                 >
-                  <div className="absolute inset-0 -rotate-[8deg] scale-[1.2] opacity-70 [background-image:linear-gradient(rgba(63,125,79,.12)_1px,transparent_1px),linear-gradient(90deg,rgba(63,125,79,.12)_1px,transparent_1px)] [background-size:54px_54px]" />
                   <div className="absolute left-[-10%] top-[46%] h-[38px] w-[120%] -rotate-[24deg] rounded-full bg-[rgba(110,178,225,.22)]" />
                   <div className="absolute right-[-12%] top-[22%] h-6 w-[70%] -rotate-[24deg] rounded-full bg-[rgba(110,178,225,.22)]" />
                   {restaurants.map((restaurant) => (
@@ -420,10 +420,10 @@ export const Restaurants = () => {
                       title={`${restaurant.name} · ${restaurant.address}`}
                       type="button"
                     >
-                      <span className="grid h-[42px] w-[42px] -rotate-45 place-items-center rounded-[50%_50%_50%_8px] bg-white text-xl shadow-[0_8px_24px_rgba(34,63,43,.08)]">
+                      <span className="grid h-[42px] w-[42px] -rotate-45 place-items-center rounded-[50%_50%_50%_8px] border border-[#dce8df] bg-white text-xl">
                         <span className="rotate-45">📍</span>
                       </span>
-                      <b className="rounded-md bg-white/90 px-[7px] py-1 text-[10px] shadow-[0_8px_24px_rgba(34,63,43,.08)]">
+                      <b className="rounded-md border border-[#dce8df] bg-white/90 px-[7px] py-1 text-[10px]">
                         {restaurant.name}
                       </b>
                     </button>
@@ -445,24 +445,20 @@ export const Restaurants = () => {
                       key={restaurant._id}
                     >
                       <div className="relative h-[190px] overflow-hidden bg-[#dff7e7]">
-                        <img
-                          className="h-full w-full object-cover"
-                          src={
-                            restaurant.coverUrl ||
-                            restaurant.coverImage ||
-                            "/assets/restaurant.jpg"
-                          }
-                          alt={restaurant.name}
-                        />
-                        <span
-                          className={`absolute left-3 top-3 rounded-[7px] px-[9px] py-1.5 text-[10px] font-extrabold text-white ${
-                            restaurant.isOpenNow
-                              ? "bg-[#ff5a1f]"
-                              : "bg-[#53615a]"
-                          }`}
-                        >
-                          {restaurant.isOpenNow ? "Mở cửa" : "Đã đóng"}
-                        </span>
+                        <Link to={`/restaurants/${restaurant.slug}`} className="block h-full">
+                          <img
+                            className="h-full w-full object-cover"
+                            src={restaurant.coverUrl || restaurant.coverImage || '/assets/restaurant.jpg'}
+                            alt={restaurant.name}
+                          />
+                          <span
+                            className={`absolute left-3 top-3 rounded-[7px] px-[9px] py-1.5 text-[10px] font-extrabold text-white ${
+                              restaurant.isOpenNow ? 'bg-[#ff5a1f]' : 'bg-[#53615a]'
+                            }`}
+                          >
+                            {restaurant.isOpenNow ? 'Mở cửa' : 'Đã đóng'}
+                          </span>
+                        </Link>
                         <button
                           type="button"
                           className={`absolute right-3 top-3 grid h-[34px] w-[34px] cursor-pointer place-items-center rounded-full border border-white/75 bg-white/90 p-0 text-lg transition hover:scale-105 ${
@@ -477,9 +473,9 @@ export const Restaurants = () => {
                         </button>
                       </div>
                       <div className="flex flex-1 flex-col p-4">
-                        <h3 className="mb-[5px] text-[15px] font-bold leading-snug">
-                          {restaurant.name}
-                        </h3>
+                        <Link to={`/restaurants/${restaurant.slug}`}>
+                          <h3 className="mb-[5px] text-[15px] font-bold leading-snug transition hover:text-[#ff5a1f]">{restaurant.name}</h3>
+                        </Link>
                         <p className="mb-0 min-h-[19px] text-xs text-[#68736c]">
                           {restaurant.cuisineCategories
                             .map((category) => category.name)
@@ -518,9 +514,7 @@ export const Restaurants = () => {
                               ? "Miễn phí giao hàng"
                               : `Phí giao ${formatMoney(restaurant.delivery.fee)}`}
                           </span>
-                          <span className="shrink-0 font-bold text-[#ff5a1f]">
-                            Xem quán →
-                          </span>
+                          <Link to={`/restaurants/${restaurant.slug}`} className="shrink-0 font-bold text-[#ff5a1f]">Xem quán →</Link>
                         </div>
                       </div>
                     </article>

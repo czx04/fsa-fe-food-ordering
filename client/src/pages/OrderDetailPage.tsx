@@ -1,6 +1,5 @@
 import { Link, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { useAuth } from "../contexts/AuthContext";
 import { OrderDetail } from "../types/order";
 import { mockApi } from "../utils/mock-api";
 
@@ -29,7 +28,6 @@ function OrderDetailPage() {
   const [order, setOrder] = useState<OrderDetail>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const { user } = useAuth();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,6 +55,13 @@ function OrderDetailPage() {
     return (
       <main className="container mx-auto p-4">
         <p>Đang tải chi tiết đơn hàng...</p>
+      </main>
+    );
+  }
+  if (error) {
+    return (
+      <main className="container mx-auto p-4">
+        <p className="text-red-600">{error}</p>
       </main>
     );
   }
