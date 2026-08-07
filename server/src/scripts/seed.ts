@@ -275,8 +275,8 @@ const seedData = async () => {
       code: 'GIAM10K',
       discountType: 'fixed',
       discountValue: 10000,
-      startsAt: new Date('2026-08-01T00:00:00Z'),
-      endsAt: new Date('2026-08-31T23:59:59Z'),
+      startsAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+      endsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       status: 'active',
     })
 
