@@ -1,8 +1,8 @@
 import { Types } from 'mongoose';
-import * as cartRepository from '../repositories/cartRepository';
-import { AddToCartRequest, UpdateCartItemRequest } from '../types/cart';
-import { ICart } from '../models/Cart';
-import { MenuItem } from '../models/MenuItem';
+import * as cartRepository from '../repositories/cartRepository.js';
+import { AddToCartRequest, UpdateCartItemRequest } from '../types/cart.js';
+import { ICart } from '../models/Cart.js';
+import { MenuItem } from '../models/MenuItem.js';
 import createError from 'http-errors';
 
 /**
