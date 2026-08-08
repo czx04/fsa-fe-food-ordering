@@ -47,3 +47,22 @@ export const requireRole = (roles: string[]) => {
     next()
   }
 }
+
+export const requireVerifiedEmail = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    res.status(401).json({ message: 'Chưa xác thực.' })
+    return
+  }
+
+  const { User } = await import('../models/User.js')
+  const user = await User.findById(req.user.userId).select('status')
+  if (!user || user.status === 'pending_verification') {
+    res.status(403).json({
+      message: 'Tài khoản chưa được xác thực email. Vui lòng kiểm tra email để kích hoạt đầy đủ tính năng.',
+    })
+    return
+  }
+
+  next()
+}
+
