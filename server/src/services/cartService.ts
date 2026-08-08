@@ -63,16 +63,17 @@ export const addItemToCart = async (
 
   if (!cart) {
     // Create a new cart
+    const itemPrice = menuItem.salePrice ?? menuItem.basePrice ?? menuItem.price ?? 0;
     const newCartItems = [{
       menuItemId: new Types.ObjectId(menuItemId),
       quantity,
-      price: menuItem.salePrice ?? menuItem.basePrice,
+      price: itemPrice,
     }];
     const newCart = await cartRepository.createCart(
       new Types.ObjectId(userId),
       new Types.ObjectId(restaurantId),
       newCartItems,
-      menuItem.price * quantity
+      itemPrice * quantity
     );
     return newCart;
   }
@@ -86,14 +87,18 @@ export const addItemToCart = async (
 
   if (itemIndex > -1) {
     // Item exists, update quantity
-    cart.items[itemIndex].quantity += quantity;
+    const currentItem = cart.items[itemIndex];
+    if (currentItem) {
+      currentItem.quantity += quantity;
+    }
   } else {
     // Item does not exist, add it
+    const itemPrice = menuItem.salePrice ?? menuItem.basePrice ?? menuItem.price ?? 0;
     cart.items.push({
       menuItemId: new Types.ObjectId(menuItemId),
       quantity,
-      price: menuItem.price,
-    });
+      price: itemPrice,
+    } as any);
   }
 
   const updatedCart = recalculateCartTotal(cart);
@@ -131,7 +136,10 @@ export const updateCartItem = async (
     throw createError(404, 'Item not found in cart');
   }
 
-  cart.items[itemIndex].quantity = quantity;
+  const currentItem = cart.items[itemIndex];
+  if (currentItem) {
+    currentItem.quantity = quantity;
+  }
 
   const updatedCart = recalculateCartTotal(cart);
   return updatedCart.save();

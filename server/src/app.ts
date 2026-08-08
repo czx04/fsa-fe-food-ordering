@@ -7,6 +7,8 @@ import { authRouter } from './routes/authRoutes.js'
 import publicRouter from './routes/publicRoutes.js'
 import cartRouter from './routes/cartRoutes.js'
 import orderRouter from './routes/orderRoutes.js'
+import { ownerRouter } from './routes/ownerRoutes.js'
+import { adminRouter } from './routes/adminRoutes.js'
 
 export const app = express()
 
@@ -18,6 +20,8 @@ app.use('/api/auth', authRouter)
 app.use('/api/public', publicRouter)
 app.use('/api/cart', cartRouter)
 app.use('/api/orders', orderRouter)
+app.use('/api/owner', ownerRouter)
+app.use('/api/admin', adminRouter)
 
 app.get('/api/health', (_request, response) => {
     response.status(200).json({

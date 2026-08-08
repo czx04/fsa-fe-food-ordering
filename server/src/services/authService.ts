@@ -1,4 +1,4 @@
-import bcrypt from 'bcryptjs'
+import bcrypt from 'bcrypt'
 import { User, IUser } from '../models/User.js'
 import { generateTokens } from '../utils/jwt.js'
 
@@ -52,6 +52,7 @@ export const loginUser = async (email: string, passwordRaw: string) => {
       fullName: user.fullName,
       email: user.email,
       role: user.role,
+      status: user.status,
       avatarUrl: user.avatarUrl,
     },
     accessToken,
@@ -73,6 +74,9 @@ export interface RegisterPayload {
   role?: 'customer' | 'restaurant_owner'
 }
 
+import crypto from 'crypto'
+import { sendVerificationEmail } from './emailService.js'
+
 export const registerUser = async (payload: RegisterPayload) => {
   const { fullName, email, phone, password, role = 'customer' } = payload
 
@@ -90,6 +94,8 @@ export const registerUser = async (payload: RegisterPayload) => {
   }
 
   const passwordHash = await bcrypt.hash(password, 10)
+  const verificationToken = crypto.randomBytes(32).toString('hex')
+  const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 Hours
 
   const newUser = new User({
     fullName: fullName.trim(),
@@ -97,18 +103,58 @@ export const registerUser = async (payload: RegisterPayload) => {
     phone: normalizedPhone,
     passwordHash,
     role,
-    status: 'active', // Trạng thái mặc định là active theo yêu cầu
+    status: 'pending_verification',
+    emailVerificationToken: verificationToken,
+    emailVerificationExpires: verificationExpires,
   })
 
   await newUser.save()
 
+  const { accessToken, refreshToken } = generateTokens(newUser)
+  newUser.refreshTokens.push(refreshToken)
+  await newUser.save()
+
+  // Gửi email xác thực Ethereal
+  const emailResult = await sendVerificationEmail(newUser.email, verificationToken)
+
   return {
-    _id: newUser._id,
-    fullName: newUser.fullName,
-    email: newUser.email,
-    phone: newUser.phone,
-    role: newUser.role,
-    status: newUser.status,
+    user: {
+      _id: newUser._id,
+      fullName: newUser.fullName,
+      email: newUser.email,
+      phone: newUser.phone,
+      role: newUser.role,
+      status: newUser.status,
+      avatarUrl: newUser.avatarUrl,
+    },
+    accessToken,
+    refreshToken,
+    previewUrl: emailResult?.previewUrl || null,
+    verificationLink: emailResult?.verificationLink || null,
+  }
+}
+
+export const verifyEmailToken = async (token: string) => {
+  if (!token) throw new Error('Mã xác nhận không hợp lệ.')
+
+  const user = await User.findOne({
+    emailVerificationToken: token,
+    emailVerificationExpires: { $gt: new Date() },
+  }).select('+emailVerificationToken +emailVerificationExpires')
+
+  if (!user) {
+    throw new Error('Link xác thực không hợp lệ hoặc đã hết hạn.')
+  }
+
+  user.status = 'active'
+  user.emailVerifiedAt = new Date()
+  user.emailVerificationToken = null
+  user.emailVerificationExpires = null
+  await user.save()
+
+  return {
+    message: 'Xác thực email thành công! Bạn hiện có thể đăng nhập.',
+    email: user.email,
   }
 }
 
