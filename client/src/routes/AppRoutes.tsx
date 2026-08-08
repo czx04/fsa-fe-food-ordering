@@ -3,12 +3,11 @@ import { AuthProvider } from "../contexts/AuthContext";
 import { MainLayout } from "../layouts/MainLayout";
 import { ProtectedRoute } from "../components/ProtectedRoute";
 import { PublicRoute } from "../components/PublicRoute";
-import { AdminDashboard } from "../pages/AdminDashboard";
 import { Home } from "../pages/Home";
 import { Login } from "../pages/Login";
 import { Register } from "../pages/Register";
 import { ForgotPassword } from "../pages/ForgotPassword";
-import { OwnerDashboard } from "../pages/OwnerDashboard";
+import { VerifyEmail } from "../pages/VerifyEmail";
 import { Restaurants } from "../pages/Restaurants";
 import { RestaurantDetail } from "../pages/RestaurantDetail";
 import { DishDetail } from "../pages/DishDetail";
@@ -37,19 +36,10 @@ function AppRoutes() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
             </Route>
 
-            {/* Protected Routes for Admin */}
-            <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
-              <Route path="/admin" element={<AdminDashboard />} />
-            </Route>
 
-            {/* Protected Routes for Restaurant Owner */}
-            <Route
-              element={<ProtectedRoute allowedRoles={["restaurant_owner"]} />}
-            >
-              <Route path="/owner" element={<OwnerDashboard />} />
-            </Route>
 
             {/* Protected Routes for Customers */}
             <Route element={<ProtectedRoute />}>
