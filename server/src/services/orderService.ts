@@ -2,10 +2,13 @@ import createError from 'http-errors'
 import { Types } from 'mongoose'
 import * as orderRepository from '../repositories/orderRepository.js'
 import { OrderDetail, OrderHistoryResponse, CreateOrderPayload } from '../types/order.js'
+import { AddToCartRequest } from '../types/cart.js'
 import * as cartRepository from '../repositories/cartRepository.js'
 import { User } from '../models/User.js'
+import { Restaurant } from '../models/Restaurant.js'
+import { MenuItem } from '../models/MenuItem.js'
 import { Order, IOrderItemSnapshot, IStatusHistory } from '../models/Order.js'
-import * as cartService from '../services/cartService.js'
+import * as cartService from './cartService.js'
 
 const DEFAULT_PAGE = 1
 const DEFAULT_LIMIT = 10
@@ -13,13 +16,14 @@ const MAX_LIMIT = 50
 
 export const getOrderHistory = async (
   customerId: string,
+  status: string | undefined,
   page = DEFAULT_PAGE,
   limit = DEFAULT_LIMIT,
 ): Promise<OrderHistoryResponse> => {
   const safePage = Number.isInteger(page) && page > 0 ? page : DEFAULT_PAGE
   const safeLimit = Number.isInteger(limit) && limit > 0 ? Math.min(limit, MAX_LIMIT) : DEFAULT_LIMIT
 
-  const { data, totalItems } = await orderRepository.findOrdersByCustomerId(customerId, safePage, safeLimit)
+  const { data, totalItems } = await orderRepository.findOrdersByCustomerId(customerId, status, safePage, safeLimit)
   const totalPages = totalItems === 0 ? 0 : Math.ceil(totalItems / safeLimit)
 
   return {
@@ -180,4 +184,91 @@ export const createOrderFromCart = async (
     },
     paymentUrl,
   }
+}
+
+export const reorderOrder = async (
+  userId: string,
+  orderId: string,
+): Promise<{ unavailableItems: Array<{ menuItemId: string; name: string }> }> => {
+  if (!Types.ObjectId.isValid(orderId)) {
+    throw createError(400, 'ID đơn hàng không hợp lệ.')
+  }
+
+  const order = await orderRepository.findOrderById(orderId)
+
+  if (order?.customerId !== userId) {
+    throw createError(404, 'Không tìm thấy đơn hàng hoặc bạn không có quyền truy cập.')
+  }
+
+  const restaurantId = order.restaurantId
+  const restaurant = await Restaurant.findById(restaurantId)
+
+  if (restaurant?.approvalStatus !== 'approved' || restaurant?.operationStatus !== 'open') {
+    throw createError(400, 'Nhà hàng không còn hoạt động hoặc không tồn tại.')
+  }
+
+  const unavailableItems: Array<{ menuItemId: string; name: string }> = []
+  const itemsToAdd: AddToCartRequest[] = []
+
+  for (const orderItem of order.items) {
+    const menuItem = await MenuItem.findById(orderItem.menuItemId)
+    if (!menuItem || !menuItem.isAvailable || menuItem.deletedAt) {
+      unavailableItems.push({
+        menuItemId: orderItem.menuItemId,
+        name: orderItem.name,
+      })
+    } else {
+      itemsToAdd.push({
+        menuItemId: orderItem.menuItemId.toString(),
+        quantity: orderItem.quantity,
+        restaurantId: restaurantId.toString(),
+      })
+    }
+  }
+
+  // Clear current cart if it's from a different restaurant, then add items
+  const currentCart = await cartRepository.findCartByUserId(userId)
+  if (currentCart && currentCart.restaurantId.toString() !== restaurantId.toString()) {
+    await cartService.clearCart(userId)
+  }
+
+  for (const itemPayload of itemsToAdd) {
+    await cartService.addItemToCart(userId, itemPayload)
+  }
+
+  return { unavailableItems }
+}
+
+export const cancelOrder = async (
+  customerId: string,
+  orderId: string,
+  reason: string,
+  note?: string,
+): Promise<OrderDetail> => {
+  if (!Types.ObjectId.isValid(orderId)) {
+    throw createError(400, 'ID đơn hàng không hợp lệ.')
+  }
+
+  const order = await Order.findById(orderId)
+
+  if (!order) {
+    throw createError(404, 'Không tìm thấy đơn hàng.')
+  }
+
+  if (order.customerId.toString() !== customerId) {
+    throw createError(403, 'Bạn không có quyền hủy đơn hàng này.')
+  }
+
+  if (order.orderStatus !== 'pending') {
+    throw createError(400, `Không thể hủy đơn hàng ở trạng thái "${order.orderStatus}".`)
+  }
+
+  order.orderStatus = 'cancelled'
+  order.cancelledAt = new Date()
+  order.cancellation = { cancelledBy: new Types.ObjectId(customerId), reason, cancelledAt: new Date() }
+  order.statusHistory.push({ to: 'cancelled', changedBy: new Types.ObjectId(customerId), changedByRole: 'customer', reason, note, changedAt: new Date() })
+
+  await order.save()
+
+  return orderRepository.findOrderById(orderId) as Promise<OrderDetail>
 }

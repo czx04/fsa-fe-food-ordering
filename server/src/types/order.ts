@@ -9,6 +9,10 @@ export interface OrderSummary {
     grandTotal: number
   }
   orderStatus: string
+  items: Array<{
+    name: string
+    quantity: number
+  }>
 }
 
 export interface OrderHistoryPagination {
@@ -124,4 +128,14 @@ export interface CreateOrderPayload {
     city: string;
   };
   note?: string;
+}
+
+export interface CancelOrderPayload {
+  reason: string;
+  note?: string;
+}
+
+export interface CancelOrderResponse {
+  message: string;
+  order: OrderDetail;
 }

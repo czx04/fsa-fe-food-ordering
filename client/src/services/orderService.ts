@@ -4,10 +4,17 @@ import {
   CreateOrderPayload,
   OrderHistoryResponse,
   CreateOrderResponse,
+  ReorderResponse,
+  CancelOrderPayload,
+  CancelOrderResponse,
 } from '../types/order';
 
-const getOrderHistory = async (page = 1, limit = 10): Promise<OrderHistoryResponse> => {
-  const response = await api.get<OrderHistoryResponse>('/orders', { params: { page, limit } });
+const getOrderHistory = async (status?: string, page = 1, limit = 10): Promise<OrderHistoryResponse> => {
+  const params: { page: string; limit: string; status?: string } = { page: String(page), limit: String(limit) };
+  if (status) {
+    params.status = status;
+  }
+  const response = await api.get<OrderHistoryResponse>('/orders', { params });
   return response.data;
 };
 
@@ -21,8 +28,20 @@ const createOrder = async (payload: CreateOrderPayload): Promise<CreateOrderResp
   return response.data;
 };
 
+const reorder = async (orderId: string): Promise<ReorderResponse> => {
+  const response = await api.post<ReorderResponse>(`/orders/${orderId}/reorder`);
+  return response.data;
+};
+
+const cancelOrder = async (orderId: string, payload: CancelOrderPayload): Promise<CancelOrderResponse> => {
+  const response = await api.post<CancelOrderResponse>(`/orders/${orderId}/cancel`, payload);
+  return response.data;
+};
+
 export const orderService = {
   getOrderHistory,
   getOrderDetail,
   createOrder,
+  reorder,
+  cancelOrder,
 };

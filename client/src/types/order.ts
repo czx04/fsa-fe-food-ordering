@@ -8,6 +8,10 @@ export interface OrderSummary {
   pricing: {
     grandTotal: number;
   };
+  items: Array<{
+    name: string;
+    quantity: number;
+  }>;
   orderStatus: string;
 }
 
@@ -132,7 +136,22 @@ export interface CreateOrderResponse {
   paymentUrl?: string;
 }
 
+export interface ReorderResponse {
+  message: string;
+  unavailableItems?: Array<{ menuItemId: string; name: string }>;
+}
+
 export interface CheckoutPricing {
   deliveryFee: number;
   finalTotal: number;
+}
+
+export interface CancelOrderPayload {
+  reason: string;
+  note?: string;
+}
+
+export interface CancelOrderResponse {
+  message: string;
+  order: OrderDetail;
 }
