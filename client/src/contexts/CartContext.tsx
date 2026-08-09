@@ -8,12 +8,14 @@ import React, {
 } from "react";
 import { api } from "../utils/api";
 import { useAuth } from "./AuthContext";
-import { Cart } from "../types/cart";
+import { Cart, AddToCartPayload } from "../types/cart";
 
 interface CartContextType {
   cart: Cart | null;
   isLoading: boolean;
   fetchCart: () => Promise<void>;
+  addItemToCart: (payload: AddToCartPayload) => Promise<void>;
+  clearCart: () => Promise<void>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -67,13 +69,33 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     fetchCart();
   }, [fetchCart]);
 
+  const addItemToCart = useCallback(
+    async (payload: AddToCartPayload) => {
+      try {
+        await api.post("/cart", payload);
+        await fetchCart();
+      } catch (error) {
+        // Re-throw to be handled by the calling component
+        throw error;
+      }
+    },
+    [fetchCart],
+  );
+
+  const clearCart = useCallback(async () => {
+    await api.delete("/cart");
+    await fetchCart();
+  }, [fetchCart]);
+
   const value = useMemo(
     () => ({
       cart,
       isLoading,
       fetchCart,
+      addItemToCart,
+      clearCart,
     }),
-    [cart, isLoading, fetchCart],
+    [cart, isLoading, fetchCart, addItemToCart, clearCart],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

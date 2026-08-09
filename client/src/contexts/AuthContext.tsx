@@ -29,6 +29,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (token: string, userData: User) => void;
   logout: () => void;
+  updateUser: (newUserData: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -37,6 +38,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   login: () => {},
   logout: () => {},
+  updateUser: () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -72,6 +74,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Optional: Call backend /auth/logout to invalidate refresh token
   };
 
+  const updateUser = (newUserData: User) => {
+    setUser(newUserData);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -80,6 +86,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isLoading,
         login,
         logout,
+        updateUser,
       }}
     >
       {children}

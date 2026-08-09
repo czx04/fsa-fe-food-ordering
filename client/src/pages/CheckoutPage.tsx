@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
-import { UserAddress } from "../types/cart";
+import { UserAddress, AddAddressPayload } from "../types/user";
 import {
   CreateOrderPayload,
   CreateOrderResponse,
@@ -9,6 +9,110 @@ import {
 import { useCart } from "../contexts/CartContext";
 import { useAuth } from "../contexts/AuthContext";
 import { api } from "../utils/api";
+import { userService } from "../services/userService";
+
+const AddressModal = ({
+  isOpen,
+  onClose,
+  onSave,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (address: AddAddressPayload) => Promise<void>;
+}) => {
+  const [formData, setFormData] = useState<AddAddressPayload>({
+    label: "Nhà riêng",
+    recipientName: "",
+    phone: "",
+    line1: "",
+    ward: "",
+    district: "",
+    city: "TP. Hồ Chí Minh",
+    isDefault: false,
+  });
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    await onSave(formData);
+    setIsSaving(false);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-8 rounded-lg shadow-xl max-w-lg w-full mx-4">
+        <h2 className="text-2xl font-bold mb-4">Thêm địa chỉ mới</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Form fields for address */}
+          <input
+            name="recipientName"
+            value={formData.recipientName}
+            onChange={handleChange}
+            placeholder="Họ và tên người nhận"
+            required
+            className="w-full p-2 border rounded"
+          />
+          <input
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            placeholder="Số điện thoại"
+            required
+            className="w-full p-2 border rounded"
+          />
+          <input
+            name="line1"
+            value={formData.line1}
+            onChange={handleChange}
+            placeholder="Số nhà, tên đường"
+            required
+            className="w-full p-2 border rounded"
+          />
+          {/* Add other fields like ward, district, city */}
+          <label className="flex items-center">
+            <input
+              type="checkbox"
+              name="isDefault"
+              checked={formData.isDefault}
+              onChange={handleChange}
+            />
+            <span className="ml-2">Đặt làm địa chỉ mặc định</span>
+          </label>
+          <div className="flex justify-end gap-4 mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded border"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="px-4 py-2 rounded bg-orange-500 text-white disabled:bg-gray-400"
+            >
+              {isSaving ? "Đang lưu..." : "Lưu địa chỉ"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("vi-VN", {
@@ -19,12 +123,13 @@ const formatCurrency = (amount: number) => {
 
 function CheckoutPage() {
   const { cart, isLoading: isCartLoading, fetchCart } = useCart();
-  const { user, isLoading: isAuthLoading } = useAuth();
+  const { user, isLoading: isAuthLoading, updateUser } = useAuth();
   const [selectedAddress, setSelectedAddress] = useState<UserAddress | null>(
     null,
   );
   const [pricing, setPricing] = useState<CheckoutPricing | null>(null);
   const [isCalculating, setIsCalculating] = useState(true);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -62,6 +167,25 @@ function CheckoutPage() {
 
   const restaurant = useMemo(() => cart?.restaurantId, [cart]);
 
+  const handleSaveNewAddress = async (addressData: AddAddressPayload) => {
+    try {
+      const response = await userService.addAddress(addressData);
+      updateUser(response.user); // Update user in AuthContext
+      // Find the newly added address to select it. It won't have an _id from the payload.
+      // The response.user.addresses will have it.
+      const newAddress = response.user.addresses?.find(
+        (addr) =>
+          addr.line1 === addressData.line1 &&
+          addr.recipientName === addressData.recipientName,
+      );
+      if (newAddress) setSelectedAddress(newAddress);
+      setIsAddressModalOpen(false);
+    } catch (err) {
+      console.error("Lỗi thêm địa chỉ:", err);
+      alert("Không thể lưu địa chỉ mới. Vui lòng thử lại.");
+    }
+  };
+
   const handlePlaceOrder = async () => {
     if (!cart || !selectedAddress) {
       setError("Vui lòng chọn địa chỉ giao hàng.");
@@ -93,7 +217,10 @@ function CheckoutPage() {
       if (paymentUrl) {
         window.location.href = paymentUrl;
       } else {
-        navigate(`/orders/${order._id}`);
+        // For COD, navigate to success page
+        navigate(
+          `/payment/success?orderId=${order._id}&orderNumber=${order.orderNumber}`,
+        );
       }
     } catch (err: any) {
       console.error("Lỗi đặt hàng:", err);
@@ -147,6 +274,7 @@ function CheckoutPage() {
                 </h2>
                 <button
                   type="button"
+                  onClick={() => setIsAddressModalOpen(true)}
                   className="text-orange-500 hover:underline text-sm font-medium"
                 >
                   Thay đổi
@@ -167,7 +295,7 @@ function CheckoutPage() {
                   <p>Bạn chưa có địa chỉ nào.</p>
                   <button
                     type="button"
-                    onClick={() => navigate("/addresses")}
+                    onClick={() => setIsAddressModalOpen(true)}
                     className="text-orange-500 font-semibold mt-2"
                   >
                     Thêm địa chỉ mới
@@ -182,10 +310,14 @@ function CheckoutPage() {
                 2. Phương thức thanh toán
               </h2>
               <div className="space-y-4">
-                <label className="flex items-center p-4 border rounded-lg cursor-pointer">
+                <label
+                  htmlFor="payment-cod"
+                  className="flex items-center p-4 border rounded-lg cursor-pointer"
+                >
                   <input
                     type="radio"
                     name="payment"
+                    id="payment-cod"
                     className="h-5 w-5 text-orange-600"
                     defaultChecked
                   />
@@ -198,10 +330,14 @@ function CheckoutPage() {
                     </span>
                   </span>
                 </label>
-                <label className="flex items-center p-4 border rounded-lg cursor-pointer bg-gray-100 text-gray-400">
+                <label
+                  htmlFor="payment-wallet"
+                  className="flex items-center p-4 border rounded-lg cursor-pointer bg-gray-100 text-gray-400"
+                >
                   <input
                     type="radio"
                     name="payment"
+                    id="payment-wallet"
                     className="h-5 w-5"
                     disabled
                   />
@@ -214,10 +350,14 @@ function CheckoutPage() {
                     </span>
                   </span>
                 </label>
-                <label className="flex items-center p-4 border rounded-lg cursor-pointer bg-gray-100 text-gray-400">
+                <label
+                  htmlFor="payment-card"
+                  className="flex items-center p-4 border rounded-lg cursor-pointer bg-gray-100 text-gray-400"
+                >
                   <input
                     type="radio"
                     name="payment"
+                    id="payment-card"
                     className="h-5 w-5"
                     disabled
                   />
@@ -321,6 +461,11 @@ function CheckoutPage() {
           </div>
         </div>
       </div>
+      <AddressModal
+        isOpen={isAddressModalOpen}
+        onClose={() => setIsAddressModalOpen(false)}
+        onSave={handleSaveNewAddress}
+      />
     </main>
   );
 }

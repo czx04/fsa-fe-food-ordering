@@ -47,6 +47,7 @@ export interface AddToCartPayload {
     menuItemId: string;
     quantity: number;
     restaurantId: string;
+    replace?: boolean;
 }
 
 export interface UserAddress {

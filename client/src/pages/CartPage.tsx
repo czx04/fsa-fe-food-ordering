@@ -146,6 +146,16 @@ function CartPage() {
     <main className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4">
         <div className="mb-6">
+          <Link
+            to={
+              restaurant.slug
+                ? `/restaurants/${restaurant.slug}`
+                : "/restaurants"
+            }
+            className="text-orange-500 hover:underline text-sm font-medium"
+          >
+            ← Chọn thêm món
+          </Link>
           <h1 className="text-4xl font-bold text-gray-800 mt-1">
             Giỏ hàng của bạn
           </h1>

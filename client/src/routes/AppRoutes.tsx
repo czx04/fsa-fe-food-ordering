@@ -57,7 +57,7 @@ function AppRoutes() {
                 />
                 <Route path="/payment/failed" element={<PaymentFailedPage />} />
                 <Route path="/orders" element={<OrderHistoryPage />} />
-                <Route path="/order/:id" element={<OrderDetailPage />} />
+                <Route path="/orders/:id" element={<OrderDetailPage />} />
               </Route>
 
               {/* Fallback 404 */}

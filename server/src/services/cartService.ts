@@ -66,7 +66,7 @@ export const addItemToCart = async (
   userId: string,
   cartData: AddToCartRequest
 ): Promise<ICart> => {
-  const { menuItemId, quantity, restaurantId } = cartData;
+  const { menuItemId, quantity, restaurantId, replace } = cartData;
 
   if (!Types.ObjectId.isValid(menuItemId) || !Types.ObjectId.isValid(restaurantId)) {
     throw createError(400, 'Invalid menuItemId or restaurantId');
@@ -87,10 +87,15 @@ export const addItemToCart = async (
   let cart = await cartRepository.findCartByUserId(userId);
 
   if (cart && cart.restaurantId.toString() !== restaurantId) {
-    // User has a cart with items from another restaurant
-    // Option: clear the old cart and start a new one.
-    await cartRepository.deleteCartByUserId(userId);
-    cart = null; // Set cart to null to create a new one
+    if (replace) {
+      // User confirmed replacement, clear the old cart.
+      await cartRepository.deleteCartByUserId(userId);
+      cart = null; // Set cart to null to create a new one.
+    } else {
+      // Conflict: cart has items from another restaurant.
+      const existingRestaurantName = (cart.restaurantId as any)?.name || 'quán ăn khác';
+      throw createError(409, `Giỏ hàng của bạn đang có món từ "${existingRestaurantName}". Bạn có muốn xóa giỏ hàng cũ và thêm món ăn này không?`);
+    }
   }
 
   if (!cart) {
