@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Edit, PlusCircle, Save, ShoppingBag, X } from "lucide-react";
 import { UserAddress, AddAddressPayload } from "../types/user";
 import {
@@ -46,7 +46,7 @@ const AddressModal = ({
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSaving(true);
     setError("");
@@ -171,6 +171,7 @@ function CheckoutPage() {
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [error, setError] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"COD" | "VNPAY">("COD");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -207,22 +208,16 @@ function CheckoutPage() {
   const restaurant = useMemo(() => cart?.restaurantId, [cart]);
 
   const handleSaveNewAddress = async (addressData: AddAddressPayload) => {
-    try {
-      const response = await userService.addAddress(addressData);
-      updateUser(response.user); // Update user in AuthContext
-      // Find the newly added address to select it. It won't have an _id from the payload.
-      // The response.user.addresses will have it.
-      const newAddress = response.user.addresses?.find(
-        (addr) =>
-          addr.line1 === addressData.line1 &&
-          addr.recipientName === addressData.recipientName,
-      );
-      if (newAddress) setSelectedAddress(newAddress);
-      setIsAddressModalOpen(false);
-    } catch (err) {
-      // Re-throw the error to be caught by the modal's submit handler
-      throw err;
-    }
+    const response = await userService.addAddress(addressData);
+    updateUser(response.user); // Update user in AuthContext
+    // Find the newly added address to select it.
+    const newAddress = response.user.addresses?.find(
+      (addr) =>
+        addr.line1 === addressData.line1 &&
+        addr.recipientName === addressData.recipientName,
+    );
+    if (newAddress) setSelectedAddress(newAddress);
+    setIsAddressModalOpen(false);
   };
 
   const handlePlaceOrder = async () => {
@@ -235,7 +230,7 @@ function CheckoutPage() {
     setError("");
     try {
       const payload: CreateOrderPayload = {
-        paymentMethod: "COD",
+        paymentMethod: paymentMethod,
         deliveryAddress: {
           recipientName: selectedAddress.recipientName,
           phone: selectedAddress.phone,
@@ -351,17 +346,23 @@ function CheckoutPage() {
               <div className="space-y-4">
                 <label
                   htmlFor="payment-cod"
-                  className="flex items-center p-4 border rounded-lg cursor-pointer"
+                  className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all ${paymentMethod === "COD" ? "border-orange-500 ring-2 ring-orange-200" : "border-gray-200"}`}
+                  onClick={() => setPaymentMethod("COD")}
                 >
                   <input
                     type="radio"
                     name="payment"
                     id="payment-cod"
                     className="h-5 w-5 text-orange-600"
-                    defaultChecked
+                    aria-labelledby="payment-cod-label"
+                    checked={paymentMethod === "COD"}
+                    readOnly
                   />
                   <span className="ml-4">
-                    <span className="font-semibold block">
+                    <span
+                      id="payment-cod-label"
+                      className="font-semibold block"
+                    >
                       Thanh toán khi nhận hàng (COD)
                     </span>
                     <span className="text-sm text-gray-500">
@@ -370,42 +371,28 @@ function CheckoutPage() {
                   </span>
                 </label>
                 <label
-                  htmlFor="payment-wallet"
-                  className="flex items-center p-4 border rounded-lg cursor-pointer bg-gray-100 text-gray-400"
+                  htmlFor="payment-vnpay"
+                  className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all ${paymentMethod === "VNPAY" ? "border-orange-500 ring-2 ring-orange-200" : "border-gray-200"}`}
+                  onClick={() => setPaymentMethod("VNPAY")}
                 >
                   <input
                     type="radio"
                     name="payment"
-                    id="payment-wallet"
-                    className="h-5 w-5"
-                    disabled
+                    id="payment-vnpay"
+                    className="h-5 w-5 text-orange-600"
+                    aria-labelledby="payment-vnpay-label"
+                    checked={paymentMethod === "VNPAY"}
+                    readOnly
                   />
                   <span className="ml-4">
-                    <span className="font-semibold block">
-                      Ví điện tử (Sắp có)
+                    <span
+                      id="payment-vnpay-label"
+                      className="font-semibold block"
+                    >
+                      Thanh toán qua VNPAY
                     </span>
-                    <span className="text-sm">
-                      Thanh toán qua MoMo, ZaloPay, VNPay...
-                    </span>
-                  </span>
-                </label>
-                <label
-                  htmlFor="payment-card"
-                  className="flex items-center p-4 border rounded-lg cursor-pointer bg-gray-100 text-gray-400"
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    id="payment-card"
-                    className="h-5 w-5"
-                    disabled
-                  />
-                  <span className="ml-4">
-                    <span className="font-semibold block">
-                      Thẻ ngân hàng (Sắp có)
-                    </span>
-                    <span className="text-sm">
-                      Hỗ trợ thẻ ATM, Visa, Mastercard
+                    <span className="text-sm text-gray-500">
+                      Sử dụng thẻ ATM, thẻ tín dụng hoặc ví VNPAY.
                     </span>
                   </span>
                 </label>
@@ -457,7 +444,11 @@ function CheckoutPage() {
                 ) : (
                   <div className="flex justify-between">
                     <span>Phí giao hàng</span>
-                    <span>{formatCurrency(pricing?.deliveryFee ?? 0)}</span>
+                    <span className={!selectedAddress ? "text-gray-500" : ""}>
+                      {selectedAddress
+                        ? formatCurrency(pricing?.deliveryFee ?? 0)
+                        : "Chọn địa chỉ"}
+                    </span>
                   </div>
                 )}
                 {discountAmount > 0 && (
@@ -471,7 +462,9 @@ function CheckoutPage() {
                   {isCalculating ? (
                     <span className="h-7 w-32 bg-gray-200 rounded animate-pulse"></span>
                   ) : (
-                    <span>{formatCurrency(pricing?.finalTotal ?? 0)}</span>
+                    <span>
+                      {formatCurrency(pricing?.finalTotal ?? cart.grandTotal)}
+                    </span>
                   )}
                 </div>
               </div>

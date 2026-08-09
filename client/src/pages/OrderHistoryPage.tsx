@@ -2,6 +2,7 @@ import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { orderService } from "../services/orderService";
 import { OrderSummary, OrderHistoryPagination } from "../types/order";
+import { useToast } from "../contexts/ToastContext";
 import { useCart } from "../contexts/CartContext";
 import {
   Loader2,
@@ -70,6 +71,7 @@ function OrderHistoryPage() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { fetchCart } = useCart();
+  const toast = useToast();
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -111,15 +113,20 @@ function OrderHistoryPage() {
       const response = await orderService.reorder(orderToReorder._id);
       await fetchCart(); // Wait for the cart to be updated before navigating
 
+      // Close modal before showing toast and navigating
+      setOrderToReorder(null);
+      toast.success("Đã thêm vào giỏ hàng thành công.");
+
       if (response.unavailableItems && response.unavailableItems.length > 0) {
         const unavailableNames = response.unavailableItems
           .map((item) => `'${item.name}'`)
           .join(", ");
-        alert(
-          `Đã thêm các món từ đơn cũ vào giỏ. Tuy nhiên, các món ${unavailableNames} hiện không có sẵn.`,
-        );
-      } else {
-        alert("Đã thêm các món từ đơn cũ vào giỏ hàng của bạn.");
+        // Use a timeout to make the second toast more noticeable
+        setTimeout(() => {
+          toast.warning(
+            `Lưu ý: Các món ${unavailableNames} hiện không có sẵn.`,
+          );
+        }, 500);
       }
       navigate("/cart"); // Navigate to cart page
     } catch (error: any) {
@@ -127,11 +134,10 @@ function OrderHistoryPage() {
       const errorMessage =
         error.response?.data?.message ||
         "Không thể đặt lại đơn hàng. Vui lòng thử lại.";
-      setError(errorMessage);
-      alert(errorMessage);
+      toast.error(errorMessage);
+      setOrderToReorder(null);
     } finally {
       setReorderingOrderId(null);
-      setOrderToReorder(null);
     }
   };
 

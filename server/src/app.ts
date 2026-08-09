@@ -48,7 +48,7 @@ const errorHandler: ErrorRequestHandler = (error, _request, response, _next) => 
   if (error instanceof ZodError) {
     return response.status(400).json({
       message: 'Dữ liệu đầu vào không hợp lệ.',
-      errors: error.flatten().fieldErrors,
+      errors: error.format(),
     });
   }
 

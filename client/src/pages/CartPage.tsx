@@ -113,15 +113,14 @@ function CartPage() {
     }
   };
 
-  const renderCouponButtonContent = () => {
-    if (isApplyingCoupon) {
-      return <Loader2 className="w-4 h-4 animate-spin" />;
-    }
-    if (displayCart?.couponId) {
-      return "Đã áp dụng";
-    }
-    return "Áp dụng";
-  };
+  const renderCouponButtonContent = () =>
+    isApplyingCoupon ? (
+      <Loader2 className="w-4 h-4 animate-spin" />
+    ) : displayCart?.couponId ? (
+      "Đã áp dụng"
+    ) : (
+      "Áp dụng"
+    );
 
   if (isCartLoading) {
     return (
@@ -143,7 +142,8 @@ function CartPage() {
           to="/restaurants"
           className="mt-6 inline-block text-orange-500 hover:underline"
         >
-          <ArrowLeft className="inline w-4 h-4" /> Bắt đầu mua sắm
+          <ArrowLeft className="inline w-4 h-4" /> Thêm sản phẩm vào giỏ hàng
+          trước
         </Link>
       </main>
     );
@@ -172,7 +172,7 @@ function CartPage() {
           </h1>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col lg:flex-row lg:items-start gap-8">
           {/* Left Section: Cart Items */}
           <div className="lg:w-2/3 bg-white p-6 rounded-lg shadow-md">
             <div className="flex justify-between items-center mb-6 border-b pb-4">
@@ -207,6 +207,12 @@ function CartPage() {
                   }
                   alt={item.menuItemId.name}
                   className="w-20 h-20 object-cover rounded-md mr-4"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.onerror = null;
+                    target.src =
+                      "https://via.placeholder.com/80?text=Image+Error";
+                  }}
                 />
                 <div className="flex-grow">
                   <h3 className="font-semibold text-gray-800">
@@ -220,7 +226,7 @@ function CartPage() {
                     <Trash2 className="w-3 h-3" /> Xóa
                   </button>
                 </div>
-                <div className="inline-flex items-center rounded-md border border-gray-200 mr-4">
+                <div className="inline-flex items-center overflow-hidden rounded-lg border border-gray-200 mr-4">
                   <button
                     type="button"
                     onClick={() =>
@@ -230,11 +236,11 @@ function CartPage() {
                       )
                     }
                     disabled={item.quantity <= 1}
-                    className="text-gray-700 w-8 h-8 flex items-center justify-center rounded-l-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="grid h-9 w-9 place-items-center bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Minus className="w-3 h-3" />
                   </button>
-                  <span className="font-medium w-9 text-center border-x">
+                  <span className="grid h-9 min-w-9 place-items-center text-sm font-bold">
                     {item.quantity}
                   </span>
                   <button
@@ -245,7 +251,7 @@ function CartPage() {
                         item.quantity + 1,
                       )
                     }
-                    className="text-gray-700 w-8 h-8 flex items-center justify-center rounded-r-md hover:bg-gray-100"
+                    className="grid h-9 w-9 place-items-center bg-white text-gray-700 hover:bg-gray-100"
                   >
                     <Plus className="w-3 h-3" />
                   </button>
