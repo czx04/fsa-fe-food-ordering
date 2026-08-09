@@ -1,9 +1,12 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
 import { useCart } from "../contexts/CartContext";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Minus, Plus, Trash2 } from "lucide-react";
 import { api } from "../utils/api";
 
+import { ConfirmationModal } from "../components/ConfirmationModal";
+import { CartItem as CartItemType } from "../types/cart";
+import { SERVER_STATIC_ASSET_BASE_URL } from "../utils/constants";
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -17,11 +20,12 @@ function CartPage() {
   const [couponCodeInput, setCouponCodeInput] = useState("");
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [couponError, setCouponError] = useState("");
-  const [removingItems, setRemovingItems] = useState<string[]>([]);
+  const [itemToDelete, setItemToDelete] = useState<CartItemType | null>(null);
+  const [isClearingCart, setIsClearingCart] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Sync local state with context state
     setDisplayCart(contextCart);
     if (contextCart?.couponId?.code) {
       setCouponCodeInput(contextCart.couponId.code);
@@ -62,35 +66,32 @@ function CartPage() {
     }
   };
 
-  const handleRemoveItem = async (menuItemId: string) => {
-    if (!displayCart) return;
-
-    // Start fade-out animation
-    setRemovingItems((prev) => [...prev, menuItemId]);
-
-    // Wait for animation to finish before removing from state and calling API
-    setTimeout(async () => {
-      try {
-        await api.delete(`/cart/items/${menuItemId}`);
-        fetchCart(); // This will update context and trigger re-render
-      } catch (error) {
-        console.error("Failed to remove item:", error);
-        alert("Lỗi xóa sản phẩm. Vui lòng thử lại.");
-        // Rollback animation
-        setRemovingItems((prev) => prev.filter((id) => id !== menuItemId));
-      }
-    }, 300); // Corresponds to transition duration
+  const handleConfirmRemoveItem = async () => {
+    if (!itemToDelete) return;
+    setIsProcessing(true);
+    try {
+      await api.delete(`/cart/items/${itemToDelete.menuItemId._id}`);
+      await fetchCart();
+    } catch (error) {
+      console.error("Failed to remove item:", error);
+      alert("Lỗi xóa sản phẩm. Vui lòng thử lại.");
+    } finally {
+      setIsProcessing(false);
+      setItemToDelete(null);
+    }
   };
 
-  const handleClearCart = async () => {
-    if (window.confirm("Bạn có chắc muốn xóa toàn bộ giỏ hàng?")) {
-      try {
-        await api.delete("/cart");
-        fetchCart();
-      } catch (error) {
-        console.error("Failed to clear cart:", error);
-        alert("Lỗi xóa giỏ hàng. Vui lòng thử lại.");
-      }
+  const handleConfirmClearCart = async () => {
+    setIsProcessing(true);
+    try {
+      await api.delete("/cart");
+      await fetchCart();
+    } catch (error) {
+      console.error("Failed to clear cart:", error);
+      alert("Lỗi xóa giỏ hàng. Vui lòng thử lại.");
+    } finally {
+      setIsProcessing(false);
+      setIsClearingCart(false);
     }
   };
 
@@ -110,6 +111,16 @@ function CartPage() {
     } finally {
       setIsApplyingCoupon(false);
     }
+  };
+
+  const renderCouponButtonContent = () => {
+    if (isApplyingCoupon) {
+      return <Loader2 className="w-4 h-4 animate-spin" />;
+    }
+    if (displayCart?.couponId) {
+      return "Đã áp dụng";
+    }
+    return "Áp dụng";
   };
 
   if (isCartLoading) {
@@ -176,25 +187,23 @@ function CartPage() {
               </div>
               <button
                 type="button"
-                onClick={handleClearCart}
-                className="text-red-500 hover:text-red-700 text-sm font-medium"
+                onClick={() => setIsClearingCart(true)}
+                className="text-red-500 hover:text-red-700 text-sm font-medium flex items-center gap-1"
               >
-                Xóa tất cả
+                <Trash2 className="w-4 h-4" /> Xóa tất cả
               </button>
             </div>
 
             {displayCart.items.map((item) => (
               <div
                 key={item.menuItemId._id}
-                className={`flex items-center py-4 border-b last:border-b-0 transition-opacity duration-300 ${
-                  removingItems.includes(item.menuItemId._id)
-                    ? "opacity-0"
-                    : "opacity-100"
-                }`}
+                className="flex items-center py-4 border-b last:border-b-0"
               >
                 <img
                   src={
-                    item.menuItemId.imageUrl || "https://via.placeholder.com/80"
+                    item.menuItemId.imageUrl
+                      ? `${SERVER_STATIC_ASSET_BASE_URL}${item.menuItemId.imageUrl}`
+                      : "https://via.placeholder.com/80"
                   }
                   alt={item.menuItemId.name}
                   className="w-20 h-20 object-cover rounded-md mr-4"
@@ -205,13 +214,13 @@ function CartPage() {
                   </h3>
                   <button
                     type="button"
-                    onClick={() => handleRemoveItem(item.menuItemId._id)}
-                    className="text-red-500 hover:text-red-700 text-xs mt-1"
+                    onClick={() => setItemToDelete(item)}
+                    className="text-red-500 hover:text-red-700 text-xs mt-1 flex items-center gap-1"
                   >
-                    Xóa
+                    <Trash2 className="w-3 h-3" /> Xóa
                   </button>
                 </div>
-                <div className="flex items-center space-x-2 mr-4">
+                <div className="inline-flex items-center rounded-md border border-gray-200 mr-4">
                   <button
                     type="button"
                     onClick={() =>
@@ -221,11 +230,13 @@ function CartPage() {
                       )
                     }
                     disabled={item.quantity <= 1}
-                    className="bg-gray-200 text-gray-700 px-2 py-1 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="text-gray-700 w-8 h-8 flex items-center justify-center rounded-l-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    -
+                    <Minus className="w-3 h-3" />
                   </button>
-                  <span className="font-medium">{item.quantity}</span>
+                  <span className="font-medium w-9 text-center border-x">
+                    {item.quantity}
+                  </span>
                   <button
                     type="button"
                     onClick={() =>
@@ -234,9 +245,9 @@ function CartPage() {
                         item.quantity + 1,
                       )
                     }
-                    className="bg-gray-200 text-gray-700 px-2 py-1 rounded-md hover:bg-gray-300"
+                    className="text-gray-700 w-8 h-8 flex items-center justify-center rounded-r-md hover:bg-gray-100"
                   >
-                    +
+                    <Plus className="w-3 h-3" />
                   </button>
                 </div>
                 <span className="font-semibold text-gray-800">
@@ -249,16 +260,6 @@ function CartPage() {
           {/* Right Section: Order Summary */}
           <div className="lg:w-1/3">
             <div className="bg-white p-6 rounded-lg shadow-md sticky top-24">
-              <Link
-                to={
-                  restaurant.slug
-                    ? `/restaurants/${restaurant.slug}`
-                    : "/restaurants"
-                }
-                className="text-orange-500 hover:underline text-sm font-medium"
-              >
-                ← Chọn thêm món
-              </Link>
               <h2 className="text-xl font-bold text-gray-800 my-4">
                 Tóm tắt đơn hàng
               </h2>
@@ -282,13 +283,7 @@ function CartPage() {
                     disabled={isApplyingCoupon || !!displayCart.couponId}
                     className="bg-orange-500 text-white px-4 py-2 hover:bg-orange-600 transition-colors duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center w-28"
                   >
-                    {isApplyingCoupon ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : displayCart.couponId ? (
-                      "Đã áp dụng"
-                    ) : (
-                      "Áp dụng"
-                    )}
+                    {renderCouponButtonContent()}
                   </button>
                 </div>
                 {couponError && (
@@ -340,6 +335,28 @@ function CartPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={!!itemToDelete}
+        onClose={() => setItemToDelete(null)}
+        onConfirm={handleConfirmRemoveItem}
+        title="Xác nhận xóa món"
+        message={`Bạn có chắc muốn xóa món "${itemToDelete?.menuItemId.name}" khỏi giỏ hàng?`}
+        confirmText="Xóa"
+        isDestructive
+        isConfirming={isProcessing}
+      />
+
+      <ConfirmationModal
+        isOpen={isClearingCart}
+        onClose={() => setIsClearingCart(false)}
+        onConfirm={handleConfirmClearCart}
+        title="Xác nhận xóa giỏ hàng"
+        message="Bạn có chắc muốn xóa tất cả các món trong giỏ hàng không? Hành động này không thể hoàn tác."
+        confirmText="Xóa tất cả"
+        isDestructive
+        isConfirming={isProcessing}
+      />
     </main>
   );
 }

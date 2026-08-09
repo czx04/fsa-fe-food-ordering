@@ -2,7 +2,15 @@ import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { orderService } from "../services/orderService";
 import { OrderSummary, OrderHistoryPagination } from "../types/order";
-import { Loader2 } from "lucide-react";
+import { useCart } from "../contexts/CartContext";
+import {
+  Loader2,
+  RotateCw,
+  Star,
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("vi-VN", {
@@ -56,9 +64,12 @@ function OrderHistoryPage() {
   const [reorderingOrderId, setReorderingOrderId] = useState<string | null>(
     null,
   );
-  const [reorderMessage, setReorderMessage] = useState<string | null>(null);
+  const [orderToReorder, setOrderToReorder] = useState<OrderSummary | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { fetchCart } = useCart();
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -91,39 +102,36 @@ function OrderHistoryPage() {
     setSearchParams({ status: activeTab, page: String(page) });
   };
 
-  const handleReorder = async (orderId: string) => {
-    setReorderingOrderId(orderId);
-    setReorderMessage(null);
+  const handleConfirmReorder = async () => {
+    if (!orderToReorder) return;
+
+    setReorderingOrderId(orderToReorder._id);
     setError(null);
     try {
-      const response = await orderService.reorder(orderId);
+      const response = await orderService.reorder(orderToReorder._id);
+      await fetchCart(); // Wait for the cart to be updated before navigating
+
       if (response.unavailableItems && response.unavailableItems.length > 0) {
         const unavailableNames = response.unavailableItems
           .map((item) => `'${item.name}'`)
           .join(", ");
-        setReorderMessage(
-          `Đã thêm các món từ đơn cũ vào giỏ. Tuy nhiên, các món ${unavailableNames} hiện không có sẵn.`,
-        );
         alert(
           `Đã thêm các món từ đơn cũ vào giỏ. Tuy nhiên, các món ${unavailableNames} hiện không có sẵn.`,
         );
       } else {
-        setReorderMessage("Đã thêm các món từ đơn cũ vào giỏ hàng của bạn.");
         alert("Đã thêm các món từ đơn cũ vào giỏ hàng của bạn.");
       }
       navigate("/cart"); // Navigate to cart page
     } catch (error: any) {
       console.error("Lỗi đặt lại đơn hàng:", error);
-      setError(
+      const errorMessage =
         error.response?.data?.message ||
-          "Không thể đặt lại đơn hàng. Vui lòng thử lại.",
-      );
-      alert(
-        error.response?.data?.message ||
-          "Không thể đặt lại đơn hàng. Vui lòng thử lại.",
-      );
+        "Không thể đặt lại đơn hàng. Vui lòng thử lại.";
+      setError(errorMessage);
+      alert(errorMessage);
     } finally {
       setReorderingOrderId(null);
+      setOrderToReorder(null);
     }
   };
 
@@ -149,13 +157,6 @@ function OrderHistoryPage() {
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
             <strong className="font-bold">Lỗi!</strong>
             <span className="block sm:inline"> {error}</span>
-          </div>
-        )}
-
-        {reorderMessage && (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
-            <strong className="font-bold">Thông báo!</strong>
-            <span className="block sm:inline"> {reorderMessage}</span>
           </div>
         )}
 
@@ -230,29 +231,32 @@ function OrderHistoryPage() {
                   >
                     Xem chi tiết
                   </Link>
-                  {order.orderStatus === "delivered" ||
-                  order.orderStatus === "cancelled" ? (
-                    <button
-                      type="button"
-                      onClick={() => handleReorder(order._id)}
-                      disabled={reorderingOrderId === order._id}
-                      className="mt-2 px-4 py-2 bg-orange-500 text-white rounded-md text-sm font-medium hover:bg-orange-600 transition-colors duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    >
-                      {reorderingOrderId === order._id ? (
-                        <Loader2 className="w-4 h-4 animate-spin inline-block mr-2" />
-                      ) : (
-                        "Đặt lại"
-                      )}
-                    </button>
-                  ) : null}
-                  {order.orderStatus === "delivered" && (
-                    <button
-                      type="button"
-                      className="ml-2 mt-2 px-4 py-2 bg-blue-500 text-white rounded-md text-sm font-medium hover:bg-blue-600 transition-colors duration-200"
-                    >
-                      Đánh giá
-                    </button>
-                  )}
+                  <div className="mt-2 flex flex-col sm:flex-row sm:justify-end gap-2">
+                    {(order.orderStatus === "delivered" ||
+                      order.orderStatus === "cancelled") && (
+                      <button
+                        type="button"
+                        onClick={() => setOrderToReorder(order)}
+                        disabled={reorderingOrderId === order._id}
+                        className="px-4 py-2 bg-orange-500 text-white rounded-md text-sm font-medium hover:bg-orange-600 transition-colors duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+                      >
+                        {reorderingOrderId === order._id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <RotateCw className="w-4 h-4 mr-2" />
+                        )}
+                        Đặt lại
+                      </button>
+                    )}
+                    {order.orderStatus === "delivered" && (
+                      <button
+                        type="button"
+                        className="px-4 py-2 bg-blue-500 text-white rounded-md text-sm font-medium hover:bg-blue-600 transition-colors duration-200 flex items-center justify-center"
+                      >
+                        <Star className="w-4 h-4 mr-2" /> Đánh giá
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -275,11 +279,12 @@ function OrderHistoryPage() {
           {pagination.totalPages > 1 && (
             <div className="flex justify-center mt-8 space-x-2">
               <button
+                type="button"
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="px-4 py-2 border rounded-md disabled:opacity-50"
+                className="px-4 py-2 border rounded-md disabled:opacity-50 flex items-center gap-2"
               >
-                Trước
+                <ChevronLeft className="w-4 h-4" /> Trước
               </button>
               {Array.from(
                 { length: pagination.totalPages },
@@ -298,14 +303,53 @@ function OrderHistoryPage() {
                 type="button"
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === pagination.totalPages}
-                className="px-4 py-2 border rounded-md disabled:opacity-50"
+                className="px-4 py-2 border rounded-md disabled:opacity-50 flex items-center gap-2"
               >
-                Sau
+                Sau <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           )}
         </div>
       </div>
+
+      {/* Reorder Confirmation Modal */}
+      {orderToReorder && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="text-center">
+              <AlertTriangle className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                Xác nhận đặt lại
+              </h2>
+              <p className="text-gray-600 mb-6">
+                Hành động này sẽ{" "}
+                <span className="font-bold">xóa giỏ hàng hiện tại</span> và thay
+                thế bằng các món từ đơn hàng{" "}
+                <span className="font-semibold">
+                  #{orderToReorder.orderNumber}
+                </span>
+                . Bạn có muốn tiếp tục?
+              </p>
+            </div>
+            <div className="flex justify-center gap-4">
+              <button
+                type="button"
+                onClick={() => setOrderToReorder(null)}
+                className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 font-semibold hover:bg-gray-100"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmReorder}
+                className="px-6 py-2 bg-orange-500 text-white rounded-md font-semibold hover:bg-orange-600"
+              >
+                Đồng ý
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -21,6 +21,7 @@ import { RestaurantChangeModal } from "../components/RestaurantChangeModal";
 import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
 import { api } from "../utils/api";
+import { SERVER_STATIC_ASSET_BASE_URL } from "../utils/constants";
 import { AddToCartPayload, CartItem } from "../types/cart";
 
 interface CuisineCategory {
@@ -85,7 +86,7 @@ interface MenuItem {
   name: string;
   slug: string;
   shortDescription: string;
-  imageUrl: string | null;
+  imageUrls: string[];
   basePrice: number;
   salePrice: number | null;
   effectivePrice: number;
@@ -170,7 +171,7 @@ const scrollToSection = (id: string) => {
 export const RestaurantDetail = () => {
   const { restaurantSlug = "" } = useParams();
   const { isAuthenticated } = useAuth();
-  const { cart, addItemToCart } = useCart();
+  const { cart, addItemToCart, fetchCart } = useCart();
   const [restaurant, setRestaurant] = useState<RestaurantDetailData | null>(
     null,
   );
@@ -348,15 +349,22 @@ export const RestaurantDetail = () => {
     }
   };
 
-  const changeQuantity = (itemKey: string, delta: number) => {
-    // This was for local storage cart. The new cart context doesn't have item-level updates exposed this way.
-    // This should be handled on the cart page.
-    // For now, let's just log it.
-    console.log(
-      "Change quantity to be implemented on cart page",
-      itemKey,
-      delta,
-    );
+  const handleUpdateQuantity = async (
+    menuItemId: string,
+    newQuantity: number,
+  ) => {
+    try {
+      if (newQuantity > 0) {
+        await api.patch(`/cart/items/${menuItemId}`, { quantity: newQuantity });
+      } else {
+        // quantity <= 0 means remove
+        await api.delete(`/cart/items/${menuItemId}`);
+      }
+      fetchCart();
+    } catch (error) {
+      console.error("Failed to update quantity:", error);
+      alert("Lỗi cập nhật số lượng. Vui lòng thử lại.");
+    }
   };
 
   if (loading) {
@@ -399,7 +407,7 @@ export const RestaurantDetail = () => {
     <main className="min-h-screen bg-[#f7faf7] text-[#17201a]">
       <section className="relative h-[360px] overflow-hidden max-[760px]:h-[470px]">
         <img
-          src={restaurant.coverUrl || "/assets/restaurant.jpg"}
+          src={`${SERVER_STATIC_ASSET_BASE_URL}${restaurant.coverUrl || "/assets/restaurant.jpg"}`}
           alt={restaurant.name}
           className="h-full w-full object-cover"
         />
@@ -589,7 +597,7 @@ export const RestaurantDetail = () => {
                       className="relative block overflow-hidden rounded-xl"
                     >
                       <img
-                        src={item.imageUrl || "/assets/noodles.jpg"}
+                        src={`${SERVER_STATIC_ASSET_BASE_URL}${item.imageUrls?.[0] || "/assets/noodles.jpg"}`}
                         alt={item.name}
                         className="h-24 w-[125px] object-cover max-[600px]:h-20 max-[600px]:w-[88px]"
                       />
@@ -912,9 +920,13 @@ export const RestaurantDetail = () => {
                         <button
                           type="button"
                           onClick={() =>
-                            changeQuantity(cartItem.menuItemId._id, -1)
+                            handleUpdateQuantity(
+                              cartItem.menuItemId._id,
+                              cartItem.quantity - 1,
+                            )
                           }
-                          className="grid h-7 w-7 place-items-center bg-white"
+                          className="grid h-7 w-7 place-items-center bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={cartItem.quantity <= 1}
                         >
                           <Minus className="h-3 w-3" />
                         </button>
@@ -924,7 +936,10 @@ export const RestaurantDetail = () => {
                         <button
                           type="button"
                           onClick={() =>
-                            changeQuantity(cartItem.menuItemId._id, 1)
+                            handleUpdateQuantity(
+                              cartItem.menuItemId._id,
+                              cartItem.quantity + 1,
+                            )
                           }
                           className="grid h-7 w-7 place-items-center bg-white"
                         >

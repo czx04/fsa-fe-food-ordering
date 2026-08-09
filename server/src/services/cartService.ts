@@ -86,15 +86,18 @@ export const addItemToCart = async (
 
   let cart = await cartRepository.findCartByUserId(userId);
 
-  if (cart && cart.restaurantId.toString() !== restaurantId) {
-    if (replace) {
-      // User confirmed replacement, clear the old cart.
-      await cartRepository.deleteCartByUserId(userId);
-      cart = null; // Set cart to null to create a new one.
-    } else {
-      // Conflict: cart has items from another restaurant.
-      const existingRestaurantName = (cart.restaurantId as any)?.name || 'quán ăn khác';
-      throw createError(409, `Giỏ hàng của bạn đang có món từ "${existingRestaurantName}". Bạn có muốn xóa giỏ hàng cũ và thêm món ăn này không?`);
+  if (cart && cart.restaurantId) {
+    const existingRestaurantId = (cart.restaurantId as any)._id?.toString() || cart.restaurantId.toString();
+    if (existingRestaurantId !== restaurantId) {
+      if (replace) {
+        // User confirmed replacement, clear the old cart.
+        await cartRepository.deleteCartByUserId(userId);
+        cart = null; // Set cart to null to create a new one.
+      } else {
+        // Conflict: cart has items from another restaurant.
+        const existingRestaurantName = (cart.restaurantId as any)?.name || 'quán ăn khác';
+        throw createError(409, `Giỏ hàng của bạn đang có món từ nhà hàng "${existingRestaurantName}". Bạn có muốn xóa giỏ hàng cũ và thêm món ăn này không?`);
+      }
     }
   }
 
@@ -159,7 +162,7 @@ export const calculateCheckout = async (
   }
 
   const restaurant = cart.restaurantId as any;
-  if (restaurant?.delivery?.fee === 'undefined') {
+  if (restaurant?.delivery?.fee == null) {
     throw createError(404, 'Không tìm thấy thông tin nhà hàng hoặc phí vận chuyển.');
   }
 
@@ -192,9 +195,11 @@ export const updateCartItem = async (
     throw createError(404, 'Cart not found');
   }
 
-  const itemIndex = cart.items.findIndex(
-    (item) => item.menuItemId.toString() === menuItemId
-  );
+  const itemIndex = cart.items.findIndex((item) => {
+    const menuItemValue = item.menuItemId as unknown as Types.ObjectId | { _id: Types.ObjectId };
+    const menuItemObjectId = menuItemValue instanceof Types.ObjectId ? menuItemValue : menuItemValue._id;
+    return menuItemObjectId.toString() === menuItemId;
+  });
 
   if (itemIndex === -1) {
     throw createError(404, 'Item not found in cart');
@@ -224,9 +229,11 @@ export const removeCartItem = async (
     throw createError(404, 'Cart not found');
   }
 
-  cart.items = cart.items.filter(
-    (item) => item.menuItemId.toString() !== menuItemId
-  );
+  cart.items = cart.items.filter((item) => {
+    const menuItemValue = item.menuItemId as unknown as Types.ObjectId | { _id: Types.ObjectId };
+    const menuItemObjectId = menuItemValue instanceof Types.ObjectId ? menuItemValue : menuItemValue._id;
+    return menuItemObjectId.toString() !== menuItemId;
+  });
 
   if (cart.items.length === 0) {
     // If cart is empty, delete it

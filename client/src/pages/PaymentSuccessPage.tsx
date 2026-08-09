@@ -130,7 +130,9 @@ function PaymentSuccessPage() {
             <div>
               <p className="text-sm text-gray-500">Giao hàng dự kiến</p>
               <p className="font-bold text-gray-800 flex items-center justify-center gap-1">
-                <Clock className="w-4 h-4" /> 20-30 phút
+                <Clock className="w-4 h-4" />{" "}
+                {(order.restaurantSnapshot as any).delivery?.minMinutes}-
+                {(order.restaurantSnapshot as any).delivery?.maxMinutes} phút
               </p>
             </div>
             <div>

@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
+import { Edit, PlusCircle, Save, ShoppingBag, X } from "lucide-react";
 import { UserAddress, AddAddressPayload } from "../types/user";
 import {
   CreateOrderPayload,
@@ -9,6 +10,7 @@ import {
 import { useCart } from "../contexts/CartContext";
 import { useAuth } from "../contexts/AuthContext";
 import { api } from "../utils/api";
+import { SERVER_STATIC_ASSET_BASE_URL } from "../utils/constants";
 import { userService } from "../services/userService";
 
 const AddressModal = ({
@@ -31,6 +33,7 @@ const AddressModal = ({
     isDefault: false,
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -46,8 +49,14 @@ const AddressModal = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    await onSave(formData);
-    setIsSaving(false);
+    setError("");
+    try {
+      await onSave(formData);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Lưu địa chỉ thất bại.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -82,7 +91,30 @@ const AddressModal = ({
             required
             className="w-full p-2 border rounded"
           />
-          {/* Add other fields like ward, district, city */}
+          <input
+            name="ward"
+            value={formData.ward}
+            onChange={handleChange}
+            placeholder="Phường/Xã"
+            required
+            className="w-full p-2 border rounded"
+          />
+          <input
+            name="district"
+            value={formData.district}
+            onChange={handleChange}
+            placeholder="Quận/Huyện"
+            required
+            className="w-full p-2 border rounded"
+          />
+          <input
+            name="city"
+            value={formData.city}
+            onChange={handleChange}
+            placeholder="Tỉnh/Thành phố"
+            required
+            className="w-full p-2 border rounded"
+          />
           <label className="flex items-center">
             <input
               type="checkbox"
@@ -92,20 +124,27 @@ const AddressModal = ({
             />
             <span className="ml-2">Đặt làm địa chỉ mặc định</span>
           </label>
+          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
           <div className="flex justify-end gap-4 mt-6">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded border"
+              className="px-4 py-2 rounded border flex items-center"
             >
-              Hủy
+              <X className="w-4 h-4 mr-2" /> Hủy
             </button>
             <button
               type="submit"
               disabled={isSaving}
-              className="px-4 py-2 rounded bg-orange-500 text-white disabled:bg-gray-400"
+              className="px-4 py-2 rounded bg-orange-500 text-white disabled:bg-gray-400 flex items-center"
             >
-              {isSaving ? "Đang lưu..." : "Lưu địa chỉ"}
+              {isSaving ? (
+                "Đang lưu..."
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" /> Lưu địa chỉ
+                </>
+              )}
             </button>
           </div>
         </form>
@@ -181,8 +220,8 @@ function CheckoutPage() {
       if (newAddress) setSelectedAddress(newAddress);
       setIsAddressModalOpen(false);
     } catch (err) {
-      console.error("Lỗi thêm địa chỉ:", err);
-      alert("Không thể lưu địa chỉ mới. Vui lòng thử lại.");
+      // Re-throw the error to be caught by the modal's submit handler
+      throw err;
     }
   };
 
@@ -275,9 +314,9 @@ function CheckoutPage() {
                 <button
                   type="button"
                   onClick={() => setIsAddressModalOpen(true)}
-                  className="text-orange-500 hover:underline text-sm font-medium"
+                  className="text-orange-500 hover:underline text-sm font-medium flex items-center"
                 >
-                  Thay đổi
+                  Thay đổi <Edit className="w-3 h-3 ml-1" />
                 </button>
               </div>
               {selectedAddress ? (
@@ -296,9 +335,9 @@ function CheckoutPage() {
                   <button
                     type="button"
                     onClick={() => setIsAddressModalOpen(true)}
-                    className="text-orange-500 font-semibold mt-2"
+                    className="text-orange-500 font-semibold mt-2 flex items-center mx-auto"
                   >
-                    Thêm địa chỉ mới
+                    <PlusCircle className="w-4 h-4 mr-2" /> Thêm địa chỉ mới
                   </button>
                 </div>
               )}
@@ -385,8 +424,9 @@ function CheckoutPage() {
                   <div key={item.menuItemId._id} className="flex items-center">
                     <img
                       src={
-                        item.menuItemId.imageUrl ||
-                        "https://via.placeholder.com/64"
+                        item.menuItemId.imageUrl
+                          ? `${SERVER_STATIC_ASSET_BASE_URL}${item.menuItemId.imageUrl}`
+                          : "https://via.placeholder.com/64"
                       }
                       alt={item.menuItemId.name}
                       className="w-16 h-16 object-cover rounded-md mr-4"
@@ -453,9 +493,15 @@ function CheckoutPage() {
                   !cart?.items.length ||
                   !selectedAddress
                 }
-                className="w-full bg-orange-500 text-white text-center py-3 rounded-md text-lg font-semibold hover:bg-orange-600 transition-colors duration-200 block disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="w-full bg-orange-500 text-white text-center py-3 rounded-md text-lg font-semibold hover:bg-orange-600 transition-colors duration-200 flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                {isPlacingOrder ? "Đang xử lý..." : "Đặt hàng"}
+                {isPlacingOrder ? (
+                  "Đang xử lý..."
+                ) : (
+                  <>
+                    <ShoppingBag className="w-5 h-5 mr-2" /> Đặt hàng
+                  </>
+                )}
               </button>
             </div>
           </div>
