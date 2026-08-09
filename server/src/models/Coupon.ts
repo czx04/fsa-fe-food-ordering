@@ -7,6 +7,8 @@ export interface ICoupon extends Document {
   code: string
   discountType: DiscountType
   discountValue: number
+  minOrderAmount: number
+  maxDiscountAmount?: number
   startsAt: Date
   endsAt: Date
   status: CouponStatus
@@ -19,6 +21,8 @@ const CouponSchema = new Schema<ICoupon>(
     code: { type: String, required: true, unique: true, uppercase: true, trim: true },
     discountType: { type: String, enum: ['percentage', 'fixed'], required: true },
     discountValue: { type: Number, required: true, min: 0 },
+    minOrderAmount: { type: Number, default: 0 },
+    maxDiscountAmount: { type: Number },
     startsAt: { type: Date, required: true },
     endsAt: { type: Date, required: true },
     status: { type: String, enum: ['active', 'expired', 'disabled'], default: 'active' },

@@ -11,7 +11,9 @@ export interface Cart {
   userId: Types.ObjectId;
   restaurantId: Types.ObjectId;
   items: CartItem[];
-  total: number;
+  subtotal: number;
+  discountAmount: number;
+  grandTotal: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,4 +27,12 @@ export interface AddToCartRequest {
 
 export interface UpdateCartItemRequest {
   quantity: number;
+}
+
+export interface ApplyCouponRequest {
+  couponCode: string;
+}
+
+export interface CalculateCheckoutPayload {
+  addressId?: string;
 }

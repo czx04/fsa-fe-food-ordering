@@ -5,18 +5,23 @@ import {
   updateCartItemHandler,
   removeCartItemHandler,
   clearCartHandler,
+  applyCouponHandler,
+  calculateCheckoutHandler,
 } from '../controllers/cartController.js';
 import { verifyToken } from '../middlewares/authMiddleware.js';
 
 const router = Router();
 
-// All routes in this file are protected
 router.use(verifyToken);
 
 router.route('/')
   .get(getCartHandler)
   .post(addItemToCartHandler)
   .delete(clearCartHandler);
+
+router.route('/apply-coupon').post(applyCouponHandler);
+
+router.route('/calculate-checkout').post(calculateCheckoutHandler);
 
 router.route('/items/:menuItemId')
   .patch(updateCartItemHandler)

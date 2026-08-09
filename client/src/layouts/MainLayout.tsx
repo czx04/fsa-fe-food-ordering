@@ -1,9 +1,14 @@
 import { Outlet, Link, NavLink } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { useCart } from "../contexts/CartContext";
 import { ShoppingBag, LogOut } from "lucide-react";
 
 export const MainLayout = () => {
   const { isAuthenticated, user, logout } = useAuth();
+  const { cart } = useCart();
+
+  const totalQuantity =
+    cart?.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50/40 text-slate-800 font-sans">
@@ -59,12 +64,18 @@ export const MainLayout = () => {
           <div className="flex items-center gap-3 sm:gap-4">
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
+                {/* Cart Icon */}
                 <Link
                   to="/cart"
                   className="p-2 rounded-xl hover:bg-slate-100 text-slate-700 relative transition"
                   title="Giỏ hàng"
                 >
                   <ShoppingBag className="w-5 h-5 text-slate-700" />
+                  {totalQuantity > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-orange-600 text-xs font-bold text-white">
+                      {totalQuantity}
+                    </span>
+                  )}
                 </Link>
                 <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
                   <div className="w-8 h-8 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold text-xs flex items-center justify-center shadow">
@@ -74,6 +85,7 @@ export const MainLayout = () => {
                     {user?.fullName}
                   </span>
                   <button
+                    type="button"
                     onClick={logout}
                     className="ml-2 px-3 py-1.5 text-xs font-semibold text-rose-600 border border-rose-200 hover:bg-rose-50 rounded-lg transition flex items-center gap-1"
                     title="Đăng xuất"

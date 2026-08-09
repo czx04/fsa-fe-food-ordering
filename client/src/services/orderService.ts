@@ -1,8 +1,13 @@
 import { api } from '../utils/api';
-import { Order, OrderDetail, CreateOrderPayload } from '../types/order';
+import {
+  OrderDetail,
+  CreateOrderPayload,
+  OrderHistoryResponse,
+  CreateOrderResponse,
+} from '../types/order';
 
-const getOrderHistory = async (page = 1, limit = 10): Promise<{ data: Order[]; totalPages: number; total: number }> => {
-  const response = await api.get('/orders', { params: { page, limit } });
+const getOrderHistory = async (page = 1, limit = 10): Promise<OrderHistoryResponse> => {
+  const response = await api.get<OrderHistoryResponse>('/orders', { params: { page, limit } });
   return response.data;
 };
 
@@ -11,8 +16,8 @@ const getOrderDetail = async (orderId: string): Promise<OrderDetail> => {
   return response.data;
 };
 
-const createOrder = async (payload: CreateOrderPayload): Promise<OrderDetail> => {
-  const response = await api.post<OrderDetail>('/orders', payload);
+const createOrder = async (payload: CreateOrderPayload): Promise<CreateOrderResponse> => {
+  const response = await api.post<CreateOrderResponse>('/orders/checkout', payload);
   return response.data;
 };
 
