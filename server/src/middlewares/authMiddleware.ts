@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { verifyAccessToken } from '../utils/jwt.js'
+import { User } from '../models/User.js'
 
 export interface AuthRequest extends Request {
   user?: {
@@ -8,7 +9,7 @@ export interface AuthRequest extends Request {
   }
 }
 
-export const verifyToken = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const verifyToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     res.status(401).json({ message: 'Không tìm thấy token xác thực.' })
@@ -28,8 +29,17 @@ export const verifyToken = (req: AuthRequest, res: Response, next: NextFunction)
     return
   }
 
-  req.user = decoded
-  next()
+  try {
+    const user = await User.findOne({ _id: decoded.userId, deletedAt: null }).select('role status').lean()
+    if (!user || user.status === 'locked') {
+      res.status(401).json({ message: 'Phiên đăng nhập không còn hiệu lực.' })
+      return
+    }
+    req.user = { userId: String(user._id), role: user.role }
+    next()
+  } catch (error) {
+    next(error)
+  }
 }
 
 export const requireRole = (roles: string[]) => {
@@ -65,4 +75,3 @@ export const requireVerifiedEmail = async (req: AuthRequest, res: Response, next
 
   next()
 }
-

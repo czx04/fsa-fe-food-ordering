@@ -2,7 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { OrderDetail, CancelOrderPayload } from "../types/order";
 import { orderService } from "../services/orderService";
-import { Loader2, XCircle, CheckCircle2, Phone } from "lucide-react";
+import { Loader2, CheckCircle2, Phone } from "lucide-react";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("vi-VN", {

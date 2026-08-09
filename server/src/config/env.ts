@@ -18,10 +18,16 @@ if (!mongodbDbName.trim()) {
 
 const jwtSecret = process.env.JWT_SECRET ?? 'fallback_secret'
 const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET ?? 'fallback_refresh_secret'
+const clientOrigins = (process.env.CLIENT_ORIGINS
+  ? process.env.CLIENT_ORIGINS.split(',')
+  : [process.env.CLIENT_ORIGIN ?? 'http://localhost:5173', 'http://localhost:5174'])
+  .map((origin) => origin.trim())
+  .filter((origin, index, values) => Boolean(origin) && values.indexOf(origin) === index)
 
 export const env = {
   port,
   clientOrigin: process.env.CLIENT_ORIGIN ?? 'http://localhost:5173',
+  clientOrigins,
   nodeEnv: process.env.NODE_ENV ?? 'development',
   mongodbUri,
   mongodbDbName,

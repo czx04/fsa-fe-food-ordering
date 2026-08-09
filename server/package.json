@@ -6,6 +6,9 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "seed": "node --import tsx src/scripts/seed.ts",
+    "accounts:dashboard": "node --import tsx src/scripts/addDashboardAccounts.ts",
+    "smoke:dashboard": "node scripts/smoke-dashboard.mjs",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit --pretty false",
     "start": "node dist/index.js"

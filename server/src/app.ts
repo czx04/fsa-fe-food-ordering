@@ -15,7 +15,13 @@ import { adminRouter } from './routes/adminRoutes.js'
 export const app = express()
 
 app.disable('x-powered-by')
-app.use(cors({ origin: env.clientOrigin }))
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || env.clientOrigins.includes(origin)) callback(null, true)
+    else callback(new Error('Origin is not allowed by CORS'))
+  },
+  credentials: true,
+}))
 app.use(express.json())
 
 app.use('/api/auth', authRouter)

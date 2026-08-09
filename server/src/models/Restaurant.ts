@@ -153,6 +153,7 @@ restaurantSchema.index(
   }
 )
 restaurantSchema.index({ cuisineCategoryIds: 1, approvalStatus: 1, operationStatus: 1 })
+restaurantSchema.index({ ownerId: 1, deletedAt: 1, createdAt: -1 })
 restaurantSchema.index({ 'ratingSummary.average': -1, createdAt: -1 })
 restaurantSchema.index({ 'address.city': 1, 'address.district': 1 })
 restaurantSchema.index({ 'address.location': '2dsphere' })

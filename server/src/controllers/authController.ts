@@ -25,6 +25,25 @@ export const getMe = async (req: AuthRequest, res: Response) => {
   }
 }
 
+export const refresh = async (req: Request, res: Response) => {
+  try {
+    const { refreshToken } = req.body
+    const tokens = await authService.refreshSession(refreshToken)
+    res.json(tokens)
+  } catch (error: any) {
+    res.status(401).json({ message: error.message || 'Không thể làm mới phiên đăng nhập.' })
+  }
+}
+
+export const logout = async (req: Request, res: Response) => {
+  try {
+    await authService.logoutSession(req.body.refreshToken)
+    res.json({ message: 'Đăng xuất thành công.' })
+  } catch {
+    res.json({ message: 'Đăng xuất thành công.' })
+  }
+}
+
 export const register = async (req: Request, res: Response) => {
   try {
     const { fullName, email, phone, password, role } = req.body
@@ -79,5 +98,4 @@ export const resetPassword = async (req: Request, res: Response) => {
     res.status(400).json({ message: error.message || 'Đặt lại mật khẩu thất bại.' })
   }
 }
-
 

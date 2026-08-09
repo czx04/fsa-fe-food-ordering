@@ -6,9 +6,14 @@ import { CuisineCategory } from '../models/CuisineCategory.js'
 import { Restaurant } from '../models/Restaurant.js'
 import { MenuItem } from '../models/MenuItem.js'
 import { MenuCategory } from '../models/MenuCategory.js'
-import { Coupon } from '../models/Coupon.js'
+import { Coupon, CouponUsage } from '../models/Coupon.js'
 import { Cart } from '../models/Cart.js'
 import { Order } from '../models/Order.js'
+import { Review } from '../models/Review.js'
+import { AuditLog } from '../models/AuditLog.js'
+import { seedImageUrl } from './seed/imageUrls.js'
+
+const image = (localPath: string) => seedImageUrl(localPath)
 
 const connectDB = async () => {
   try {
@@ -64,6 +69,9 @@ const seedData = async () => {
     await connectDB()
 
     console.log('Clearing existing data...')
+    await AuditLog.deleteMany({})
+    await Review.deleteMany({})
+    await CouponUsage.deleteMany({})
     await Order.deleteMany({})
     await Cart.deleteMany({})
     await Coupon.deleteMany({})
@@ -82,6 +90,8 @@ const seedData = async () => {
       passwordHash,
       fullName: 'System Admin',
       role: 'admin',
+      status: 'active',
+      emailVerifiedAt: new Date(),
     })
 
     const owner1 = await User.create({
@@ -90,6 +100,8 @@ const seedData = async () => {
       passwordHash,
       fullName: 'Restaurant Owner 1',
       role: 'restaurant_owner',
+      status: 'active',
+      emailVerifiedAt: new Date(),
     })
 
     const owner2 = await User.create({
@@ -98,6 +110,8 @@ const seedData = async () => {
       passwordHash,
       fullName: 'Restaurant Owner 2',
       role: 'restaurant_owner',
+      status: 'active',
+      emailVerifiedAt: new Date(),
     })
 
     const customer = await User.create({
@@ -106,6 +120,8 @@ const seedData = async () => {
       passwordHash,
       fullName: 'John Customer',
       role: 'customer',
+      status: 'active',
+      emailVerifiedAt: new Date(),
       addresses: [
         {
           label: 'Nhà riêng',
@@ -121,13 +137,23 @@ const seedData = async () => {
       ],
     })
 
+    await User.create({
+      email: 'locked@foodordering.com',
+      phone: '0900000005',
+      passwordHash,
+      fullName: 'Locked Customer',
+      role: 'customer',
+      status: 'locked',
+      emailVerifiedAt: new Date(),
+    })
+
     console.log('Creating cuisine categories...')
-    const catPho = await CuisineCategory.create({ name: 'Phở & Bún', slug: 'pho-bun', imageUrl: '/assets/noodles.jpg', displayOrder: 1 })
-    const catCom = await CuisineCategory.create({ name: 'Cơm Văn Phòng', slug: 'com-van-phong', imageUrl: '/assets/chicken.jpg', displayOrder: 2 })
-    const catAnVat = await CuisineCategory.create({ name: 'Ăn Vặt Vỉa Hè', slug: 'an-vat-via-he', imageUrl: '/assets/burger.jpg', displayOrder: 3 })
-    await CuisineCategory.create({ name: 'Trà Sữa & Cafe', slug: 'tra-sua-cafe', imageUrl: '/assets/drink.jpg', displayOrder: 4 })
-    await CuisineCategory.create({ name: 'Healthy & Salad', slug: 'healthy-salad', imageUrl: '/assets/salad.jpg', displayOrder: 5 })
-    const catPizza = await CuisineCategory.create({ name: 'Pizza & Âu', slug: 'pizza-au', imageUrl: '/assets/pizza.jpg', displayOrder: 6 })
+    const catPho = await CuisineCategory.create({ name: 'Phở & Bún', slug: 'pho-bun', imageUrl: image('/assets/noodles.jpg'), displayOrder: 1 })
+    const catCom = await CuisineCategory.create({ name: 'Cơm Văn Phòng', slug: 'com-van-phong', imageUrl: image('/assets/chicken.jpg'), displayOrder: 2 })
+    const catAnVat = await CuisineCategory.create({ name: 'Ăn Vặt Vỉa Hè', slug: 'an-vat-via-he', imageUrl: image('/assets/burger.jpg'), displayOrder: 3 })
+    await CuisineCategory.create({ name: 'Trà Sữa & Cafe', slug: 'tra-sua-cafe', imageUrl: image('/assets/drink.jpg'), displayOrder: 4 })
+    await CuisineCategory.create({ name: 'Healthy & Salad', slug: 'healthy-salad', imageUrl: image('/assets/salad.jpg'), displayOrder: 5 })
+    const catPizza = await CuisineCategory.create({ name: 'Pizza & Âu', slug: 'pizza-au', imageUrl: image('/assets/pizza.jpg'), displayOrder: 6 })
 
     console.log('Creating restaurants...')
     // Owner 1 has 2 restaurants
@@ -139,8 +165,8 @@ const seedData = async () => {
       description: 'Đặc sản phở bò Hà Nội với nước dùng đậm đà.',
       address: { line1: '13 Lò Đúc', ward: 'Phường Phạm Đình Hổ', district: 'Quận Hai Bà Trưng', city: 'Hà Nội' },
       phone: '0901234567',
-      logoUrl: '/assets/noodles.jpg',
-      coverUrl: '/assets/noodles.jpg',
+      logoUrl: image('/assets/noodles.jpg'),
+      coverUrl: image('/assets/noodles.jpg'),
       openingHours: everyDay('06:00', '21:00'),
       delivery: { fee: 15000, minMinutes: 20, maxMinutes: 30 },
       priceRange: 'budget',
@@ -158,8 +184,8 @@ const seedData = async () => {
       description: 'Cơm rang nóng hổi phục vụ nhanh cho bữa trưa và tối.',
       address: { line1: '24 Tôn Thất Tùng', ward: 'Phường Khương Thượng', district: 'Quận Đống Đa', city: 'Hà Nội' },
       phone: '0902345678',
-      logoUrl: '/assets/chicken.jpg',
-      coverUrl: '/assets/chicken.jpg',
+      logoUrl: image('/assets/chicken.jpg'),
+      coverUrl: image('/assets/chicken.jpg'),
       openingHours: everyDay('10:00', '22:00'),
       delivery: { fee: 12000, minMinutes: 20, maxMinutes: 30 },
       priceRange: 'budget',
@@ -178,8 +204,8 @@ const seedData = async () => {
       description: 'Pizza nướng lò củi cùng phô mai nhà làm.',
       address: { line1: '43 Tràng Tiền', ward: 'Phường Tràng Tiền', district: 'Quận Hoàn Kiếm', city: 'Hà Nội' },
       phone: '0903456789',
-      logoUrl: '/assets/pizza.jpg',
-      coverUrl: '/assets/pizza.jpg',
+      logoUrl: image('/assets/pizza.jpg'),
+      coverUrl: image('/assets/pizza.jpg'),
       openingHours: everyDay('10:00', '22:30'),
       delivery: { fee: 0, minMinutes: 25, maxMinutes: 35 },
       priceRange: 'premium',
@@ -187,6 +213,52 @@ const seedData = async () => {
       operationStatus: 'open',
       ratingSummary: { average: 4.8, count: 560 },
       stats: { completedOrderCount: 920, totalItemSold: 1480 },
+    })
+
+    await Restaurant.create({
+      ownerId: owner1._id,
+      cuisineCategoryIds: [catAnVat._id],
+      name: 'Bếp Mới Chờ Duyệt',
+      slug: 'bep-moi-cho-duyet',
+      description: 'Hồ sơ mẫu để kiểm thử luồng phê duyệt nhà hàng mới.',
+      address: { line1: '10 Nguyễn Trãi', ward: 'Phường Thượng Đình', district: 'Quận Thanh Xuân', city: 'Hà Nội' },
+      phone: '0904567890',
+      openingHours: everyDay('09:00', '21:00'),
+      delivery: { fee: 15000, minMinutes: 25, maxMinutes: 40 },
+      priceRange: 'mid',
+      approvalStatus: 'pending',
+      operationStatus: 'temporarily_closed',
+    })
+
+    await Restaurant.create({
+      ownerId: owner2._id,
+      cuisineCategoryIds: [catPizza._id],
+      name: 'Bếp Âu Hồ Sơ Bị Từ Chối',
+      slug: 'bep-au-ho-so-bi-tu-choi',
+      description: 'Hồ sơ mẫu để kiểm thử trạng thái bị từ chối và nộp lại.',
+      address: { line1: '22 Hai Bà Trưng', ward: 'Phường Tràng Tiền', district: 'Quận Hoàn Kiếm', city: 'Hà Nội' },
+      phone: '0905678901',
+      openingHours: everyDay('10:00', '22:00'),
+      delivery: { fee: 20000, minMinutes: 30, maxMinutes: 45 },
+      priceRange: 'premium',
+      approvalStatus: 'rejected',
+      operationStatus: 'temporarily_closed',
+      rejectionReason: 'Ảnh giấy tờ và thông tin địa chỉ chưa đầy đủ.',
+    })
+
+    const suspendedRestaurant = await Restaurant.create({
+      ownerId: owner2._id,
+      cuisineCategoryIds: [catCom._id],
+      name: 'Cơm Nhà Tạm Đình Chỉ',
+      slug: 'com-nha-tam-dinh-chi',
+      description: 'Nhà hàng mẫu để kiểm thử thao tác đình chỉ và gỡ đình chỉ.',
+      address: { line1: '18 Cầu Giấy', ward: 'Phường Quan Hoa', district: 'Quận Cầu Giấy', city: 'Hà Nội' },
+      phone: '0906789012',
+      openingHours: everyDay('10:00', '20:30'),
+      delivery: { fee: 10000, minMinutes: 20, maxMinutes: 35 },
+      priceRange: 'budget',
+      approvalStatus: 'approved',
+      operationStatus: 'suspended',
     })
 
     console.log('Creating menu categories...')
@@ -211,7 +283,7 @@ const seedData = async () => {
         slug: `pho-thin-${index + 1}`,
         description: 'Đặc sản phở Hà Nội với nước dùng đậm đà',
         price: 60000 + index * 10000,
-        imageUrl: '/assets/noodles.jpg',
+        imageUrl: image('/assets/noodles.jpg'),
       })
     }
     await createMenuItem({
@@ -221,15 +293,15 @@ const seedData = async () => {
       slug: 'quay-gion',
       description: 'Quẩy nóng giòn ăn kèm phở',
       price: 10000,
-      imageUrl: '/assets/noodles.jpg',
+      imageUrl: image('/assets/noodles.jpg'),
     })
 
     // Menu items for res2 (Cơm Rang)
-    await createMenuItem({ restaurantId: res2._id, menuCategoryId: menuCatCom1._id, name: 'Cơm Rang Dưa Bò', slug: 'com-rang-dua-bo', description: 'Cơm chuẩn vị văn phòng, nóng hổi', price: 55000, imageUrl: '/assets/chicken.jpg' })
-    await createMenuItem({ restaurantId: res2._id, menuCategoryId: menuCatCom1._id, name: 'Cơm Đảo Gà Rang', slug: 'com-dao-ga-rang', description: 'Cơm chuẩn vị văn phòng, nóng hổi', price: 60000, imageUrl: '/assets/chicken.jpg' })
-    await createMenuItem({ restaurantId: res2._id, menuCategoryId: menuCatCom1._id, name: 'Cơm Rang Hải Sản', slug: 'com-rang-hai-san', description: 'Cơm chuẩn vị văn phòng, nóng hổi', price: 65000, imageUrl: '/assets/chicken.jpg' })
-    await createMenuItem({ restaurantId: res2._id, menuCategoryId: menuCatCom3._id, name: 'Canh Cải Thăn Băm', slug: 'canh-cai-than-bam', description: 'Canh nóng cho bữa cơm', price: 25000, imageUrl: '/assets/chicken.jpg' })
-    await createMenuItem({ restaurantId: res2._id, menuCategoryId: menuCatCom2._id, name: 'Bò Lúc Lắc Khoai Tây', slug: 'bo-luc-lac-khoai-tay', description: 'Bò xào đậm đà', price: 80000, imageUrl: '/assets/chicken.jpg' })
+    await createMenuItem({ restaurantId: res2._id, menuCategoryId: menuCatCom1._id, name: 'Cơm Rang Dưa Bò', slug: 'com-rang-dua-bo', description: 'Cơm chuẩn vị văn phòng, nóng hổi', price: 55000, imageUrl: image('/assets/chicken.jpg') })
+    await createMenuItem({ restaurantId: res2._id, menuCategoryId: menuCatCom1._id, name: 'Cơm Đảo Gà Rang', slug: 'com-dao-ga-rang', description: 'Cơm chuẩn vị văn phòng, nóng hổi', price: 60000, imageUrl: image('/assets/chicken.jpg') })
+    await createMenuItem({ restaurantId: res2._id, menuCategoryId: menuCatCom1._id, name: 'Cơm Rang Hải Sản', slug: 'com-rang-hai-san', description: 'Cơm chuẩn vị văn phòng, nóng hổi', price: 65000, imageUrl: image('/assets/chicken.jpg') })
+    await createMenuItem({ restaurantId: res2._id, menuCategoryId: menuCatCom3._id, name: 'Canh Cải Thăn Băm', slug: 'canh-cai-than-bam', description: 'Canh nóng cho bữa cơm', price: 25000, imageUrl: image('/assets/chicken.jpg') })
+    await createMenuItem({ restaurantId: res2._id, menuCategoryId: menuCatCom2._id, name: 'Bò Lúc Lắc Khoai Tây', slug: 'bo-luc-lac-khoai-tay', description: 'Bò xào đậm đà', price: 80000, imageUrl: image('/assets/chicken.jpg') })
 
     // Menu items for res3 (Pizza 4P's)
     const pizzaMargherita = await createMenuItem({
@@ -239,7 +311,7 @@ const seedData = async () => {
       slug: 'pizza-margherita',
       description: 'Đồ âu chuẩn vị, nướng lò củi',
       price: 150000,
-      imageUrl: '/assets/pizza.jpg',
+      imageUrl: image('/assets/pizza.jpg'),
     })
     await createMenuItem({
       restaurantId: res3._id,
@@ -248,7 +320,7 @@ const seedData = async () => {
       slug: 'pizza-4-pho-mai',
       description: 'Đồ âu chuẩn vị, nướng lò củi',
       price: 180000,
-      imageUrl: '/assets/pizza.jpg',
+      imageUrl: image('/assets/pizza.jpg'),
     })
     await createMenuItem({
       restaurantId: res3._id,
@@ -257,7 +329,7 @@ const seedData = async () => {
       slug: 'mi-y-hai-san',
       description: 'Đồ âu chuẩn vị, nướng lò củi',
       price: 200000,
-      imageUrl: '/assets/pizza.jpg',
+      imageUrl: image('/assets/pizza.jpg'),
     })
 
     const cocaCola = await createMenuItem({
@@ -267,7 +339,7 @@ const seedData = async () => {
       slug: 'coca-cola',
       description: 'Nước ngọt Coca-Cola lon 330ml',
       price: 20000,
-      imageUrl: '/assets/pizza.jpg',
+      imageUrl: image('/assets/pizza.jpg'),
     })
 
     console.log('Creating coupon...')
@@ -279,6 +351,8 @@ const seedData = async () => {
       endsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       status: 'active',
     })
+    await Coupon.create({ code: 'TAMTAT20', discountType: 'percentage', discountValue: 20, minOrderAmount: 100000, maxDiscountAmount: 50000, startsAt: new Date(Date.now() - 24 * 60 * 60 * 1000), endsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), status: 'disabled' })
+    await Coupon.create({ code: 'HETHAN25', discountType: 'fixed', discountValue: 25000, minOrderAmount: 150000, startsAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000), endsAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), status: 'expired' })
 
     console.log('Creating cart...')
     await Cart.create({
@@ -296,12 +370,15 @@ const seedData = async () => {
           price: 20000,
         },
       ],
-      total: 190000,
+      subtotal: 190000,
+      discountAmount: 10000,
+      grandTotal: 180000,
+      couponId: coupon._id,
     })
 
     console.log('Creating order...')
     const orderPlacedAt = new Date('2026-08-07T08:00:00Z')
-    await Order.create({
+    const deliveredOrder = await Order.create({
       orderNumber: 'FD-20260807-8F2K9A',
       checkoutKey: 'checkout-demo-20260807-0001',
       customerId: customer._id,
@@ -420,6 +497,29 @@ const seedData = async () => {
       deliveredAt: new Date('2026-08-07T09:00:00Z'),
       cancelledAt: null,
       cancellation: null,
+    })
+
+    console.log('Creating review and audit fixtures...')
+    await Review.create({
+      orderId: deliveredOrder._id,
+      customerId: customer._id,
+      restaurantId: res3._id,
+      rating: 4,
+      content: 'Món ngon nhưng thời gian giao hơi lâu, cần kiểm tra nội dung trước khi hiển thị.',
+      imageUrls: [image('/assets/pizza.jpg')],
+      visibilityStatus: 'flagged',
+    })
+    await AuditLog.create({
+      actorId: admin._id,
+      actorRole: 'admin',
+      action: 'restaurant.suspended',
+      entityType: 'Restaurant',
+      entityId: String(suspendedRestaurant._id),
+      reason: 'Dữ liệu mẫu cho dashboard kiểm thử nhật ký.',
+      before: 'open',
+      after: 'suspended',
+      ip: '127.0.0.1',
+      userAgent: 'seed-script',
     })
 
     console.log('Seeding completed successfully!')
