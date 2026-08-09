@@ -1,39 +1,20 @@
-export interface CartItemOption {
-    optionGroupId: string;
-    optionId: string;
-    optionName: string;
-    priceDelta: number;
+export interface CartMenuItem {
+    _id: string;
+    name: string;
+    imageUrl?: string;
 }
 
 export interface CartItem {
     _id: string;
-    menuItemId: string;
+    menuItemId: CartMenuItem;
     quantity: number;
-    displaySnapshot: {
-        name: string;
-        imageUrl?: string;
-        unitPrice: number;
-    };
-    selectedOptions: CartItemOption[];
-    note?: string;
+    price: number;
 }
 
-export interface Cart {
-    _id: string;
-    restaurantId: string;
-    customerId: string;
-    items: CartItem[];
-}
-
-export interface AddToCartPayload {
-    menuItemId: string;
-    quantity: number;
-    options?: { optionGroupId: string; optionId: string }[];
-}
-
-export interface Restaurant {
+export interface CartRestaurantInfo {
     _id: string;
     name: string;
+    slug: string;
     address: {
         line1: string;
         ward: string;
@@ -45,30 +26,38 @@ export interface Restaurant {
     };
 }
 
-export interface Coupon {
+export interface CartCoupon {
     _id: string;
     code: string;
-    name: string;
-    description?: string;
-    discountType: "fixed" | "percentage";
-    discountValue: number;
-    maxDiscountAmount?: number;
-    minOrderAmount: number;
 }
 
-export interface User {
+export interface Cart {
     _id: string;
-    fullName: string;
-    email: string;
-    role: string;
+    userId: string;
+    restaurantId: CartRestaurantInfo;
+    items: CartItem[];
+    subtotal: number;
+    discountAmount: number;
+    grandTotal: number;
+    couponId?: CartCoupon | null;
 }
 
-export interface Address {
-    _id: string;
+// API Payloads
+export interface AddToCartPayload {
+    menuItemId: string;
+    quantity: number;
+    restaurantId: string;
+    replace?: boolean;
+}
+
+export interface UserAddress {
+    _id?: string;
+    label: string;
     recipientName: string;
     phone: string;
     line1: string;
     ward: string;
     district: string;
     city: string;
+    isDefault: boolean;
 }

@@ -7,7 +7,10 @@ import { Cart, ICart } from '../models/Cart.js';
  * @returns A promise that resolves to the user's cart or null if not found.
  */
 export const findCartByUserId = async (userId: string | Types.ObjectId): Promise<ICart | null> => {
-  return Cart.findOne({ userId }).populate('items.menuItemId', 'name basePrice salePrice');
+  return Cart.findOne({ userId })
+    .populate('items.menuItemId', 'name basePrice salePrice imageUrl')
+    .populate('restaurantId', 'name slug address delivery phone logoUrl')
+    .populate('couponId', 'code name discountType discountValue');
 };
 
 /**
@@ -22,13 +25,15 @@ export const createCart = async (
   userId: Types.ObjectId,
   restaurantId: Types.ObjectId,
   items: ICart['items'],
-  total: number
+  pricing: { subtotal: number; discountAmount: number; grandTotal: number }
 ): Promise<ICart> => {
   const newCart = new Cart({
     userId,
     restaurantId,
     items,
-    total,
+    subtotal: pricing.subtotal,
+    discountAmount: pricing.discountAmount,
+    grandTotal: pricing.grandTotal,
   });
   return newCart.save();
 };

@@ -1,7 +1,8 @@
 import { Link, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { OrderDetail } from "../types/order";
-import { mockApi } from "../utils/mock-api";
+import { OrderDetail, CancelOrderPayload } from "../types/order";
+import { orderService } from "../services/orderService";
+import { Loader2, XCircle, CheckCircle2, Phone } from "lucide-react";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("vi-VN", {
@@ -10,7 +11,10 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
-const formatDate = (dateString: string) => {
+const formatDateTime = (dateString: string) => {
+  if (!dateString) return "N/A";
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return "N/A";
   return new Date(dateString).toLocaleString("vi-VN");
 };
 
@@ -21,23 +25,34 @@ const statusTranslations: { [key: string]: string } = {
   preparing: "Đang chuẩn bị",
   delivering: "Đang giao",
   confirmed: "Đã xác nhận",
+  all: "Tất cả",
 };
+
+const orderStatusSteps = [
+  "pending",
+  "confirmed",
+  "preparing",
+  "delivering",
+  "delivered",
+];
 
 function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<OrderDetail>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
         if (id) {
-          const orderResponse = await mockApi.get(`/orders?_id=${id}`);
-          // json-server query returns an array, we need the first element
-          setOrder(orderResponse.data[0]);
-          console.log(orderResponse.data);
+          const orderData = await orderService.getOrderDetail(id);
+          setOrder(orderData);
         } else {
           setError("Không tìm thấy ID đơn hàng.");
         }
@@ -50,25 +65,47 @@ function OrderDetailPage() {
     };
 
     fetchData();
-  }, [id]);
+  }, [id]); // Re-fetch when ID changes
+
+  const handleCancelOrder = async () => {
+    if (!id || !cancelReason) return;
+
+    setIsCancelling(true);
+    setCancelError("");
+    try {
+      const payload: CancelOrderPayload = { reason: cancelReason };
+      const response = await orderService.cancelOrder(id, payload);
+      setOrder(response.order); // Update order with cancelled status
+      setShowCancelModal(false);
+      alert("Đơn hàng đã được hủy thành công.");
+    } catch (err: any) {
+      console.error("Lỗi hủy đơn hàng:", err);
+      setCancelError(
+        err.response?.data?.message ||
+          "Không thể hủy đơn hàng. Vui lòng thử lại.",
+      );
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const currentStepIndex = orderStatusSteps.indexOf(order?.orderStatus || "");
+
   if (loading) {
     return (
       <main className="container mx-auto p-4">
-        <p>Đang tải chi tiết đơn hàng...</p>
+        <div className="flex items-center justify-center h-48">
+          <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+          <p className="ml-2 text-gray-600">Đang tải chi tiết đơn hàng...</p>
+        </div>
       </main>
     );
   }
+
   if (error) {
     return (
       <main className="container mx-auto p-4">
         <p className="text-red-600">{error}</p>
-      </main>
-    );
-  }
-  if (!order) {
-    return (
-      <main className="container mx-auto p-4">
-        <h1 className="text-3xl font-bold mb-4">Không tìm thấy đơn hàng</h1>
         <Link
           to="/orders"
           className="text-orange-500 hover:underline mt-4 block"
@@ -78,6 +115,27 @@ function OrderDetailPage() {
       </main>
     );
   }
+  if (!order) {
+    return (
+      <main className="container mx-auto p-4">
+        <h1 className="text-3xl font-bold mb-4">
+          Không tìm thấy đơn hàng hoặc bạn không có quyền truy cập.
+        </h1>
+        <Link
+          to="/orders"
+          className="text-orange-500 hover:underline mt-4 block"
+        >
+          Quay về lịch sử đơn hàng
+        </Link>
+      </main>
+    );
+  }
+
+  const isCancellable = order.orderStatus === "pending";
+  const isPreparingOrLater =
+    orderStatusSteps.indexOf(order.orderStatus) >=
+    orderStatusSteps.indexOf("preparing");
+  const contactPhone = order.restaurantSnapshot.phone || "19008888"; // Fallback to general support
 
   return (
     <main className="min-h-screen bg-gray-50 py-8">
@@ -90,10 +148,10 @@ function OrderDetailPage() {
             ← Quay lại danh sách
           </Link>
           <h1 className="text-4xl font-bold text-gray-800">
-            Chi tiết đơn hàng #{order.orderNumber}
+            Đơn hàng #{order.orderNumber}
           </h1>
           <p className="text-gray-500 mt-1">
-            Đặt lúc: {formatDate(order.placedAt)}
+            Đặt lúc: {formatDateTime(order.placedAt)}
           </p>
         </div>
 
@@ -102,31 +160,39 @@ function OrderDetailPage() {
           <div className="lg:w-2/3 space-y-8">
             {/* Order Status */}
             <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">
+              <h2 className="text-xl font-bold text-gray-800 mb-6">
                 Trạng thái đơn hàng
               </h2>
-              <ol className="relative border-l border-gray-200">
-                {order.statusHistory.map((status, index) => (
-                  <li key={index} className="mb-6 ml-6">
-                    <span className="absolute flex items-center justify-center w-6 h-6 bg-blue-100 rounded-full -left-3 ring-8 ring-white">
-                      <svg
-                        className="w-3 h-3 text-blue-800"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-                          clipRule="evenodd"
-                        ></path>
-                      </svg>
-                    </span>
-                    <h3 className="font-semibold text-gray-900">
-                      {statusTranslations[status.to] || status.to}
+              <ol className="flex items-center w-full text-center text-sm font-medium text-gray-500 sm:text-base">
+                {orderStatusSteps.map((statusKey, index) => (
+                  <li
+                    key={statusKey}
+                    className={`flex md:w-full items-center ${
+                      index <= currentStepIndex
+                        ? "text-orange-600 after:border-orange-200"
+                        : "after:border-gray-200"
+                    } ${
+                      index < orderStatusSteps.length - 1
+                        ? "after:content-[''] after:w-full after:h-1 after:border-b after:border-4 after:inline-block"
+                        : ""
+                    }`}
+                  >
+                    <div
+                      className={`flex items-center justify-center w-10 h-10 rounded-full ring-0 shrink-0 ${
+                        index <= currentStepIndex
+                          ? "bg-orange-600 text-white"
+                          : "bg-gray-100 text-gray-500"
+                      }`}
+                    >
+                      {index < currentStepIndex ? (
+                        <CheckCircle2 className="w-5 h-5" />
+                      ) : (
+                        index + 1
+                      )}
+                    </div>
+                    <h3 className="ml-3 font-semibold text-gray-900">
+                      {statusTranslations[statusKey]}
                     </h3>
-                    <time className="block text-sm font-normal leading-none text-gray-400">
-                      {formatDate(status.changedAt)}
-                    </time>
                   </li>
                 ))}
               </ol>
@@ -157,6 +223,48 @@ function OrderDetailPage() {
                   </p>
                 )}
               </div>
+              <div className="mt-6 flex flex-col sm:flex-row gap-4">
+                {isCancellable && (
+                  <button
+                    type="button"
+                    onClick={() => setShowCancelModal(true)}
+                    className="w-full sm:w-auto px-6 py-3 border border-red-500 text-red-500 rounded-md font-semibold hover:bg-red-50 transition-colors duration-200"
+                  >
+                    Hủy đơn hàng
+                  </button>
+                )}
+                {isPreparingOrLater && !isCancellable && (
+                  <p className="text-red-500 text-sm font-medium">
+                    Đơn hàng đang được chuẩn bị, không thể hủy.
+                  </p>
+                )}
+                <a
+                  href={`tel:${contactPhone}`}
+                  className="w-full sm:w-auto px-6 py-3 bg-blue-500 text-white rounded-md font-semibold hover:bg-blue-600 transition-colors duration-200 flex items-center justify-center gap-2"
+                >
+                  <Phone className="w-4 h-4" />
+                  Liên hệ hỗ trợ
+                </a>
+              </div>
+            </div>
+
+            {/* Restaurant Info */}
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h2 className="text-xl font-bold text-gray-800 mb-4">
+                Thông tin nhà hàng
+              </h2>
+              <p>
+                <span className="font-semibold">Tên nhà hàng:</span>{" "}
+                {order.restaurantSnapshot.name}
+              </p>
+              <p>
+                <span className="font-semibold">Địa chỉ:</span>{" "}
+                {order.restaurantSnapshot.addressText}
+              </p>
+              <p>
+                <span className="font-semibold">Số điện thoại:</span>{" "}
+                {order.restaurantSnapshot.phone}
+              </p>
             </div>
           </div>
 
@@ -222,6 +330,78 @@ function OrderDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Cancel Order Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Hủy đơn hàng #{order.orderNumber}
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Vui lòng chọn lý do hủy đơn hàng của bạn:
+            </p>
+            {cancelError && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+                <strong className="font-bold">Lỗi!</strong>
+                <span className="block sm:inline"> {cancelError}</span>
+              </div>
+            )}
+            <div className="space-y-3 mb-6">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="cancelReason"
+                  value="Muốn đổi món"
+                  checked={cancelReason === "Muốn đổi món"}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  className="h-4 w-4 text-red-600 focus:ring-red-500"
+                />
+                <span className="ml-3 text-gray-700">Muốn đổi món</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="cancelReason"
+                  value="Đặt nhầm địa chỉ"
+                  checked={cancelReason === "Đặt nhầm địa chỉ"}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  className="h-4 w-4 text-red-600 focus:ring-red-500"
+                />
+                <span className="ml-3 text-gray-700">Đặt nhầm địa chỉ</span>
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="cancelReason"
+                  value="Khác"
+                  checked={cancelReason === "Khác"}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  className="h-4 w-4 text-red-600 focus:ring-red-500"
+                />
+                <span className="ml-3 text-gray-700">Lý do khác</span>
+              </label>
+            </div>
+            <div className="flex justify-end gap-4">
+              <button
+                type="button"
+                onClick={() => setShowCancelModal(false)}
+                className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 font-semibold hover:bg-gray-100 transition-colors duration-200"
+              >
+                Đóng
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelOrder}
+                disabled={isCancelling || !cancelReason}
+                className="px-6 py-2 bg-red-500 text-white rounded-md font-semibold hover:bg-red-600 transition-colors duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                {isCancelling ? "Đang hủy..." : "Xác nhận hủy"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
