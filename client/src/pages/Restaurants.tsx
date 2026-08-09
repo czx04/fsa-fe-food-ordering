@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
+import { Star, MapPin, Filter, Grid, Map, UtensilsCrossed } from 'lucide-react'
 
 import { api } from '../utils/api'
+import { RestaurantCard } from '../components/cards/RestaurantCard'
+import { Pagination } from '../components/ui/Pagination'
 
 interface CuisineCategory {
   _id: string;
@@ -64,18 +67,13 @@ const RATING_OPTIONS = [4.5, 4, 3.5];
 const CONTAINER_CLASS =
   "mx-auto w-[calc(100%-2.5rem)] max-w-[1180px] max-[760px]:w-[calc(100%-1.5rem)]";
 const FORM_CONTROL_CLASS =
-  "h-[42px] min-w-[155px] rounded-[9px] border border-[#e7ece8] bg-white px-3 text-[#17201a] outline-none transition focus:border-[#2eae62] focus:ring-4 focus:ring-[#2eae62]/10 max-[760px]:w-full";
+  "h-[42px] min-w-[155px] rounded-[9px] border border-[#e7ece8] bg-white px-3 text-[#17201a] outline-none transition focus:border-[#ff5a1f] focus:ring-4 focus:ring-[#ff5a1f]/10 max-[760px]:w-full text-xs font-semibold";
 const PRIMARY_BUTTON_CLASS =
-  'inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[10px] border-0 bg-[#ff5a1f] px-5 py-[11px] font-bold text-white transition hover:-translate-y-px hover:bg-[#e94e16] focus:outline-none focus:ring-4 focus:ring-[#ff5a1f]/20'
+  'inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[10px] border-0 bg-[#ff5a1f] px-5 py-[11px] font-bold text-white transition hover:-translate-y-px hover:bg-[#e94e16] focus:outline-none focus:ring-4 focus:ring-[#ff5a1f]/20 text-xs'
 const OUTLINE_BUTTON_CLASS =
-  "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-[#e7ece8] bg-white px-5 py-[11px] font-bold text-[#17201a] transition hover:-translate-y-px hover:border-[#ff5a1f] focus:outline-none focus:ring-4 focus:ring-[#ff5a1f]/10";
+  "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-[#e7ece8] bg-white px-5 py-[11px] font-bold text-[#17201a] transition hover:-translate-y-px hover:border-[#ff5a1f] focus:outline-none focus:ring-4 focus:ring-[#ff5a1f]/10 text-xs";
 const FILTER_LABEL_CLASS =
   "my-[9px] flex cursor-pointer items-center gap-[9px] text-xs text-[#68736c]";
-const PAGINATION_BUTTON_CLASS =
-  "grid h-[38px] w-[38px] cursor-pointer place-items-center rounded-[9px] border border-[#e7ece8] bg-white font-bold text-[#17201a] transition hover:border-[#ff5a1f] hover:text-[#ff5a1f] disabled:cursor-not-allowed disabled:opacity-40";
-
-const formatMoney = (value: number) =>
-  `${new Intl.NumberFormat("vi-VN").format(value)}đ`;
 
 const getMapPosition = (restaurant: Restaurant) => {
   const coordinates =
@@ -196,21 +194,11 @@ export const Restaurants = () => {
     setSearchParams({ sort: "popular_desc", openNow: "true", page: "1" });
   };
 
-  const pageNumbers = Array.from(
-    { length: pagination.totalPages },
-    (_, index) => index + 1,
-  ).filter(
-    (page) =>
-      page === 1 ||
-      page === pagination.totalPages ||
-      Math.abs(page - pagination.page) <= 1,
-  );
-
   return (
     <main className="min-h-screen bg-[#f7faf7] text-[#17201a]">
-      <section className="bg-[#dff7e7] py-12">
+      <section className="bg-[#fff0e9] py-12">
         <div className={CONTAINER_CLASS}>
-          <div className="mb-2.5 text-[11px] font-extrabold uppercase tracking-[.12em] text-[#2eae62]">
+          <div className="mb-2.5 text-[11px] font-extrabold uppercase tracking-[.12em] text-[#ff5a1f]">
             Khám phá vị ngon
           </div>
           <h1 className="mb-2.5 text-[38px] font-bold leading-tight tracking-[-.035em]">
@@ -227,14 +215,14 @@ export const Restaurants = () => {
       <section className="py-[38px]">
         <div className={CONTAINER_CLASS}>
           <form
-            className="mb-6 flex items-center gap-3 rounded-[14px] border border-[#e7ece8] bg-white p-[14px] max-[760px]:flex-col max-[760px]:items-stretch"
+            className="mb-6 flex items-center gap-3 rounded-[14px] border border-[#e7ece8] bg-white p-[14px] max-[760px]:flex-col max-[760px]:items-stretch shadow-sm"
             onSubmit={submitSearch}
           >
             <input
               className={`${FORM_CONTROL_CLASS} flex-1`}
               value={draftSearch}
               onChange={(event) => setDraftSearch(event.target.value)}
-              placeholder="⌕  Tìm tên nhà hàng hoặc địa chỉ"
+              placeholder="Tìm tên nhà hàng hoặc địa chỉ"
               aria-label="Tìm tên nhà hàng hoặc địa chỉ"
             />
             <select
@@ -278,7 +266,8 @@ export const Restaurants = () => {
             type="button"
             onClick={() => setShowMobileFilters((value) => !value)}
           >
-            ☷ {showMobileFilters ? "Ẩn bộ lọc" : "Hiện bộ lọc"}
+            <Filter className="w-4 h-4" />
+            <span>{showMobileFilters ? "Ẩn bộ lọc" : "Hiện bộ lọc"}</span>
           </button>
 
           <div className="grid grid-cols-[260px_minmax(0,1fr)] items-start gap-[26px] max-[760px]:grid-cols-1">
@@ -298,7 +287,7 @@ export const Restaurants = () => {
                 </button>
               </div>
               <div className="border-b border-[#e7ece8] py-4">
-                <h4 className="mb-3 font-bold">Loại ẩm thực</h4>
+                <h4 className="mb-3 font-bold text-xs">Loại ẩm thực</h4>
                 {categories.map((category) => (
                   <label className={FILTER_LABEL_CLASS} key={category._id}>
                     <input
@@ -312,7 +301,7 @@ export const Restaurants = () => {
                 ))}
               </div>
               <div className="border-b border-[#e7ece8] py-4">
-                <h4 className="mb-3 font-bold">Khoảng giá</h4>
+                <h4 className="mb-3 font-bold text-xs">Khoảng giá</h4>
                 {PRICE_OPTIONS.map((option) => (
                   <label className={FILTER_LABEL_CLASS} key={option.value}>
                     <input
@@ -329,7 +318,7 @@ export const Restaurants = () => {
                 ))}
               </div>
               <div className="border-b border-[#e7ece8] py-4">
-                <h4 className="mb-3 font-bold">Đánh giá</h4>
+                <h4 className="mb-3 font-bold text-xs">Đánh giá</h4>
                 {RATING_OPTIONS.map((rating) => (
                   <label className={FILTER_LABEL_CLASS} key={rating}>
                     <input
@@ -341,7 +330,10 @@ export const Restaurants = () => {
                         updateParams({ minRating: String(rating) })
                       }
                     />
-                    ★ {rating} sao trở lên
+                    <span className="flex items-center gap-1">
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      <span>{rating} sao trở lên</span>
+                    </span>
                   </label>
                 ))}
               </div>
@@ -390,7 +382,17 @@ export const Restaurants = () => {
                   type="button"
                   onClick={() => setShowMap((value) => !value)}
                 >
-                  {showMap ? "▦ Danh sách" : "☷ Bản đồ"}
+                  {showMap ? (
+                    <>
+                      <Grid className="w-4 h-4" />
+                      <span>Danh sách</span>
+                    </>
+                  ) : (
+                    <>
+                      <Map className="w-4 h-4" />
+                      <span>Bản đồ</span>
+                    </>
+                  )}
                 </button>
               </div>
 
@@ -421,7 +423,7 @@ export const Restaurants = () => {
                       type="button"
                     >
                       <span className="grid h-[42px] w-[42px] -rotate-45 place-items-center rounded-[50%_50%_50%_8px] border border-[#dce8df] bg-white text-xl">
-                        <span className="rotate-45">📍</span>
+                        <MapPin className="rotate-45 w-5 h-5 text-[#ff5a1f]" />
                       </span>
                       <b className="rounded-md border border-[#dce8df] bg-white/90 px-[7px] py-1 text-[10px]">
                         {restaurant.name}
@@ -440,95 +442,23 @@ export const Restaurants = () => {
               {!loading && !error && !showMap && restaurants.length > 0 && (
                 <div className="grid grid-cols-3 items-stretch gap-[22px] max-[760px]:grid-cols-1">
                   {restaurants.map((restaurant) => (
-                    <article
-                      className="flex flex-col overflow-hidden rounded-2xl border border-[#e7ece8] bg-white shadow-[0_5px_18px_rgba(34,63,43,.04)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_18px_50px_rgba(32,70,45,.10)]"
+                    <RestaurantCard
                       key={restaurant._id}
-                    >
-                      <div className="relative h-[190px] overflow-hidden bg-[#dff7e7]">
-                        <Link to={`/restaurants/${restaurant.slug}`} className="block h-full">
-                          <img
-                            className="h-full w-full object-cover"
-                            src={restaurant.coverUrl || restaurant.coverImage || '/assets/restaurant.jpg'}
-                            alt={restaurant.name}
-                          />
-                          <span
-                            className={`absolute left-3 top-3 rounded-[7px] px-[9px] py-1.5 text-[10px] font-extrabold text-white ${
-                              restaurant.isOpenNow ? 'bg-[#ff5a1f]' : 'bg-[#53615a]'
-                            }`}
-                          >
-                            {restaurant.isOpenNow ? 'Mở cửa' : 'Đã đóng'}
-                          </span>
-                        </Link>
-                        <button
-                          type="button"
-                          className={`absolute right-3 top-3 grid h-[34px] w-[34px] cursor-pointer place-items-center rounded-full border border-white/75 bg-white/90 p-0 text-lg transition hover:scale-105 ${
-                            favorites.has(restaurant._id)
-                              ? "bg-white text-[#e34444]"
-                              : "text-[#17201a]"
-                          }`}
-                          onClick={() => toggleFavorite(restaurant._id)}
-                          aria-label={`${favorites.has(restaurant._id) ? "Bỏ yêu thích" : "Yêu thích"} ${restaurant.name}`}
-                        >
-                          {favorites.has(restaurant._id) ? "♥" : "♡"}
-                        </button>
-                      </div>
-                      <div className="flex flex-1 flex-col p-4">
-                        <Link to={`/restaurants/${restaurant.slug}`}>
-                          <h3 className="mb-[5px] text-[15px] font-bold leading-snug transition hover:text-[#ff5a1f]">{restaurant.name}</h3>
-                        </Link>
-                        <p className="mb-0 min-h-[19px] text-xs text-[#68736c]">
-                          {restaurant.cuisineCategories
-                            .map((category) => category.name)
-                            .join(" • ")}
-                        </p>
-                        <p className="mb-2.5 mt-[7px] min-h-[38px] text-xs text-[#68736c]">
-                          📍 {restaurant.address}
-                        </p>
-                        <div className="flex flex-wrap gap-2.5 text-[11px] text-[#68736c]">
-                          <span className="font-bold text-[#e69b00]">
-                            ★ {restaurant.ratingSummary.average.toFixed(1)}
-                          </span>
-                          <span>
-                            ◷ {restaurant.delivery.minMinutes}–
-                            {restaurant.delivery.maxMinutes} phút
-                          </span>
-                          <span>
-                            ₫{" "}
-                            {
-                              PRICE_OPTIONS.find(
-                                (option) =>
-                                  option.value === restaurant.priceRange,
-                              )?.label
-                            }
-                          </span>
-                        </div>
-                        <div className="mt-auto flex items-center justify-between gap-3 pt-6">
-                          <span
-                            className={`text-xs ${
-                              restaurant.delivery.fee === 0
-                                ? "font-bold text-[#167a3e]"
-                                : "text-[#68736c]"
-                            }`}
-                          >
-                            {restaurant.delivery.fee === 0
-                              ? "Miễn phí giao hàng"
-                              : `Phí giao ${formatMoney(restaurant.delivery.fee)}`}
-                          </span>
-                          <Link to={`/restaurants/${restaurant.slug}`} className="shrink-0 font-bold text-[#ff5a1f]">Xem quán →</Link>
-                        </div>
-                      </div>
-                    </article>
+                      restaurant={restaurant}
+                      isFavorite={favorites.has(restaurant._id)}
+                      onToggleFavorite={toggleFavorite}
+                    />
                   ))}
                 </div>
               )}
 
               {!loading && !error && restaurants.length === 0 && (
                 <div className="rounded-2xl border border-[#e7ece8] bg-white px-6 py-12 text-center text-[#68736c]">
-                  <span className="mb-3 block text-[52px]">🍽️</span>
+                  <UtensilsCrossed className="w-12 h-12 text-slate-400 mx-auto mb-3" />
                   <h3 className="mb-2 text-lg font-bold text-[#17201a]">
                     Chưa tìm thấy nhà hàng phù hợp
                   </h3>
-                  <p>Hãy thử đổi từ khóa hoặc bỏ bớt bộ lọc.</p>
+                  <p className="text-xs mb-4">Hãy thử đổi từ khóa hoặc bỏ bớt bộ lọc.</p>
                   <button
                     type="button"
                     className={OUTLINE_BUTTON_CLASS}
@@ -539,53 +469,12 @@ export const Restaurants = () => {
                 </div>
               )}
 
-              {!loading && !error && pagination.totalPages > 1 && (
-                <nav
-                  className="mt-[34px] flex justify-center gap-2"
-                  aria-label="Phân trang nhà hàng"
-                >
-                  <button
-                    className={PAGINATION_BUTTON_CLASS}
-                    type="button"
-                    disabled={pagination.page === 1}
-                    onClick={() =>
-                      updateParams({ page: String(pagination.page - 1) })
-                    }
-                  >
-                    ‹
-                  </button>
-                  {pageNumbers.map((page, index) => {
-                    const previous = pageNumbers[index - 1];
-                    return (
-                      <span className="flex items-center gap-2" key={page}>
-                        {previous && page - previous > 1 && (
-                          <span className="text-[#68736c]">…</span>
-                        )}
-                        <button
-                          type="button"
-                          className={`${PAGINATION_BUTTON_CLASS} ${
-                            page === pagination.page
-                              ? "border-[#ff5a1f] bg-[#ff5a1f] text-white hover:text-white"
-                              : ""
-                          }`}
-                          onClick={() => updateParams({ page: String(page) })}
-                        >
-                          {page}
-                        </button>
-                      </span>
-                    );
-                  })}
-                  <button
-                    className={PAGINATION_BUTTON_CLASS}
-                    type="button"
-                    disabled={pagination.page === pagination.totalPages}
-                    onClick={() =>
-                      updateParams({ page: String(pagination.page + 1) })
-                    }
-                  >
-                    ›
-                  </button>
-                </nav>
+              {!loading && !error && (
+                <Pagination
+                  currentPage={pagination.page}
+                  totalPages={pagination.totalPages}
+                  onPageChange={(page) => updateParams({ page: String(page) })}
+                />
               )}
             </div>
           </div>

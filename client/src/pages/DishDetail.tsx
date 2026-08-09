@@ -266,7 +266,7 @@ export const DishDetail = () => {
 
             <div className="rounded-3xl border border-[#dce8df] bg-white p-7 max-[600px]:p-5">
               <div className="mb-3 flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-[#dff7e7] px-3 py-1.5 text-[10px] font-extrabold uppercase text-[#167a3e]">{item.menuCategory.name}</span>
+                <span className="rounded-full bg-[#fff0e9] px-3 py-1.5 text-[10px] font-extrabold uppercase text-[#ff5a1f]">{item.menuCategory.name}</span>
                 <span className={`rounded-full px-3 py-1.5 text-[10px] font-extrabold uppercase ${item.isAvailable ? 'bg-[#fff0e9] text-[#ff5a1f]' : 'bg-slate-100 text-slate-500'}`}>
                   {item.isAvailable ? 'Còn món' : 'Tạm hết món'}
                 </span>
@@ -328,13 +328,13 @@ export const DishDetail = () => {
               </label>
 
               {selectionError && <p className="mb-3 rounded-xl bg-red-50 p-3 text-xs font-semibold text-red-600">{selectionError}</p>}
-              {addedMessage && <p className="mb-3 flex items-center gap-2 rounded-xl bg-[#e5f8eb] p-3 text-xs font-semibold text-[#167a3e]"><Check className="h-4 w-4" />{addedMessage}</p>}
+              {addedMessage && <p className="mb-3 flex items-center gap-2 rounded-xl bg-[#fff0e9] p-3 text-xs font-semibold text-[#ff5a1f]"><Check className="h-4 w-4" />{addedMessage}</p>}
 
               <div className="flex gap-3 max-[480px]:flex-col">
                 <div className="inline-flex h-12 shrink-0 items-center overflow-hidden rounded-xl border border-[#e7ece8] bg-white max-[480px]:justify-between">
-                  <button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))} className="grid h-12 w-11 place-items-center bg-white hover:bg-[#f7faf7]" aria-label="Giảm số lượng"><Minus className="h-4 w-4" /></button>
+                  <button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))} className="grid h-12 w-11 place-items-center bg-white hover:bg-[#fffaf7]" aria-label="Giảm số lượng"><Minus className="h-4 w-4" /></button>
                   <span className="grid h-12 min-w-10 place-items-center text-sm font-extrabold">{quantity}</span>
-                  <button type="button" onClick={() => setQuantity((value) => Math.min(99, value + 1))} className="grid h-12 w-11 place-items-center bg-white hover:bg-[#f7faf7]" aria-label="Tăng số lượng"><Plus className="h-4 w-4" /></button>
+                  <button type="button" onClick={() => setQuantity((value) => Math.min(99, value + 1))} className="grid h-12 w-11 place-items-center bg-white hover:bg-[#fffaf7]" aria-label="Tăng số lượng"><Plus className="h-4 w-4" /></button>
                 </div>
                 <button
                   type="button"
@@ -356,7 +356,7 @@ export const DishDetail = () => {
           <div className="mx-auto w-[calc(100%-2.5rem)] max-w-[1180px] max-[760px]:w-[calc(100%-1.5rem)]">
             <div className="mb-6 flex items-end justify-between gap-4">
               <div>
-                <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-[.12em] text-[#2eae62]">Ăn kèm thật hợp</span>
+                <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-[.12em] text-[#ff5a1f]">Ăn kèm thật hợp</span>
                 <h2 className="mb-0 text-3xl font-extrabold tracking-[-.03em]">Có thể bạn cũng thích</h2>
               </div>
               <Link to={`/restaurants/${item.restaurant.slug}`} className="text-xs font-bold text-[#ff5a1f]">Xem thực đơn →</Link>

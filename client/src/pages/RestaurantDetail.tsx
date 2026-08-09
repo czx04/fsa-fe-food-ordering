@@ -13,6 +13,7 @@ import {
   Star,
   Store,
   Truck,
+  UtensilsCrossed,
 } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
@@ -394,12 +395,12 @@ export const RestaurantDetail = () => {
                 <span
                   className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-extrabold ${
                     restaurant.isOpenNow
-                      ? 'bg-[#e5f8eb] text-[#187a3d]'
+                      ? 'bg-[#fff0e9] text-[#ff5a1f]'
                       : 'bg-white/90 text-slate-600'
                   }`}
                 >
                   <span
-                    className={`h-2 w-2 rounded-full ${restaurant.isOpenNow ? 'bg-[#29b55c]' : 'bg-slate-400'}`}
+                    className={`h-2 w-2 rounded-full ${restaurant.isOpenNow ? 'bg-[#ff5a1f]' : 'bg-slate-400'}`}
                   />
                   {restaurant.isOpenNow ? 'Đang mở cửa' : 'Hiện đang đóng cửa'}
                 </span>
@@ -474,7 +475,7 @@ export const RestaurantDetail = () => {
           <div className="min-w-0">
             <div className="mb-6 flex items-end justify-between gap-5 max-[760px]:flex-col max-[760px]:items-stretch">
               <div>
-                <div className="mb-2 text-[11px] font-extrabold uppercase tracking-[.12em] text-[#2eae62]">
+                <div className="mb-2 text-[11px] font-extrabold uppercase tracking-[.12em] text-[#ff5a1f]">
                   Thực đơn hôm nay
                 </div>
                 <h2 className="mb-0 text-3xl font-extrabold tracking-[-.03em]">Món ngon của quán</h2>
@@ -531,7 +532,7 @@ export const RestaurantDetail = () => {
             )}
             {!menuLoading && !menuError && menuItems.length === 0 && (
               <div className="rounded-2xl border border-[#e7ece8] bg-white px-6 py-14 text-center text-[#68736c]">
-                <span className="mb-3 block text-4xl">🍽️</span>
+                <UtensilsCrossed className="mx-auto mb-3 h-10 w-10 text-slate-400" />
                 Không tìm thấy món phù hợp.
               </div>
             )}
@@ -593,7 +594,7 @@ export const RestaurantDetail = () => {
 
             <section id="about" className="scroll-mt-32 pt-14">
               <div className="mb-6">
-                <div className="mb-2 text-[11px] font-extrabold uppercase tracking-[.12em] text-[#2eae62]">
+                <div className="mb-2 text-[11px] font-extrabold uppercase tracking-[.12em] text-[#ff5a1f]">
                   Câu chuyện của quán
                 </div>
                 <h2 className="mb-0 text-3xl font-extrabold tracking-[-.03em]">Thông tin nhà hàng</h2>
@@ -616,7 +617,7 @@ export const RestaurantDetail = () => {
             <section id="reviews" className="scroll-mt-32 pt-14">
               <div className="mb-6 flex items-end justify-between gap-4 max-[600px]:items-start">
                 <div>
-                  <div className="mb-2 text-[11px] font-extrabold uppercase tracking-[.12em] text-[#2eae62]">
+                  <div className="mb-2 text-[11px] font-extrabold uppercase tracking-[.12em] text-[#ff5a1f]">
                     Trải nghiệm thực tế
                   </div>
                   <h2 className="mb-1 text-3xl font-extrabold tracking-[-.03em]">Khách hàng nói gì</h2>
@@ -675,7 +676,7 @@ export const RestaurantDetail = () => {
                       {review.customer.avatarUrl ? (
                         <img src={review.customer.avatarUrl} alt="" className="h-11 w-11 rounded-full object-cover" />
                       ) : (
-                        <span className="grid h-11 w-11 place-items-center rounded-full bg-[#dff7e7] text-xs font-extrabold text-[#167a3e]">
+                        <span className="grid h-11 w-11 place-items-center rounded-full bg-[#fff0e9] text-xs font-extrabold text-[#ff5a1f]">
                           {getInitials(review.customer.fullName)}
                         </span>
                       )}
@@ -747,7 +748,9 @@ export const RestaurantDetail = () => {
               )}
               {cartItems.length === 0 ? (
                 <div className="py-5 text-center">
-                  <span className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-[#fff0e9] text-2xl">🥡</span>
+                  <span className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-[#fff0e9]">
+                    <ShoppingBag className="h-6 w-6 text-[#ff5a1f]" />
+                  </span>
                   <b className="block text-sm">Giỏ hàng đang trống</b>
                   <p className="mb-0 mt-1 text-[11px] text-[#68736c]">Chọn món ngon ở thực đơn để bắt đầu.</p>
                 </div>
@@ -795,11 +798,11 @@ export const RestaurantDetail = () => {
 
             <div className="border-t border-[#e7ece8] bg-[#fbfdfb] p-5">
               <div className="mb-3 flex items-start gap-3 text-xs">
-                <Truck className="mt-0.5 h-4 w-4 shrink-0 text-[#2eae62]" />
+                <Truck className="mt-0.5 h-4 w-4 shrink-0 text-[#ff5a1f]" />
                 <span><b className="block">Giao trong {restaurant.delivery.minMinutes}–{restaurant.delivery.maxMinutes} phút</b><span className="text-[#68736c]">Bán kính tối đa {restaurant.delivery.maxDistanceKm ?? 8} km</span></span>
               </div>
               <div className="flex items-start gap-3 text-xs">
-                <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-[#2eae62]" />
+                <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-[#ff5a1f]" />
                 <span><b className="block">Giờ hoạt động</b><span className="text-[#68736c]">{PRICE_LABELS[restaurant.priceRange]}</span></span>
               </div>
               <div className="mt-4 grid gap-1.5 border-t border-[#e7ece8] pt-4 text-[11px]">
