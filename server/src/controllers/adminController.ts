@@ -8,6 +8,7 @@ import { MenuItem } from '../models/MenuItem.js'
 import { Order } from '../models/Order.js'
 import { Restaurant } from '../models/Restaurant.js'
 import { Review } from '../models/Review.js'
+import { recalculateRestaurantRatingSummary } from '../services/reviewService.js'
 import { User } from '../models/User.js'
 import { requestPasswordReset } from '../services/authService.js'
 import {
@@ -424,6 +425,7 @@ export const moderateAdminReview = async (req: AuthRequest, res: Response) => {
     const review = await Review.findOne({ _id: req.params.reviewId, deletedAt: null })
     if (!review) { res.status(404).json({ message: 'Không tìm thấy đánh giá.' }); return }
     const before = review.visibilityStatus; review.visibilityStatus = req.body.visibilityStatus; await review.save()
+    await recalculateRestaurantRatingSummary(review.restaurantId)
     await recordAudit({ request: req, actorId: adminId(req), actorRole: 'admin', action: 'review.visibility_changed', entityType: 'Review', entityId: review.id, reason: req.body.reason, before, after: review.visibilityStatus })
     res.json({ message: 'Đã cập nhật trạng thái đánh giá.', review })
   } catch (error: any) {

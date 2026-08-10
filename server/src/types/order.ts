@@ -13,6 +13,20 @@ export interface OrderSummary {
     name: string
     quantity: number
   }>
+  review?: {
+    _id: string
+    orderId: string
+    restaurantId: string
+    rating: number
+    content: string
+    visibilityStatus: 'visible' | 'hidden' | 'flagged'
+    ownerReply: {
+      content: string
+      createdAt: string
+    } | null
+    createdAt: string
+    updatedAt: string
+  } | null
 }
 
 export interface OrderHistoryPagination {

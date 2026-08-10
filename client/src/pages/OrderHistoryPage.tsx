@@ -4,6 +4,7 @@ import { orderService } from "../services/orderService";
 import { OrderSummary, OrderHistoryPagination } from "../types/order";
 import { useToast } from "../contexts/ToastContext";
 import { useCart } from "../contexts/CartContext";
+import { ReviewModal } from "../components/ReviewModal";
 import {
   Loader2,
   RotateCw,
@@ -68,6 +69,7 @@ function OrderHistoryPage() {
   const [orderToReorder, setOrderToReorder] = useState<OrderSummary | null>(
     null,
   );
+  const [orderToReview, setOrderToReview] = useState<OrderSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { fetchCart } = useCart();
@@ -139,6 +141,19 @@ function OrderHistoryPage() {
     } finally {
       setReorderingOrderId(null);
     }
+  };
+
+  const handleReviewChanged = (review: OrderSummary["review"]) => {
+    if (!orderToReview) return;
+    const orderId = orderToReview._id;
+    setOrders((currentOrders) =>
+      currentOrders.map((order) =>
+        order._id === orderId ? { ...order, review } : order,
+      ),
+    );
+    setOrderToReview((currentOrder) =>
+      currentOrder ? { ...currentOrder, review } : null,
+    );
   };
 
   if (loading) {
@@ -257,9 +272,17 @@ function OrderHistoryPage() {
                     {order.orderStatus === "delivered" && (
                       <button
                         type="button"
-                        className="px-4 py-2 bg-blue-500 text-white rounded-md text-sm font-medium hover:bg-blue-600 transition-colors duration-200 flex items-center justify-center"
+                        onClick={() => setOrderToReview(order)}
+                        className={`px-4 py-2 text-white rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center ${
+                          order.review
+                            ? "bg-amber-500 hover:bg-amber-600"
+                            : "bg-blue-500 hover:bg-blue-600"
+                        }`}
                       >
-                        <Star className="w-4 h-4 mr-2" /> Đánh giá
+                        <Star
+                          className={`w-4 h-4 mr-2 ${order.review ? "fill-white" : ""}`}
+                        />
+                        {order.review ? "Sửa đánh giá" : "Đánh giá"}
                       </button>
                     )}
                   </div>
@@ -355,6 +378,14 @@ function OrderHistoryPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {orderToReview && (
+        <ReviewModal
+          order={orderToReview}
+          onClose={() => setOrderToReview(null)}
+          onChanged={handleReviewChanged}
+        />
       )}
     </main>
   );

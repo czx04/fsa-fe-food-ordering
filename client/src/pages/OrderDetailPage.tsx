@@ -3,8 +3,9 @@ import { useState, useEffect } from "react";
 import { OrderDetail, CancelOrderPayload } from "../types/order";
 import { orderService } from "../services/orderService";
 import { socketService } from "../services/socketService";
-import { Loader2, XCircle, CheckCircle2, Trash2, X } from "lucide-react";
+import { Loader2, XCircle, CheckCircle2, Trash2, X, Star } from "lucide-react";
 import { useToast } from "../contexts/ToastContext";
+import { ReviewModal } from "../components/ReviewModal";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("vi-VN", {
@@ -46,6 +47,7 @@ function OrderDetailPage() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [isCancelling, setIsCancelling] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
@@ -281,6 +283,22 @@ function OrderDetailPage() {
                 <span className="font-semibold">Số điện thoại:</span>{" "}
                 {order.restaurantSnapshot.phone}
               </p>
+              {order.orderStatus === "delivered" && (
+                <button
+                  type="button"
+                  onClick={() => setShowReviewModal(true)}
+                  className={`mt-5 inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 font-semibold text-white transition-colors ${
+                    order.review
+                      ? "bg-amber-500 hover:bg-amber-600"
+                      : "bg-blue-500 hover:bg-blue-600"
+                  }`}
+                >
+                  <Star
+                    className={`h-4 w-4 ${order.review ? "fill-white" : ""}`}
+                  />
+                  {order.review ? "Sửa đánh giá" : "Đánh giá nhà hàng"}
+                </button>
+              )}
             </div>
           </div>
 
@@ -417,6 +435,18 @@ function OrderDetailPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {showReviewModal && (
+        <ReviewModal
+          order={order}
+          onClose={() => setShowReviewModal(false)}
+          onChanged={(review) =>
+            setOrder((currentOrder) =>
+              currentOrder ? { ...currentOrder, review } : currentOrder,
+            )
+          }
+        />
       )}
     </main>
   );
