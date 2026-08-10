@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../utils/api'
+import { KeyRound, AlertCircle, CheckCircle2, Lightbulb } from 'lucide-react'
 
 export const ForgotPassword = () => {
   const [step, setStep] = useState<1 | 2>(1)
@@ -62,14 +63,15 @@ export const ForgotPassword = () => {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6 bg-amber-50/40 text-slate-800">
-      <div className="w-full max-w-md bg-white p-8 sm:p-10 rounded-3xl shadow-xl shadow-orange-950/5 border border-orange-100">
+    <main className="min-h-screen flex items-center justify-center p-6 bg-slate-50/50 text-slate-800">
+      <div className="w-full max-w-md bg-white p-8 sm:p-10 rounded-3xl shadow-sm border border-slate-100">
         <Link to="/login" className="text-xs font-bold text-orange-600 hover:underline inline-block mb-4">
           ← Quay lại đăng nhập
         </Link>
 
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-          {step === 1 ? 'Quên mật khẩu 🔑' : 'Đặt lại mật khẩu mới 🔑'}
+        <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+          <span>{step === 1 ? 'Quên mật khẩu' : 'Đặt lại mật khẩu mới'}</span>
+          <KeyRound className="w-5 h-5 text-orange-500" />
         </h1>
         <p className="text-xs text-slate-500 mt-1 mb-6">
           {step === 1 
@@ -78,14 +80,16 @@ export const ForgotPassword = () => {
         </p>
 
         {error && (
-          <div className="p-4 mb-4 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm font-medium">
-            ⚠️ {error}
+          <div className="p-4 mb-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-sm font-medium flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
         {success && (
-          <div className="p-4 mb-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 text-sm font-medium">
-            ✅ {success}
+          <div className="p-4 mb-4 rounded-xl bg-green-50 border border-green-200 text-green-600 text-sm font-medium flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-green-500" />
+            <span>{success}</span>
           </div>
         )}
 
@@ -108,7 +112,7 @@ export const ForgotPassword = () => {
             <button 
               type="submit" 
               disabled={isLoading}
-              className="w-full py-3.5 px-4 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/25 transition text-sm disabled:opacity-70"
+              className="w-full py-3.5 px-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl shadow-sm transition text-sm disabled:opacity-70"
             >
               {isLoading ? 'Đang gửi...' : 'Gửi mã xác nhận'}
             </button>
@@ -116,8 +120,9 @@ export const ForgotPassword = () => {
         ) : (
           <form onSubmit={handleResetPassword} className="space-y-4">
             {demoToken && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs">
-                💡 <b>Mã xác nhận (Demo/Test):</b> <code className="text-orange-600 font-bold">{demoToken}</code>
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs flex items-center gap-2">
+                <Lightbulb className="w-4 h-4 text-amber-600 shrink-0" />
+                <span><b>Mã xác nhận (Demo/Test):</b> <code className="text-orange-600 font-bold">{demoToken}</code></span>
               </div>
             )}
 
@@ -166,7 +171,7 @@ export const ForgotPassword = () => {
             <button 
               type="submit" 
               disabled={isLoading}
-              className="w-full py-3.5 px-4 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/25 transition text-sm disabled:opacity-70"
+              className="w-full py-3.5 px-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl shadow-sm transition text-sm disabled:opacity-70"
             >
               {isLoading ? 'Đang cập nhật...' : 'Đổi mật khẩu'}
             </button>

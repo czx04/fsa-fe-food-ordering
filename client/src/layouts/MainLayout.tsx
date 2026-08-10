@@ -78,7 +78,7 @@ export const MainLayout = () => {
                   )}
                 </Link>
                 <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-orange-500 to-amber-500 text-white font-bold text-xs flex items-center justify-center shadow">
+                  <div className="w-8 h-8 rounded-full bg-orange-500 text-white font-bold text-xs flex items-center justify-center shadow-sm">
                     {user?.fullName?.charAt(0) || "U"}
                   </div>
                   <span className="hidden sm:inline text-xs font-semibold text-slate-700 max-w-[120px] truncate">
@@ -105,7 +105,7 @@ export const MainLayout = () => {
                 </Link>
                 <Link
                   to="/register"
-                  className="px-4 py-2 text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 rounded-xl shadow-md shadow-orange-500/20 transition"
+                  className="px-4 py-2 text-xs sm:text-sm font-bold text-white bg-orange-500 hover:bg-orange-600 rounded-xl shadow-sm transition"
                 >
                   Đăng ký
                 </Link>

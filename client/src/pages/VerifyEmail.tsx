@@ -49,8 +49,8 @@ export const VerifyEmail = () => {
 
           {!loading && message && (
             <div>
-              <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
-              <h2 className="text-emerald-600 mb-2">Xác thực thành công!</h2>
+              <CheckCircle2 className="w-16 h-16 text-orange-500 mx-auto mb-4" />
+              <h2 className="text-orange-600 mb-2">Xác thực thành công!</h2>
               <p className="muted mb-6">{message}</p>
               <Link to="/login" className="btn" style={{ textDecoration: 'none' }}>
                 Đăng nhập ngay

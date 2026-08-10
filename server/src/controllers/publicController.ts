@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import { MenuItem } from '../models/MenuItem.js'
+import { Coupon } from '../models/Coupon.js'
 import {
   listCuisineCategories,
   listPublicRestaurants,
@@ -168,3 +169,20 @@ export const getRestaurantMenuItemDetail = async (
     handlePublicDetailError(error, res, 'Lỗi server khi lấy chi tiết món ăn')
   }
 }
+
+export const getPromotions = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const coupons = await Coupon.find({
+      status: 'active',
+      endsAt: { $gte: new Date() },
+    })
+      .sort({ createdAt: -1 })
+      .limit(6)
+      .lean()
+
+    res.json(coupons)
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi server khi lấy mã khuyến mãi' })
+  }
+}
+

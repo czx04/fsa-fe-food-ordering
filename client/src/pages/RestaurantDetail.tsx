@@ -12,6 +12,7 @@ import {
   Star,
   Store,
   Truck,
+  Utensils,
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -430,12 +431,12 @@ export const RestaurantDetail = () => {
                 <span
                   className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-extrabold ${
                     restaurant.isOpenNow
-                      ? "bg-[#e5f8eb] text-[#187a3d]"
+                      ? "bg-orange-50 text-orange-600"
                       : "bg-white/90 text-slate-600"
                   }`}
                 >
                   <span
-                    className={`h-2 w-2 rounded-full ${restaurant.isOpenNow ? "bg-[#29b55c]" : "bg-slate-400"}`}
+                    className={`h-2 w-2 rounded-full ${restaurant.isOpenNow ? "bg-orange-500" : "bg-slate-400"}`}
                   />
                   {restaurant.isOpenNow ? "Đang mở cửa" : "Hiện đang đóng cửa"}
                 </span>
@@ -526,7 +527,7 @@ export const RestaurantDetail = () => {
           <div className="min-w-0">
             <div className="mb-6 flex items-end justify-between gap-5 max-[760px]:flex-col max-[760px]:items-stretch">
               <div>
-                <div className="mb-2 text-[11px] font-extrabold uppercase tracking-[.12em] text-[#2eae62]">
+                <div className="mb-2 text-[11px] font-extrabold uppercase tracking-[.12em] text-orange-600">
                   Thực đơn hôm nay
                 </div>
                 <h2 className="mb-0 text-3xl font-extrabold tracking-[-.03em]">
@@ -588,7 +589,7 @@ export const RestaurantDetail = () => {
             )}
             {!menuLoading && !menuError && menuItems.length === 0 && (
               <div className="rounded-2xl border border-[#e7ece8] bg-white px-6 py-14 text-center text-[#68736c]">
-                <span className="mb-3 block text-4xl">🍽️</span>
+                <Utensils className="mx-auto mb-3 h-10 w-10 text-orange-400" />
                 Không tìm thấy món phù hợp.
               </div>
             )}
@@ -669,7 +670,7 @@ export const RestaurantDetail = () => {
 
             <section id="about" className="scroll-mt-32 pt-14">
               <div className="mb-6">
-                <div className="mb-2 text-[11px] font-extrabold uppercase tracking-[.12em] text-[#2eae62]">
+                <div className="mb-2 text-[11px] font-extrabold uppercase tracking-[.12em] text-orange-600">
                   Câu chuyện của quán
                 </div>
                 <h2 className="mb-0 text-3xl font-extrabold tracking-[-.03em]">
@@ -709,7 +710,7 @@ export const RestaurantDetail = () => {
             <section id="reviews" className="scroll-mt-32 pt-14">
               <div className="mb-6 flex items-end justify-between gap-4 max-[600px]:items-start">
                 <div>
-                  <div className="mb-2 text-[11px] font-extrabold uppercase tracking-[.12em] text-[#2eae62]">
+                  <div className="mb-2 text-[11px] font-extrabold uppercase tracking-[.12em] text-orange-600">
                     Trải nghiệm thực tế
                   </div>
                   <h2 className="mb-1 text-3xl font-extrabold tracking-[-.03em]">

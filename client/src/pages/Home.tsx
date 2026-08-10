@@ -3,12 +3,13 @@ import { Link } from "react-router-dom";
 import { api } from "../utils/api";
 import {
   DEFAULT_DISH_IMAGE_URL,
-  DEFAULT_RESTAURANT_IMAGE_URL,
   HOME_PROMOTION_IMAGE_URL,
-  resolveAssetUrl,
 } from "../utils/constants";
 import { useAuth } from "../contexts/AuthContext";
 import { LoginModal } from "../components/LoginModal";
+import { MenuItemCard, MenuItemCardData } from "../components/cards/MenuItemCard";
+import { RestaurantCard, RestaurantCardData } from "../components/cards/RestaurantCard";
+import { useCart } from "../contexts/CartContext";
 import {
   Zap,
   Star,
@@ -16,15 +17,13 @@ import {
   Check,
   MapPin,
   Search,
-  Heart,
-  Plus,
-  Clock,
   Utensils,
   Soup,
   Coffee,
   Pizza,
   Salad,
   ArrowRight,
+  Tag,
 } from "lucide-react";
 
 interface CuisineCategory {
@@ -34,65 +33,61 @@ interface CuisineCategory {
   slug: string;
 }
 
-interface Restaurant {
+interface CouponItem {
   _id: string;
-  name: string;
-  slug: string;
-  address: string;
-  phone: string;
-  coverImage?: string;
-  rating: number;
-  openTime: string;
-  closeTime: string;
-}
-
-interface MenuItem {
-  _id: string;
-  name: string;
-  slug: string;
-  description?: string;
-  price: number;
-  imageUrl?: string | null;
-  imageUrls?: string[];
-  restaurantId?: {
-    _id: string;
-    name: string;
-    slug: string;
-  };
+  code: string;
+  discountType: "percentage" | "fixed";
+  discountValue: number;
+  minOrderAmount: number;
+  maxDiscountAmount?: number;
 }
 
 export const Home = () => {
   const { isAuthenticated } = useAuth();
+  const { addItemToCart } = useCart();
   const [categories, setCategories] = useState<CuisineCategory[]>([]);
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [restaurants, setRestaurants] = useState<RestaurantCardData[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItemCardData[]>([]);
+  const [promotions, setPromotions] = useState<CouponItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [selectedItemName, setSelectedItemName] = useState("");
 
-  const handleAddToCart = (item: MenuItem) => {
+  const handleAddToCart = async (item: MenuItemCardData) => {
     if (!isAuthenticated) {
       setSelectedItemName(item.name);
       setIsLoginModalOpen(true);
       return;
     }
-    alert(`Đã thêm "${item.name}" vào giỏ hàng!`);
+    try {
+      await addItemToCart({
+        restaurantId: item.restaurantId?._id || "",
+        menuItemId: item._id,
+        quantity: 1,
+      });
+      alert(`Đã thêm "${item.name}" vào giỏ hàng!`);
+    } catch (err) {
+      console.error(err);
+      alert("Không thể thêm vào giỏ hàng!");
+    }
   };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [catRes, resRes, menuRes] = await Promise.all([
+        const [catRes, resRes, menuRes, promoRes] = await Promise.all([
           api.get("/public/categories"),
           api.get("/public/restaurants?limit=6"),
           api.get("/public/menu-items?limit=4"),
+          api.get("/public/promotions").catch(() => ({ data: [] })),
         ]);
         setCategories(catRes.data);
         setRestaurants(
           Array.isArray(resRes.data) ? resRes.data : resRes.data.data,
         );
         setMenuItems(menuRes.data);
+        setPromotions(promoRes.data || []);
       } catch (error) {
         console.error("Lỗi tải dữ liệu trang chủ:", error);
       } finally {
@@ -109,20 +104,18 @@ export const Home = () => {
     if (name.includes("Trà Sữa") || name.includes("Cafe"))
       return <Coffee className="w-6 h-6 text-amber-600" />;
     if (name.includes("Healthy") || name.includes("Salad"))
-      return <Salad className="w-6 h-6 text-emerald-500" />;
+      return <Salad className="w-6 h-6 text-orange-500" />;
     if (name.includes("Pizza") || name.includes("Âu"))
       return <Pizza className="w-6 h-6 text-rose-500" />;
     return <Utensils className="w-6 h-6 text-orange-500" />;
   };
 
-  const formatMoney = (val: number) => {
-    return new Intl.NumberFormat("vi-VN").format(val) + "đ";
-  };
+  const activeCoupon = promotions.length > 0 ? promotions[0] : null;
 
   return (
     <main className="bg-slate-50/50 min-h-screen text-slate-800 pb-16">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-orange-500/10 via-amber-500/5 to-transparent pt-8 pb-16">
+      <section className="relative overflow-hidden bg-orange-50/60 pt-8 pb-16 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             {/* Copy */}
@@ -133,7 +126,7 @@ export const Home = () => {
               </span>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 leading-[1.15] tracking-tight">
                 Đói bụng ư? Món ngon{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-amber-500">
+                <span className="text-orange-500">
                   đến liền!
                 </span>
               </h1>
@@ -143,7 +136,7 @@ export const Home = () => {
               </p>
 
               {/* Search bar */}
-              <div className="bg-white p-2 sm:p-3 rounded-2xl shadow-xl shadow-orange-950/5 border border-slate-100 flex flex-col sm:flex-row gap-2 max-w-2xl">
+              <div className="bg-white p-2 sm:p-3 rounded-2xl shadow-md border border-slate-200/80 flex flex-col sm:flex-row gap-2 max-w-2xl">
                 <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl text-sm font-medium border border-slate-200 sm:w-1/3">
                   <MapPin className="w-4 h-4 text-orange-500 shrink-0" />
                   <input
@@ -161,7 +154,7 @@ export const Home = () => {
                 </div>
                 <Link
                   to="/restaurants"
-                  className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-sm rounded-xl text-center shadow-md shadow-orange-500/20 transition flex items-center justify-center gap-2"
+                  className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm rounded-xl text-center shadow-sm transition flex items-center justify-center gap-2"
                 >
                   <Search className="w-4 h-4" />
                   <span>Tìm món</span>
@@ -171,15 +164,15 @@ export const Home = () => {
               {/* Badges */}
               <div className="flex flex-wrap gap-4 text-xs font-semibold text-slate-500 pt-2">
                 <span className="flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-emerald-500 stroke-[3]" />{" "}
+                  <Check className="w-3.5 h-3.5 text-green-500 stroke-[3]" />{" "}
                   1.000+ nhà hàng
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-emerald-500 stroke-[3]" />{" "}
+                  <Check className="w-3.5 h-3.5 text-green-500 stroke-[3]" />{" "}
                   Giao nhanh 30 phút
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-emerald-500 stroke-[3]" />{" "}
+                  <Check className="w-3.5 h-3.5 text-green-500 stroke-[3]" />{" "}
                   Thanh toán an toàn
                 </span>
               </div>
@@ -188,15 +181,14 @@ export const Home = () => {
             {/* Hero Art */}
             <div className="lg:col-span-5 relative">
               <div className="relative mx-auto w-full max-w-md">
-                <div className="absolute -inset-4 bg-gradient-to-r from-orange-400 to-amber-300 rounded-3xl blur-2xl opacity-20"></div>
                 <img
                   src={DEFAULT_DISH_IMAGE_URL}
                   alt="Món ăn nổi bật"
-                  className="relative rounded-3xl shadow-2xl w-full h-[400px] object-cover border-4 border-white"
+                  className="relative rounded-3xl shadow-xl w-full h-[400px] object-cover border-4 border-white"
                 />
 
                 {/* Floating Cards */}
-                <div className="absolute -top-4 -left-4 bg-white p-3 sm:p-4 rounded-2xl shadow-xl border border-slate-100 flex items-center gap-3">
+                <div className="absolute -top-4 -left-4 bg-white p-3 sm:p-4 rounded-2xl shadow-md border border-slate-100 flex items-center gap-3">
                   <div className="p-2 bg-orange-100 rounded-xl text-orange-600">
                     <Zap className="w-5 h-5 fill-orange-500" />
                   </div>
@@ -210,7 +202,7 @@ export const Home = () => {
                   </div>
                 </div>
 
-                <div className="absolute bottom-6 -right-4 bg-white p-3 sm:p-4 rounded-2xl shadow-xl border border-slate-100 flex items-center gap-3">
+                <div className="absolute bottom-6 -right-4 bg-white p-3 sm:p-4 rounded-2xl shadow-md border border-slate-100 flex items-center gap-3">
                   <div className="p-2 bg-amber-100 rounded-xl text-amber-600">
                     <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
                   </div>
@@ -224,12 +216,12 @@ export const Home = () => {
                   </div>
                 </div>
 
-                <div className="absolute -bottom-6 left-8 bg-white p-3 sm:p-4 rounded-2xl shadow-xl border border-slate-100 flex items-center gap-3">
-                  <div className="p-2 bg-emerald-100 rounded-xl text-emerald-600">
-                    <Gift className="w-5 h-5" />
+                <div className="absolute -bottom-6 left-8 bg-white p-3 sm:p-4 rounded-2xl shadow-md border border-slate-100 flex items-center gap-3">
+                  <div className="p-2 bg-orange-100 rounded-xl text-orange-600">
+                    <Gift className="w-5 h-5 text-orange-500" />
                   </div>
                   <div>
-                    <div className="text-xs font-bold text-emerald-600">
+                    <div className="text-xs font-bold text-orange-600">
                       FREESHIP
                     </div>
                     <div className="text-[10px] text-slate-400">Đơn từ 99k</div>
@@ -279,7 +271,7 @@ export const Home = () => {
                     <strong className="block text-sm font-bold text-slate-800 group-hover:text-orange-600 transition">
                       {c.name}
                     </strong>
-                    <small className="text-[10px] font-medium text-emerald-600">
+                    <small className="text-[10px] font-medium text-orange-600">
                       Đang mở
                     </small>
                   </div>
@@ -319,107 +311,55 @@ export const Home = () => {
             <p className="text-slate-400 text-sm">Đang tải món ăn...</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {menuItems.map((f, i) => (
-                <article
-                  className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl transition duration-300 overflow-hidden flex flex-col group"
-                  key={f._id}
-                >
-                  <Link
-                    to={
-                      f.restaurantId?.slug
-                        ? `/restaurants/${f.restaurantId.slug}/menu-items/${f.slug}`
-                        : "/restaurants"
-                    }
-                    className="relative block aspect-[4/3] overflow-hidden"
-                  >
-                    <img
-                      src={resolveAssetUrl(
-                        f.imageUrl || f.imageUrls?.[0],
-                        DEFAULT_DISH_IMAGE_URL,
-                      )}
-                      alt={f.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                      onError={(event) => {
-                        event.currentTarget.onerror = null;
-                        event.currentTarget.src = DEFAULT_DISH_IMAGE_URL;
-                      }}
-                    />
-                    <span className="absolute top-3 left-3 px-2.5 py-1 bg-orange-500 text-white text-[10px] font-bold rounded-lg uppercase shadow">
-                      {i % 2 === 0 ? "-20%" : "Bán chạy"}
-                    </span>
-                    <button className="absolute top-3 right-3 w-8 h-8 bg-white/80 backdrop-blur rounded-full flex items-center justify-center text-slate-600 hover:text-red-500 transition shadow">
-                      <Heart className="w-4 h-4" />
-                    </button>
-                  </Link>
-                  <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
-                    <div>
-                      <h3 className="font-bold text-slate-900 group-hover:text-orange-600 transition line-clamp-1">
-                        {f.name}
-                      </h3>
-                      <p className="text-xs text-slate-400 mt-1">
-                        {f.restaurantId?.name || "Nhà hàng"}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-3 text-xs font-medium text-slate-500">
-                      <span className="flex items-center gap-1 text-amber-500 font-bold">
-                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />{" "}
-                        4.8
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" /> 20–30
-                        phút
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                      <b className="text-base font-extrabold text-orange-600">
-                        {formatMoney(f.price)}
-                      </b>
-                      <button
-                        onClick={() => handleAddToCart(f)}
-                        className="w-8 h-8 rounded-xl bg-orange-50 hover:bg-orange-500 hover:text-white text-orange-600 font-bold transition flex items-center justify-center"
-                        title="Thêm vào giỏ"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </article>
+              {menuItems.map((item) => (
+                <MenuItemCard
+                  key={item._id}
+                  item={item}
+                  onAddToCart={handleAddToCart}
+                />
               ))}
             </div>
           )}
         </div>
       </section>
 
-      {/* Promo */}
+      {/* Promo Banner from Coupon API */}
       <section className="py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gradient-to-r from-orange-500 to-amber-500 rounded-3xl p-8 sm:p-12 text-white shadow-xl shadow-orange-500/20 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="bg-orange-500 rounded-3xl p-8 sm:p-12 text-white shadow-lg relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="max-w-xl space-y-4 relative z-10">
-              <span className="px-3 py-1 bg-white/20 text-white text-xs font-bold uppercase rounded-full backdrop-blur">
-                Ưu đãi hôm nay
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/20 text-white text-xs font-bold uppercase rounded-full">
+                <Tag className="w-3.5 h-3.5" />
+                {activeCoupon ? "Mã ưu đãi độc quyền" : "Ưu đãi đặc biệt"}
               </span>
               <h2 className="text-3xl sm:text-4xl font-black tracking-tight leading-tight">
-                Giảm 20% cho đơn đầu tiên
+                {activeCoupon
+                  ? activeCoupon.discountType === "percentage"
+                    ? `Giảm tới ${activeCoupon.discountValue}% cho đơn hàng!`
+                    : `Giảm trực tiếp ${new Intl.NumberFormat("vi-VN").format(activeCoupon.discountValue)}đ!`
+                  : "Giảm 20% cho đơn hàng đầu tiên"}
               </h2>
-              <p className="text-amber-100 text-sm leading-relaxed">
+              <p className="text-orange-100 text-sm leading-relaxed">
                 Nhập mã{" "}
-                <b className="bg-white text-orange-600 px-2 py-0.5 rounded font-extrabold">
-                  HELLOMAM
+                <b className="bg-white text-orange-600 px-2.5 py-1 rounded-lg font-extrabold text-base tracking-wide shadow-sm">
+                  {activeCoupon ? activeCoupon.code : "FOODIE20"}
                 </b>{" "}
-                và tận hưởng bữa ăn ngon hơn với giá mềm hơn.
+                {activeCoupon?.minOrderAmount
+                  ? `cho đơn từ ${new Intl.NumberFormat("vi-VN").format(activeCoupon.minOrderAmount)}đ`
+                  : "và tận hưởng bữa ăn ngon chuẩn vị."}
               </p>
               <Link
                 to="/restaurants"
-                className="inline-flex items-center gap-2 mt-4 px-6 py-3 bg-slate-900 hover:bg-black text-white font-bold text-sm rounded-xl shadow-lg transition"
+                className="inline-flex items-center gap-2 mt-4 px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl shadow-md transition"
               >
-                <span>Đặt món ngay</span>
+                <span>Khám phá ngay</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
             <img
               src={HOME_PROMOTION_IMAGE_URL}
               alt="Khuyến mãi"
-              className="w-72 h-48 object-cover rounded-2xl shadow-2xl transform md:rotate-3 border-4 border-white/20 relative z-10"
+              className="w-72 h-48 object-cover rounded-2xl shadow-xl transform md:rotate-2 border-4 border-white/20 relative z-10"
             />
           </div>
         </div>
@@ -450,69 +390,8 @@ export const Home = () => {
             <p className="text-slate-400 text-sm">Đang tải nhà hàng...</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {restaurants.map((r, i) => (
-                <article
-                  className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl transition duration-300 overflow-hidden flex flex-col group"
-                  key={r._id}
-                >
-                  <div className="relative aspect-[16/9] overflow-hidden">
-                    <Link
-                      to={`/restaurants/${r.slug}`}
-                      className="block h-full"
-                    >
-                      <img
-                        src={resolveAssetUrl(
-                          r.coverImage,
-                          DEFAULT_RESTAURANT_IMAGE_URL,
-                        )}
-                        alt={r.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                        onError={(event) => {
-                          event.currentTarget.onerror = null;
-                          event.currentTarget.src = DEFAULT_RESTAURANT_IMAGE_URL;
-                        }}
-                      />
-                      <span className="absolute top-3 left-3 px-2.5 py-1 bg-emerald-500 text-white text-[10px] font-bold rounded-lg uppercase shadow">
-                        {i === 0 ? "Hot" : "Mở cửa"}
-                      </span>
-                    </Link>
-                    <button className="absolute top-3 right-3 w-8 h-8 bg-white/80 backdrop-blur rounded-full flex items-center justify-center text-slate-600 hover:text-red-500 transition shadow">
-                      <Heart className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
-                    <div>
-                      <Link to={`/restaurants/${r.slug}`}>
-                        <h3 className="font-bold text-slate-900 group-hover:text-orange-600 transition text-base line-clamp-1">
-                          {r.name}
-                        </h3>
-                      </Link>
-                      <p className="text-xs text-slate-400 mt-1 line-clamp-1">
-                        {r.address}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-4 text-xs font-medium text-slate-500">
-                      <span className="flex items-center gap-1 text-amber-500 font-bold">
-                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />{" "}
-                        {r.rating || 4.8}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-slate-400" />{" "}
-                        {r.openTime} - {r.closeTime}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs font-medium">
-                      <span className="text-slate-400">Miễn phí giao hàng</span>
-                      <Link
-                        to={`/restaurants/${r.slug}`}
-                        className="font-bold text-orange-600 hover:text-orange-700 transition flex items-center gap-1"
-                      >
-                        <span>Xem quán</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </Link>
-                    </div>
-                  </div>
-                </article>
+              {restaurants.map((r) => (
+                <RestaurantCard key={r._id} restaurant={r} />
               ))}
             </div>
           )}
