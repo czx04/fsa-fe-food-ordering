@@ -2,7 +2,8 @@ import { Link, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { OrderDetail, CancelOrderPayload } from "../types/order";
 import { orderService } from "../services/orderService";
-import { Loader2, XCircle, CheckCircle2, Phone } from "lucide-react";
+import { Loader2, XCircle, CheckCircle2, Trash2, X } from "lucide-react";
+import { useToast } from "../contexts/ToastContext";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("vi-VN", {
@@ -44,7 +45,7 @@ function OrderDetailPage() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [isCancelling, setIsCancelling] = useState(false);
-  const [cancelError, setCancelError] = useState("");
+  const toast = useToast();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -71,19 +72,19 @@ function OrderDetailPage() {
     if (!id || !cancelReason) return;
 
     setIsCancelling(true);
-    setCancelError("");
     try {
       const payload: CancelOrderPayload = { reason: cancelReason };
       const response = await orderService.cancelOrder(id, payload);
       setOrder(response.order); // Update order with cancelled status
       setShowCancelModal(false);
-      alert("Đơn hàng đã được hủy thành công.");
+      toast.success("Đơn hàng đã được hủy thành công.");
     } catch (err: any) {
       console.error("Lỗi hủy đơn hàng:", err);
-      setCancelError(
+      toast.error(
         err.response?.data?.message ||
           "Không thể hủy đơn hàng. Vui lòng thử lại.",
       );
+      setShowCancelModal(false);
     } finally {
       setIsCancelling(false);
     }
@@ -132,10 +133,6 @@ function OrderDetailPage() {
   }
 
   const isCancellable = order.orderStatus === "pending";
-  const isPreparingOrLater =
-    orderStatusSteps.indexOf(order.orderStatus) >=
-    orderStatusSteps.indexOf("preparing");
-  const contactPhone = order.restaurantSnapshot.phone || "19008888"; // Fallback to general support
 
   return (
     <main className="min-h-screen bg-gray-50 py-8">
@@ -223,29 +220,17 @@ function OrderDetailPage() {
                   </p>
                 )}
               </div>
-              <div className="mt-6 flex flex-col sm:flex-row gap-4">
-                {isCancellable && (
+              {isCancellable && (
+                <div className="mt-6 flex flex-col sm:flex-row gap-4">
                   <button
                     type="button"
                     onClick={() => setShowCancelModal(true)}
-                    className="w-full sm:w-auto px-6 py-3 border border-red-500 text-red-500 rounded-md font-semibold hover:bg-red-50 transition-colors duration-200"
+                    className="w-full sm:w-auto px-6 py-3 border border-red-500 text-red-500 rounded-md font-semibold hover:bg-red-50 transition-colors duration-200 flex items-center justify-center gap-2"
                   >
-                    Hủy đơn hàng
+                    <XCircle className="w-4 h-4" /> Hủy đơn hàng
                   </button>
-                )}
-                {isPreparingOrLater && !isCancellable && (
-                  <p className="text-red-500 text-sm font-medium">
-                    Đơn hàng đang được chuẩn bị, không thể hủy.
-                  </p>
-                )}
-                <a
-                  href={`tel:${contactPhone}`}
-                  className="w-full sm:w-auto px-6 py-3 bg-blue-500 text-white rounded-md font-semibold hover:bg-blue-600 transition-colors duration-200 flex items-center justify-center gap-2"
-                >
-                  <Phone className="w-4 h-4" />
-                  Liên hệ hỗ trợ
-                </a>
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Restaurant Info */}
@@ -275,8 +260,8 @@ function OrderDetailPage() {
                 Các món đã đặt
               </h2>
               <div className="space-y-4 mb-6">
-                {order.items.map((item, index) => (
-                  <div key={index} className="flex items-center">
+                {order.items.map((item) => (
+                  <div key={item.menuItemId} className="flex items-center">
                     <div className="bg-gray-100 rounded-md px-2 py-1 font-bold mr-4">
                       {item.quantity}x
                     </div>
@@ -341,12 +326,6 @@ function OrderDetailPage() {
             <p className="text-gray-600 mb-6">
               Vui lòng chọn lý do hủy đơn hàng của bạn:
             </p>
-            {cancelError && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
-                <strong className="font-bold">Lỗi!</strong>
-                <span className="block sm:inline"> {cancelError}</span>
-              </div>
-            )}
             <div className="space-y-3 mb-6">
               <label className="flex items-center">
                 <input
@@ -386,17 +365,23 @@ function OrderDetailPage() {
               <button
                 type="button"
                 onClick={() => setShowCancelModal(false)}
-                className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 font-semibold hover:bg-gray-100 transition-colors duration-200"
+                className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 font-semibold hover:bg-gray-100 transition-colors duration-200 flex items-center justify-center gap-2"
               >
-                Đóng
+                <X className="w-4 h-4" /> Đóng
               </button>
               <button
                 type="button"
                 onClick={handleCancelOrder}
                 disabled={isCancelling || !cancelReason}
-                className="px-6 py-2 bg-red-500 text-white rounded-md font-semibold hover:bg-red-600 transition-colors duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="px-6 py-2 bg-red-500 text-white rounded-md font-semibold hover:bg-red-600 transition-colors duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {isCancelling ? "Đang hủy..." : "Xác nhận hủy"}
+                {isCancelling ? (
+                  "Đang hủy..."
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" /> Xác nhận hủy
+                  </>
+                )}
               </button>
             </div>
           </div>

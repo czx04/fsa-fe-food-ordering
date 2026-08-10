@@ -14,9 +14,39 @@ export interface IUserAddress {
   city: string
   location?: {
     type: 'Point'
-    coordinates: [number, number] // [lng, lat]
+    coordinates: [number, number]
   }
   isDefault: boolean
+}
+
+const normalizeAddressLocation = (address: IUserAddress): IUserAddress => {
+  const rawLocation = address.location
+
+  if (!rawLocation?.coordinates) {
+    address.location = undefined
+    return address
+  }
+
+  const [longitude, latitude] = rawLocation.coordinates
+  const hasValidCoordinates =
+    Array.isArray(rawLocation.coordinates) &&
+    rawLocation.coordinates.length === 2 &&
+    typeof longitude === 'number' &&
+    typeof latitude === 'number' &&
+    Number.isFinite(longitude) &&
+    Number.isFinite(latitude)
+
+  if (!hasValidCoordinates) {
+    address.location = undefined
+    return address
+  }
+
+  address.location = {
+    type: 'Point',
+    coordinates: [Number(longitude), Number(latitude)],
+  }
+
+  return address
 }
 
 export interface IUser extends Document {
@@ -114,5 +144,13 @@ const UserSchema = new Schema<IUser>(
 UserSchema.index({ role: 1, status: 1 })
 // Index hỗ trợ tìm kiếm khoảng cách theo địa chỉ
 UserSchema.index({ 'addresses.location': '2dsphere' })
+
+UserSchema.pre('save', async function () {
+  if (Array.isArray(this.addresses)) {
+    this.addresses.forEach((address: IUserAddress) => {
+      normalizeAddressLocation(address)
+    })
+  }
+})
 
 export const User = mongoose.model<IUser>('User', UserSchema)

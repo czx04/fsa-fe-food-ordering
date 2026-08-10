@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import { Edit, PlusCircle, Save, ShoppingBag, X } from "lucide-react";
 import { UserAddress, AddAddressPayload } from "../types/user";
 import {
   CreateOrderPayload,
@@ -9,6 +10,8 @@ import {
 import { useCart } from "../contexts/CartContext";
 import { useAuth } from "../contexts/AuthContext";
 import { api } from "../utils/api";
+import { SERVER_STATIC_ASSET_BASE_URL } from "../utils/constants";
+import { useToast } from "../contexts/ToastContext";
 import { userService } from "../services/userService";
 
 const AddressModal = ({
@@ -31,6 +34,7 @@ const AddressModal = ({
     isDefault: false,
   });
   const [isSaving, setIsSaving] = useState(false);
+  const toast = useToast();
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -43,11 +47,16 @@ const AddressModal = ({
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSaving(true);
-    await onSave(formData);
-    setIsSaving(false);
+    try {
+      await onSave(formData);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Lưu địa chỉ thất bại.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -82,7 +91,30 @@ const AddressModal = ({
             required
             className="w-full p-2 border rounded"
           />
-          {/* Add other fields like ward, district, city */}
+          <input
+            name="ward"
+            value={formData.ward}
+            onChange={handleChange}
+            placeholder="Phường/Xã"
+            required
+            className="w-full p-2 border rounded"
+          />
+          <input
+            name="district"
+            value={formData.district}
+            onChange={handleChange}
+            placeholder="Quận/Huyện"
+            required
+            className="w-full p-2 border rounded"
+          />
+          <input
+            name="city"
+            value={formData.city}
+            onChange={handleChange}
+            placeholder="Tỉnh/Thành phố"
+            required
+            className="w-full p-2 border rounded"
+          />
           <label className="flex items-center">
             <input
               type="checkbox"
@@ -96,16 +128,22 @@ const AddressModal = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded border"
+              className="px-4 py-2 rounded border flex items-center"
             >
-              Hủy
+              <X className="w-4 h-4 mr-2" /> Hủy
             </button>
             <button
               type="submit"
               disabled={isSaving}
-              className="px-4 py-2 rounded bg-orange-500 text-white disabled:bg-gray-400"
+              className="px-4 py-2 rounded bg-orange-500 text-white disabled:bg-gray-400 flex items-center"
             >
-              {isSaving ? "Đang lưu..." : "Lưu địa chỉ"}
+              {isSaving ? (
+                "Đang lưu..."
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" /> Lưu địa chỉ
+                </>
+              )}
             </button>
           </div>
         </form>
@@ -131,8 +169,9 @@ function CheckoutPage() {
   const [isCalculating, setIsCalculating] = useState(true);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  const [error, setError] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"COD" | "VNPAY">("COD");
   const navigate = useNavigate();
+  const toast = useToast();
 
   useEffect(() => {
     if (user?.addresses && user.addresses.length > 0) {
@@ -157,7 +196,7 @@ function CheckoutPage() {
         setPricing(response.data);
       } catch (e) {
         console.error("Lỗi tính toán phí vận chuyển:", e);
-        setError("Không thể tính phí vận chuyển, vui lòng thử lại.");
+        toast.error("Không thể tính phí vận chuyển, vui lòng thử lại.");
       } finally {
         setIsCalculating(false);
       }
@@ -168,35 +207,28 @@ function CheckoutPage() {
   const restaurant = useMemo(() => cart?.restaurantId, [cart]);
 
   const handleSaveNewAddress = async (addressData: AddAddressPayload) => {
-    try {
-      const response = await userService.addAddress(addressData);
-      updateUser(response.user); // Update user in AuthContext
-      // Find the newly added address to select it. It won't have an _id from the payload.
-      // The response.user.addresses will have it.
-      const newAddress = response.user.addresses?.find(
-        (addr) =>
-          addr.line1 === addressData.line1 &&
-          addr.recipientName === addressData.recipientName,
-      );
-      if (newAddress) setSelectedAddress(newAddress);
-      setIsAddressModalOpen(false);
-    } catch (err) {
-      console.error("Lỗi thêm địa chỉ:", err);
-      alert("Không thể lưu địa chỉ mới. Vui lòng thử lại.");
-    }
+    const response = await userService.addAddress(addressData);
+    updateUser(response.user); // Update user in AuthContext
+    // Find the newly added address to select it.
+    const newAddress = response.user.addresses?.find(
+      (addr) =>
+        addr.line1 === addressData.line1 &&
+        addr.recipientName === addressData.recipientName,
+    );
+    if (newAddress) setSelectedAddress(newAddress);
+    setIsAddressModalOpen(false);
   };
 
   const handlePlaceOrder = async () => {
     if (!cart || !selectedAddress) {
-      setError("Vui lòng chọn địa chỉ giao hàng.");
+      toast.error("Vui lòng chọn địa chỉ giao hàng.");
       return;
     }
 
     setIsPlacingOrder(true);
-    setError("");
     try {
       const payload: CreateOrderPayload = {
-        paymentMethod: "COD",
+        paymentMethod: paymentMethod,
         deliveryAddress: {
           recipientName: selectedAddress.recipientName,
           phone: selectedAddress.phone,
@@ -224,7 +256,7 @@ function CheckoutPage() {
       }
     } catch (err: any) {
       console.error("Lỗi đặt hàng:", err);
-      setError(
+      toast.error(
         err.response?.data?.message || "Đặt hàng thất bại. Vui lòng thử lại.",
       );
     } finally {
@@ -260,7 +292,6 @@ function CheckoutPage() {
       <div className="container mx-auto px-4">
         <div className="mb-6">
           <h1 className="text-4xl font-bold text-gray-800 mt-1">Thanh toán</h1>
-          {error && <p className="text-red-500 mt-2">{error}</p>}
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
@@ -275,9 +306,9 @@ function CheckoutPage() {
                 <button
                   type="button"
                   onClick={() => setIsAddressModalOpen(true)}
-                  className="text-orange-500 hover:underline text-sm font-medium"
+                  className="text-orange-500 hover:underline text-sm font-medium flex items-center"
                 >
-                  Thay đổi
+                  Thay đổi <Edit className="w-3 h-3 ml-1" />
                 </button>
               </div>
               {selectedAddress ? (
@@ -296,9 +327,9 @@ function CheckoutPage() {
                   <button
                     type="button"
                     onClick={() => setIsAddressModalOpen(true)}
-                    className="text-orange-500 font-semibold mt-2"
+                    className="text-orange-500 font-semibold mt-2 flex items-center mx-auto"
                   >
-                    Thêm địa chỉ mới
+                    <PlusCircle className="w-4 h-4 mr-2" /> Thêm địa chỉ mới
                   </button>
                 </div>
               )}
@@ -312,17 +343,23 @@ function CheckoutPage() {
               <div className="space-y-4">
                 <label
                   htmlFor="payment-cod"
-                  className="flex items-center p-4 border rounded-lg cursor-pointer"
+                  className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all ${paymentMethod === "COD" ? "border-orange-500 ring-2 ring-orange-200" : "border-gray-200"}`}
+                  onClick={() => setPaymentMethod("COD")}
                 >
                   <input
                     type="radio"
                     name="payment"
                     id="payment-cod"
                     className="h-5 w-5 text-orange-600"
-                    defaultChecked
+                    aria-labelledby="payment-cod-label"
+                    checked={paymentMethod === "COD"}
+                    readOnly
                   />
                   <span className="ml-4">
-                    <span className="font-semibold block">
+                    <span
+                      id="payment-cod-label"
+                      className="font-semibold block"
+                    >
                       Thanh toán khi nhận hàng (COD)
                     </span>
                     <span className="text-sm text-gray-500">
@@ -331,42 +368,28 @@ function CheckoutPage() {
                   </span>
                 </label>
                 <label
-                  htmlFor="payment-wallet"
-                  className="flex items-center p-4 border rounded-lg cursor-pointer bg-gray-100 text-gray-400"
+                  htmlFor="payment-vnpay"
+                  className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all ${paymentMethod === "VNPAY" ? "border-orange-500 ring-2 ring-orange-200" : "border-gray-200"}`}
+                  onClick={() => setPaymentMethod("VNPAY")}
                 >
                   <input
                     type="radio"
                     name="payment"
-                    id="payment-wallet"
-                    className="h-5 w-5"
-                    disabled
+                    id="payment-vnpay"
+                    className="h-5 w-5 text-orange-600"
+                    aria-labelledby="payment-vnpay-label"
+                    checked={paymentMethod === "VNPAY"}
+                    readOnly
                   />
                   <span className="ml-4">
-                    <span className="font-semibold block">
-                      Ví điện tử (Sắp có)
+                    <span
+                      id="payment-vnpay-label"
+                      className="font-semibold block"
+                    >
+                      Thanh toán qua VNPAY
                     </span>
-                    <span className="text-sm">
-                      Thanh toán qua MoMo, ZaloPay, VNPay...
-                    </span>
-                  </span>
-                </label>
-                <label
-                  htmlFor="payment-card"
-                  className="flex items-center p-4 border rounded-lg cursor-pointer bg-gray-100 text-gray-400"
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    id="payment-card"
-                    className="h-5 w-5"
-                    disabled
-                  />
-                  <span className="ml-4">
-                    <span className="font-semibold block">
-                      Thẻ ngân hàng (Sắp có)
-                    </span>
-                    <span className="text-sm">
-                      Hỗ trợ thẻ ATM, Visa, Mastercard
+                    <span className="text-sm text-gray-500">
+                      Sử dụng thẻ ATM, thẻ tín dụng hoặc ví VNPAY.
                     </span>
                   </span>
                 </label>
@@ -385,8 +408,9 @@ function CheckoutPage() {
                   <div key={item.menuItemId._id} className="flex items-center">
                     <img
                       src={
-                        item.menuItemId.imageUrl ||
-                        "https://via.placeholder.com/64"
+                        item.menuItemId.imageUrl
+                          ? `${SERVER_STATIC_ASSET_BASE_URL}${item.menuItemId.imageUrl}`
+                          : "https://via.placeholder.com/64"
                       }
                       alt={item.menuItemId.name}
                       className="w-16 h-16 object-cover rounded-md mr-4"
@@ -417,7 +441,11 @@ function CheckoutPage() {
                 ) : (
                   <div className="flex justify-between">
                     <span>Phí giao hàng</span>
-                    <span>{formatCurrency(pricing?.deliveryFee ?? 0)}</span>
+                    <span className={!selectedAddress ? "text-gray-500" : ""}>
+                      {selectedAddress
+                        ? formatCurrency(pricing?.deliveryFee ?? 0)
+                        : "Chọn địa chỉ"}
+                    </span>
                   </div>
                 )}
                 {discountAmount > 0 && (
@@ -431,7 +459,9 @@ function CheckoutPage() {
                   {isCalculating ? (
                     <span className="h-7 w-32 bg-gray-200 rounded animate-pulse"></span>
                   ) : (
-                    <span>{formatCurrency(pricing?.finalTotal ?? 0)}</span>
+                    <span>
+                      {formatCurrency(pricing?.finalTotal ?? cart.grandTotal)}
+                    </span>
                   )}
                 </div>
               </div>
@@ -453,9 +483,15 @@ function CheckoutPage() {
                   !cart?.items.length ||
                   !selectedAddress
                 }
-                className="w-full bg-orange-500 text-white text-center py-3 rounded-md text-lg font-semibold hover:bg-orange-600 transition-colors duration-200 block disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="w-full bg-orange-500 text-white text-center py-3 rounded-md text-lg font-semibold hover:bg-orange-600 transition-colors duration-200 flex items-center justify-center disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                {isPlacingOrder ? "Đang xử lý..." : "Đặt hàng"}
+                {isPlacingOrder ? (
+                  "Đang xử lý..."
+                ) : (
+                  <>
+                    <ShoppingBag className="w-5 h-5 mr-2" /> Đặt hàng
+                  </>
+                )}
               </button>
             </div>
           </div>

@@ -15,6 +15,7 @@ import { RestaurantChangeModal } from "../components/RestaurantChangeModal";
 import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
 import { api } from "../utils/api";
+import { SERVER_STATIC_ASSET_BASE_URL } from "../utils/constants";
 import { AddToCartPayload } from "../types/cart";
 
 interface ItemOption {
@@ -36,7 +37,7 @@ interface RelatedItem {
   _id: string;
   name: string;
   slug: string;
-  imageUrl: string | null;
+  imageUrls: string[];
   basePrice: number;
   salePrice: number | null;
   effectivePrice: number;
@@ -164,7 +165,7 @@ export const DishDetail = () => {
   };
 
   const handleAddToCart = async (replace = false) => {
-    if (!item || !item.isAvailable) return;
+    if (!item?.isAvailable) return;
     setSelectionError("");
     setAddedMessage("");
 
@@ -264,7 +265,7 @@ export const DishDetail = () => {
             <div>
               <div className="overflow-hidden rounded-3xl border border-[#dce8df] bg-white">
                 <img
-                  src={images[activeImage]}
+                  src={`${SERVER_STATIC_ASSET_BASE_URL}${images[activeImage]}`}
                   alt={item.name}
                   className="h-[500px] w-full object-cover max-[600px]:h-[340px]"
                 />
@@ -478,7 +479,7 @@ export const DishDetail = () => {
                 >
                   <div className="relative h-40 overflow-hidden bg-[#eef8f1]">
                     <img
-                      src={related.imageUrl || "/assets/noodles.jpg"}
+                      src={`${SERVER_STATIC_ASSET_BASE_URL}${related.imageUrls?.[0] || "/assets/noodles.jpg"}`}
                       alt={related.name}
                       className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                     />
