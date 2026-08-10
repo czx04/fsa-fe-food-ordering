@@ -6,6 +6,13 @@ import { MenuItem } from '../models/MenuItem.js';
 import { Coupon } from '../models/Coupon.js';
 import createError from 'http-errors';
 
+const getIdString = (field: any): string => {
+  if (!field) return '';
+  if (typeof field === 'string') return field;
+  if (field._id) return field._id.toString();
+  return field.toString();
+};
+
 /**
  * Calculates the discount for a given cart and coupon.
  * @param cart The cart object.
@@ -13,10 +20,10 @@ import createError from 'http-errors';
  */
 const calculateDiscount = async (cart: ICart): Promise<number> => {
   if (cart.couponId) {
-    // Ensure coupon is populated or fetch it. findCartByUserId should populate it.
-    const coupon = cart.couponId instanceof Coupon ? cart.couponId : await Coupon.findById(cart.couponId);
+    const couponIdStr = getIdString(cart.couponId);
+    const coupon = (cart.couponId as any)?.code ? (cart.couponId as any) : await Coupon.findById(couponIdStr);
 
-    if (coupon?.status === 'active' && new Date() >= coupon.startsAt && new Date() <= coupon.endsAt) {
+    if (coupon?.status === 'active' && new Date() >= new Date(coupon.startsAt) && new Date() <= new Date(coupon.endsAt)) {
       if (cart.subtotal >= coupon.minOrderAmount) {
         let discount = 0;
         if (coupon.discountType === 'fixed') {
@@ -82,10 +89,9 @@ const createNewCartWithItem = async (userId: string, restaurantId: string, menuI
 };
 
 const updateExistingCartWithItem = async (cart: ICart, menuItem: any, quantity: number): Promise<ICart> => {
+  const menuItemIdStr = getIdString(menuItem._id);
   const itemIndex = cart.items.findIndex((item) => {
-    const menuItemValue = item.menuItemId as unknown as Types.ObjectId | { _id: Types.ObjectId };
-    const menuItemObjectId = menuItemValue instanceof Types.ObjectId ? menuItemValue : menuItemValue._id;
-    return menuItemObjectId.toString() === menuItem._id.toString();
+    return getIdString(item.menuItemId) === menuItemIdStr;
   });
 
   if (itemIndex > -1) {
@@ -127,25 +133,22 @@ export const addItemToCart = async (
     throw createError(404, 'Menu item not found');
   }
 
-  if (menuItem.restaurantId.toString() !== restaurantId) {
+  if (getIdString(menuItem.restaurantId) !== restaurantId) {
     throw createError(400, 'Menu item does not belong to this restaurant');
   }
 
   let cart = await cartRepository.findCartByUserId(userId);
 
-  if (cart && cart.restaurantId) {
-    const existingRestaurantId = (cart.restaurantId as any)._id?.toString() || cart.restaurantId.toString();
-    if (existingRestaurantId !== restaurantId) {
-      if (replace) {
-        // User confirmed replacement, clear the old cart.
-        await cartRepository.deleteCartByUserId(userId);
-        cart = null; // Set cart to null to create a new one.
-      } else {
-        // Conflict: cart has items from another restaurant.
-        const restaurant = cart.restaurantId as any;
-        const existingRestaurantName = (restaurant && 'name' in restaurant) ? restaurant.name : 'quán ăn khác';
-        throw createError(409, `Giỏ hàng của bạn đang có món từ nhà hàng "${existingRestaurantName}". Bạn có muốn xóa giỏ hàng cũ và thêm món ăn này không?`);
-      }
+  if (cart && getIdString(cart.restaurantId) !== restaurantId) {
+    if (replace) {
+      // User confirmed replacement, clear the old cart.
+      await cartRepository.deleteCartByUserId(userId);
+      cart = null; // Set cart to null to create a new one.
+    } else {
+      // Conflict: cart has items from another restaurant.
+      const restaurant = cart.restaurantId as any;
+      const existingRestaurantName = (restaurant && 'name' in restaurant) ? restaurant.name : 'quán ăn khác';
+      throw createError(409, `Giỏ hàng của bạn đang có món từ nhà hàng "${existingRestaurantName}". Bạn có muốn xóa giỏ hàng cũ và thêm món ăn này không?`);
     }
   }
 
@@ -172,7 +175,7 @@ export const calculateCheckout = async (
   }
 
   const restaurant = cart.restaurantId as any;
-  if (restaurant?.delivery?.fee == null) {
+  if (!restaurant || restaurant.delivery?.fee == null) {
     throw createError(404, 'Không tìm thấy thông tin nhà hàng hoặc phí vận chuyển.');
   }
 
@@ -205,11 +208,9 @@ export const updateCartItem = async (
     throw createError(404, 'Cart not found');
   }
 
-  const itemIndex = cart.items.findIndex((item) => {
-    const menuItemValue = item.menuItemId as unknown as Types.ObjectId | { _id: Types.ObjectId };
-    const menuItemObjectId = menuItemValue instanceof Types.ObjectId ? menuItemValue : menuItemValue._id;
-    return menuItemObjectId.toString() === menuItemId;
-  });
+  const itemIndex = cart.items.findIndex(
+    (item) => getIdString(item.menuItemId) === menuItemId
+  );
 
   if (itemIndex === -1) {
     throw createError(404, 'Item not found in cart');
@@ -239,11 +240,9 @@ export const removeCartItem = async (
     throw createError(404, 'Cart not found');
   }
 
-  cart.items = cart.items.filter((item) => {
-    const menuItemValue = item.menuItemId as unknown as Types.ObjectId | { _id: Types.ObjectId };
-    const menuItemObjectId = menuItemValue instanceof Types.ObjectId ? menuItemValue : menuItemValue._id;
-    return menuItemObjectId.toString() !== menuItemId;
-  });
+  cart.items = cart.items.filter(
+    (item) => getIdString(item.menuItemId) !== menuItemId
+  );
 
   if (cart.items.length === 0) {
     // If cart is empty, delete it

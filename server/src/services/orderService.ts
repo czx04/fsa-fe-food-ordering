@@ -9,7 +9,8 @@ import { Restaurant } from '../models/Restaurant.js'
 import { MenuItem } from '../models/MenuItem.js'
 import { Order, IOrderItemSnapshot, IStatusHistory } from '../models/Order.js'
 import * as cartService from './cartService.js'
-import { createVnpayPaymentUrl } from './vnpayService.js'
+import { createVnpayPaymentUrl } from './paymentService.js'
+import { sendOrderConfirmationEmail } from './emailService.js'
 
 const DEFAULT_PAGE = 1
 const DEFAULT_LIMIT = 10
@@ -65,7 +66,7 @@ export const getOrderDetail = async (
 export const createOrderFromCart = async (
   userId: string,
   payload: CreateOrderPayload,
-  req: any, // Thêm req để lấy IP cho VNPAY thật
+  req?: any,
 ): Promise<{ order: { _id: string; orderNumber: string }; paymentUrl?: string }> => {
   const { paymentMethod, deliveryAddress, note } = payload
 
@@ -173,10 +174,14 @@ export const createOrderFromCart = async (
 
   await cartService.clearCart(userId)
 
-  // 8. Handle Payment Redirection
+  // 8. Handle Payment Redirection & Email Trigger
   let paymentUrl: string | undefined
   if (paymentMethod.toUpperCase() === 'VNPAY') {
-    paymentUrl = createVnpayPaymentUrl(newOrder, req)
+    paymentUrl = createVnpayPaymentUrl(newOrder, req?.ip)
+  } else if (paymentMethod.toUpperCase() === 'COD') {
+    sendOrderConfirmationEmail(newOrder).catch(err =>
+      console.error('❌ Error sending COD order confirmation email:', err)
+    )
   }
 
   return {
@@ -228,9 +233,9 @@ export const reorderOrder = async (
     }
   }
 
-  // Clear current cart if it's from a different restaurant, then add items
   const currentCart = await cartRepository.findCartByUserId(userId)
-  if (currentCart && currentCart.restaurantId.toString() !== restaurantId.toString()) {
+  const currentCartRestId = currentCart?.restaurantId ? ((currentCart.restaurantId as any)._id?.toString() || currentCart.restaurantId.toString()) : ''
+  if (currentCart && currentCartRestId !== restaurantId.toString()) {
     await cartService.clearCart(userId)
   }
 
