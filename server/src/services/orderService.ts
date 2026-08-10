@@ -11,6 +11,7 @@ import { Order, IOrderItemSnapshot, IStatusHistory } from '../models/Order.js'
 import * as cartService from './cartService.js'
 import { createVnpayPaymentUrl } from './paymentService.js'
 import { sendOrderConfirmationEmail } from './emailService.js'
+import { getReviewsForCustomerOrders } from './reviewService.js'
 
 const DEFAULT_PAGE = 1
 const DEFAULT_LIMIT = 10
@@ -27,9 +28,16 @@ export const getOrderHistory = async (
 
   const { data, totalItems } = await orderRepository.findOrdersByCustomerId(customerId, status, safePage, safeLimit)
   const totalPages = totalItems === 0 ? 0 : Math.ceil(totalItems / safeLimit)
+  const reviewsByOrderId = await getReviewsForCustomerOrders(
+    customerId,
+    data.map((order) => order._id),
+  )
 
   return {
-    data,
+    data: data.map((order) => ({
+      ...order,
+      review: reviewsByOrderId.get(order._id) ?? null,
+    })),
     pagination: {
       currentPage: safePage,
       totalPages,
@@ -60,7 +68,11 @@ export const getOrderDetail = async (
     throw createError(403, 'Bạn không có quyền xem đơn hàng này')
   }
 
-  return order
+  const reviewsByOrderId = await getReviewsForCustomerOrders(customerId, [order._id])
+  return {
+    ...order,
+    review: reviewsByOrderId.get(order._id) ?? null,
+  }
 }
 
 export const createOrderFromCart = async (

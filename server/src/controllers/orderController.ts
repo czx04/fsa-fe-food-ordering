@@ -3,6 +3,13 @@ import createError from 'http-errors'
 import { AuthRequest } from '../middlewares/authMiddleware.js'
 import * as orderService from '../services/orderService.js'
 import { CancelOrderPayload, CreateOrderPayload } from '../types/order.js'
+import {
+  createCustomerOrderReview,
+  deleteCustomerOrderReview,
+  getCustomerOrderReview,
+  ReviewPayload,
+  updateCustomerOrderReview,
+} from '../services/reviewService.js'
 
 const parsePositiveInteger = (value: unknown, fallback: number): number => {
   if (typeof value !== 'string') {
@@ -12,6 +19,14 @@ const parsePositiveInteger = (value: unknown, fallback: number): number => {
   const parsedValue = Number.parseInt(value, 10)
 
   return Number.isInteger(parsedValue) && parsedValue > 0 ? parsedValue : fallback
+}
+
+const getOrderIdParam = (req: AuthRequest): string => {
+  const orderId = req.params.orderId
+  if (typeof orderId !== 'string' || orderId.length === 0) {
+    throw createError(400, 'ID đơn hàng không hợp lệ.')
+  }
+  return orderId
 }
 
 export const getOrderHistoryHandler = async (
@@ -122,6 +137,66 @@ export const reorderOrderHandler = async (
       message: 'Đơn hàng đã được thêm vào giỏ.',
       unavailableItems: result.unavailableItems,
     })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const getOrderReviewHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const review = await getCustomerOrderReview(req.user!.userId, getOrderIdParam(req))
+    res.status(200).json({ review })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const createOrderReviewHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const review = await createCustomerOrderReview(
+      req.user!.userId,
+      getOrderIdParam(req),
+      req.body as ReviewPayload,
+    )
+    res.status(201).json({ message: 'Cảm ơn bạn đã đánh giá.', review })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const updateOrderReviewHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const review = await updateCustomerOrderReview(
+      req.user!.userId,
+      getOrderIdParam(req),
+      req.body as ReviewPayload,
+    )
+    res.status(200).json({ message: 'Đã cập nhật đánh giá.', review })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export const deleteOrderReviewHandler = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    await deleteCustomerOrderReview(req.user!.userId, getOrderIdParam(req))
+    res.status(200).json({ message: 'Đã xóa đánh giá.' })
   } catch (error) {
     next(error)
   }
