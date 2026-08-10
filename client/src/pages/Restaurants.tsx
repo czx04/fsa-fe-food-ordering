@@ -1,8 +1,18 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-
-import { api } from '../utils/api'
-import { DEFAULT_RESTAURANT_IMAGE_URL, resolveAssetUrl } from '../utils/constants'
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useSearchParams } from "react-router-dom";
+import { api } from "../utils/api";
+import { RestaurantCard, RestaurantCardData } from "../components/cards/RestaurantCard";
+import { Pagination } from "../components/ui/Pagination";
+import { Button } from "../components/ui/Button";
+import {
+  Search,
+  Filter,
+  MapPin,
+  Map,
+  List,
+  Utensils,
+  Star,
+} from "lucide-react";
 
 interface CuisineCategory {
   _id: string;
@@ -10,42 +20,8 @@ interface CuisineCategory {
   slug: string;
 }
 
-interface Restaurant {
-  _id: string;
-  name: string;
-  slug: string;
-  description: string;
-  coverUrl: string | null;
-  coverImage: string | null;
-  address: string;
-  addressDetails: {
-    district: string;
-    city: string;
-    location?: {
-      type: "Point";
-      coordinates: [number, number];
-    };
-  };
-  location?: {
-    type: "Point";
-    coordinates: [number, number];
-  } | null;
-  cuisineCategories: CuisineCategory[];
-  priceRange: "budget" | "mid" | "premium";
-  delivery: {
-    fee: number;
-    minMinutes: number;
-    maxMinutes: number;
-  };
-  ratingSummary: {
-    average: number;
-    count: number;
-  };
-  isOpenNow: boolean;
-}
-
 interface RestaurantResponse {
-  data: Restaurant[];
+  data: RestaurantCardData[];
   pagination: {
     page: number;
     limit: number;
@@ -65,37 +41,23 @@ const RATING_OPTIONS = [4.5, 4, 3.5];
 const CONTAINER_CLASS =
   "mx-auto w-[calc(100%-2.5rem)] max-w-[1180px] max-[760px]:w-[calc(100%-1.5rem)]";
 const FORM_CONTROL_CLASS =
-  "h-[42px] min-w-[155px] rounded-[9px] border border-[#e7ece8] bg-white px-3 text-[#17201a] outline-none transition focus:border-[#2eae62] focus:ring-4 focus:ring-[#2eae62]/10 max-[760px]:w-full";
-const PRIMARY_BUTTON_CLASS =
-  'inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[10px] border-0 bg-[#ff5a1f] px-5 py-[11px] font-bold text-white transition hover:-translate-y-px hover:bg-[#e94e16] focus:outline-none focus:ring-4 focus:ring-[#ff5a1f]/20'
-const OUTLINE_BUTTON_CLASS =
-  "inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-[10px] border border-[#e7ece8] bg-white px-5 py-[11px] font-bold text-[#17201a] transition hover:-translate-y-px hover:border-[#ff5a1f] focus:outline-none focus:ring-4 focus:ring-[#ff5a1f]/10";
+  "h-[44px] min-w-[155px] rounded-xl border border-slate-200 bg-white px-3 text-slate-800 outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 text-xs font-semibold max-[760px]:w-full";
 const FILTER_LABEL_CLASS =
-  "my-[9px] flex cursor-pointer items-center gap-[9px] text-xs text-[#68736c]";
-const PAGINATION_BUTTON_CLASS =
-  "grid h-[38px] w-[38px] cursor-pointer place-items-center rounded-[9px] border border-[#e7ece8] bg-white font-bold text-[#17201a] transition hover:border-[#ff5a1f] hover:text-[#ff5a1f] disabled:cursor-not-allowed disabled:opacity-40";
+  "my-2 flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-600 hover:text-slate-900";
 
-const formatMoney = (value: number) =>
-  `${new Intl.NumberFormat("vi-VN").format(value)}đ`;
-
-const getMapPosition = (restaurant: Restaurant) => {
-  const coordinates =
-    restaurant.location?.coordinates ??
-    restaurant.addressDetails.location?.coordinates;
-  if (!coordinates) return { left: "50%", top: "50%" };
-  const [lng, lat] = coordinates;
-  const left = Math.min(92, Math.max(8, ((lng - 106.684) / 0.022) * 84 + 8));
-  const top = Math.min(88, Math.max(12, ((10.789 - lat) / 0.018) * 76 + 12));
+const getMapPosition = (restaurant: RestaurantCardData) => {
+  const address = typeof restaurant.address === 'string' ? restaurant.address : '';
+  const hash = address.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const left = Math.min(90, Math.max(10, (hash % 80) + 10));
+  const top = Math.min(85, Math.max(15, ((hash * 3) % 70) + 15));
   return { left: `${left}%`, top: `${top}%` };
 };
 
 export const Restaurants = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [categories, setCategories] = useState<CuisineCategory[]>([]);
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-  const [pagination, setPagination] = useState<
-    RestaurantResponse["pagination"]
-  >({
+  const [restaurants, setRestaurants] = useState<RestaurantCardData[]>([]);
+  const [pagination, setPagination] = useState<RestaurantResponse["pagination"]>({
     page: 1,
     limit: 12,
     total: 0,
@@ -106,7 +68,6 @@ export const Restaurants = () => {
   const [error, setError] = useState("");
   const [showMap, setShowMap] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
   const selectedCuisines = useMemo(
     () => (searchParams.get("cuisine") ?? "").split(",").filter(Boolean),
@@ -183,41 +144,23 @@ export const Restaurants = () => {
     updateParams({ cuisine: next.length > 0 ? next.join(",") : null });
   };
 
-  const toggleFavorite = (id: string) => {
-    setFavorites((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
   const resetFilters = () => {
     setDraftSearch("");
     setSearchParams({ sort: "popular_desc", openNow: "true", page: "1" });
   };
 
-  const pageNumbers = Array.from(
-    { length: pagination.totalPages },
-    (_, index) => index + 1,
-  ).filter(
-    (page) =>
-      page === 1 ||
-      page === pagination.totalPages ||
-      Math.abs(page - pagination.page) <= 1,
-  );
-
   return (
-    <main className="min-h-screen bg-[#f7faf7] text-[#17201a]">
-      <section className="bg-[#dff7e7] py-12">
+    <main className="min-h-screen bg-slate-50/50 text-slate-800">
+      {/* Header Banner */}
+      <section className="bg-orange-50/70 border-b border-slate-100 py-10">
         <div className={CONTAINER_CLASS}>
-          <div className="mb-2.5 text-[11px] font-extrabold uppercase tracking-[.12em] text-[#2eae62]">
+          <div className="mb-2 text-[11px] font-extrabold uppercase tracking-widest text-orange-600">
             Khám phá vị ngon
           </div>
-          <h1 className="mb-2.5 text-[38px] font-bold leading-tight tracking-[-.035em]">
+          <h1 className="mb-2 text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
             Nhà hàng gần bạn
           </h1>
-          <p className="mb-0 text-[#68736c]">
+          <p className="text-slate-500 text-sm">
             {loading
               ? "Đang tìm những lựa chọn phù hợp..."
               : `${pagination.total} nhà hàng${openOnly ? " đang mở" : ""}${district ? ` tại ${district}, ${city}` : ` tại ${city}`}`}
@@ -225,19 +168,23 @@ export const Restaurants = () => {
         </div>
       </section>
 
-      <section className="py-[38px]">
+      <section className="py-8">
         <div className={CONTAINER_CLASS}>
+          {/* Search Controls */}
           <form
-            className="mb-6 flex items-center gap-3 rounded-[14px] border border-[#e7ece8] bg-white p-[14px] max-[760px]:flex-col max-[760px]:items-stretch"
+            className="mb-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-sm"
             onSubmit={submitSearch}
           >
-            <input
-              className={`${FORM_CONTROL_CLASS} flex-1`}
-              value={draftSearch}
-              onChange={(event) => setDraftSearch(event.target.value)}
-              placeholder="⌕  Tìm tên nhà hàng hoặc địa chỉ"
-              aria-label="Tìm tên nhà hàng hoặc địa chỉ"
-            />
+            <div className="flex-1 relative flex items-center">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5" />
+              <input
+                className="w-full h-[44px] pl-10 pr-3 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800 outline-none focus:border-orange-500"
+                value={draftSearch}
+                onChange={(event) => setDraftSearch(event.target.value)}
+                placeholder="Tìm tên nhà hàng hoặc địa chỉ..."
+                aria-label="Tìm tên nhà hàng hoặc địa chỉ"
+              />
+            </div>
             <select
               className={FORM_CONTROL_CLASS}
               value={district ? `${district}|${city}` : ""}
@@ -266,58 +213,65 @@ export const Restaurants = () => {
               <option value="price_asc">Giá thấp trước</option>
               <option value="newest">Mới nhất</option>
             </select>
-            <button
-              className={`${PRIMARY_BUTTON_CLASS} max-[760px]:w-full`}
-              type="submit"
-            >
-              Tìm kiếm
-            </button>
+            <Button type="submit" variant="primary" size="md">
+              <Search className="w-4 h-4" />
+              <span>Tìm kiếm</span>
+            </Button>
           </form>
 
-          <button
-            className={`${OUTLINE_BUTTON_CLASS} mb-4 hidden max-[760px]:inline-flex`}
-            type="button"
+          <Button
+            variant="outline"
+            className="mb-4 sm:hidden w-full"
             onClick={() => setShowMobileFilters((value) => !value)}
           >
-            ☷ {showMobileFilters ? "Ẩn bộ lọc" : "Hiện bộ lọc"}
-          </button>
+            <Filter className="w-4 h-4" />
+            <span>{showMobileFilters ? "Ẩn bộ lọc" : "Hiện bộ lọc"}</span>
+          </Button>
 
-          <div className="grid grid-cols-[260px_minmax(0,1fr)] items-start gap-[26px] max-[760px]:grid-cols-1">
+          <div className="grid grid-cols-1 md:grid-cols-[260px_minmax(0,1fr)] items-start gap-6">
+            {/* Sidebar Filters */}
             <aside
-              className={`sticky top-[92px] rounded-2xl border border-[#e7ece8] bg-white p-[18px] max-[760px]:static ${
-                showMobileFilters ? "max-[760px]:block" : "max-[760px]:hidden"
+              className={`sticky top-24 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm ${
+                showMobileFilters ? "block" : "hidden md:block"
               }`}
             >
-              <div className="flex items-center justify-between gap-2.5">
-                <b>Bộ lọc</b>
+              <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                <b className="text-sm text-slate-800 flex items-center gap-2">
+                  <Filter className="w-4 h-4 text-orange-500" />
+                  Bộ lọc
+                </b>
                 <button
                   type="button"
-                  className="cursor-pointer border-0 bg-transparent p-0 text-[11px] font-bold text-[#ff5a1f]"
+                  className="cursor-pointer border-0 bg-transparent text-xs font-bold text-orange-600 hover:underline"
                   onClick={resetFilters}
                 >
                   Xóa tất cả
                 </button>
               </div>
-              <div className="border-b border-[#e7ece8] py-4">
-                <h4 className="mb-3 font-bold">Loại ẩm thực</h4>
+
+              {/* Categories Filter */}
+              <div className="border-b border-slate-100 py-4">
+                <h4 className="mb-2 font-bold text-xs text-slate-700">Loại ẩm thực</h4>
                 {categories.map((category) => (
                   <label className={FILTER_LABEL_CLASS} key={category._id}>
                     <input
-                      className="h-4 w-4 accent-[#ff5a1f]"
+                      className="h-4 w-4 rounded accent-orange-500"
                       type="checkbox"
                       checked={selectedCuisines.includes(category.slug)}
                       onChange={() => toggleCuisine(category.slug)}
                     />
-                    {category.name}
+                    <span>{category.name}</span>
                   </label>
                 ))}
               </div>
-              <div className="border-b border-[#e7ece8] py-4">
-                <h4 className="mb-3 font-bold">Khoảng giá</h4>
+
+              {/* Price Filter */}
+              <div className="border-b border-slate-100 py-4">
+                <h4 className="mb-2 font-bold text-xs text-slate-700">Khoảng giá</h4>
                 {PRICE_OPTIONS.map((option) => (
                   <label className={FILTER_LABEL_CLASS} key={option.value}>
                     <input
-                      className="h-4 w-4 accent-[#ff5a1f]"
+                      className="h-4 w-4 accent-orange-500"
                       type="radio"
                       name="price"
                       checked={searchParams.get("priceRange") === option.value}
@@ -325,16 +279,18 @@ export const Restaurants = () => {
                         updateParams({ priceRange: option.value })
                       }
                     />
-                    {option.label}
+                    <span>{option.label}</span>
                   </label>
                 ))}
               </div>
-              <div className="border-b border-[#e7ece8] py-4">
-                <h4 className="mb-3 font-bold">Đánh giá</h4>
+
+              {/* Rating Filter */}
+              <div className="border-b border-slate-100 py-4">
+                <h4 className="mb-2 font-bold text-xs text-slate-700">Đánh giá</h4>
                 {RATING_OPTIONS.map((rating) => (
                   <label className={FILTER_LABEL_CLASS} key={rating}>
                     <input
-                      className="h-4 w-4 accent-[#ff5a1f]"
+                      className="h-4 w-4 accent-orange-500"
                       type="radio"
                       name="rating"
                       checked={searchParams.get("minRating") === String(rating)}
@@ -342,25 +298,29 @@ export const Restaurants = () => {
                         updateParams({ minRating: String(rating) })
                       }
                     />
-                    ★ {rating} sao trở lên
+                    <span className="flex items-center gap-1">
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      {rating} sao trở lên
+                    </span>
                   </label>
                 ))}
               </div>
-              <div className="pt-4">
+
+              <div className="pt-4 space-y-2">
                 <label className={FILTER_LABEL_CLASS}>
                   <input
-                    className="h-4 w-4 accent-[#ff5a1f]"
+                    className="h-4 w-4 rounded accent-orange-500"
                     type="checkbox"
                     checked={openOnly}
                     onChange={(event) =>
                       updateParams({ openNow: String(event.target.checked) })
                     }
                   />
-                  Chỉ quán đang mở
+                  <span>Chỉ quán đang mở</span>
                 </label>
                 <label className={FILTER_LABEL_CLASS}>
                   <input
-                    className="h-4 w-4 accent-[#ff5a1f]"
+                    className="h-4 w-4 rounded accent-orange-500"
                     type="checkbox"
                     checked={searchParams.get("freeDelivery") === "true"}
                     onChange={(event) =>
@@ -369,231 +329,109 @@ export const Restaurants = () => {
                       })
                     }
                   />
-                  Miễn phí giao hàng
+                  <span>Miễn phí giao hàng</span>
                 </label>
               </div>
             </aside>
 
+            {/* Main Content Area */}
             <div className="min-w-0">
               <div className="mb-4 flex items-center justify-between gap-4">
                 <div>
-                  <b>{pagination.total} kết quả</b>
-                  <div className="text-xs text-[#68736c]">
+                  <b className="text-sm text-slate-800">{pagination.total} kết quả</b>
+                  <div className="text-xs text-slate-400">
                     Kết quả phù hợp nhất với bạn
                   </div>
                 </div>
-                <button
-                  className={`inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-lg border px-[13px] py-2 text-xs font-bold transition hover:-translate-y-px focus:outline-none focus:ring-4 focus:ring-[#ff5a1f]/10 ${
-                    showMap
-                      ? "border-[#ff5a1f] bg-[#fff0e9] text-[#ff5a1f]"
-                      : "border-[#e7ece8] bg-white text-[#17201a]"
-                  }`}
-                  type="button"
+                <Button
+                  variant={showMap ? "secondary" : "outline"}
+                  size="sm"
                   onClick={() => setShowMap((value) => !value)}
                 >
-                  {showMap ? "▦ Danh sách" : "☷ Bản đồ"}
-                </button>
+                  {showMap ? (
+                    <>
+                      <List className="w-4 h-4" />
+                      <span>Danh sách</span>
+                    </>
+                  ) : (
+                    <>
+                      <Map className="w-4 h-4" />
+                      <span>Bản đồ</span>
+                    </>
+                  )}
+                </Button>
               </div>
 
               {error && (
-                <div className="rounded-2xl border border-[#f5bcbc] bg-[#fff7f7] px-6 py-12 text-center text-[#e34444]">
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center text-rose-600 text-sm font-medium">
                   {error}
                 </div>
               )}
               {loading && (
-                <div className="rounded-2xl border border-[#e7ece8] bg-white px-6 py-12 text-center text-[#68736c]">
+                <div className="rounded-2xl border border-slate-100 bg-white p-12 text-center text-slate-400 text-sm">
                   Đang tải danh sách nhà hàng...
                 </div>
               )}
 
+              {/* Map View */}
               {!loading && !error && showMap && restaurants.length > 0 && (
                 <div
-                  className="relative min-h-[560px] overflow-hidden rounded-[18px] border border-[#dce8df] bg-[#edf6ee] shadow-[0_8px_24px_rgba(34,63,43,.08)] max-[760px]:min-h-[460px]"
+                  className="relative min-h-[500px] overflow-hidden rounded-2xl border border-slate-200 bg-orange-50/50 shadow-sm"
                   aria-label="Bản đồ nhà hàng"
                 >
-                  <div className="absolute left-[-10%] top-[46%] h-[38px] w-[120%] -rotate-[24deg] rounded-full bg-[rgba(110,178,225,.22)]" />
-                  <div className="absolute right-[-12%] top-[22%] h-6 w-[70%] -rotate-[24deg] rounded-full bg-[rgba(110,178,225,.22)]" />
                   {restaurants.map((restaurant) => (
                     <button
-                      className="absolute z-[2] grid max-w-[130px] -translate-x-1/2 -translate-y-1/2 cursor-pointer justify-items-center gap-[3px] border-0 bg-transparent text-[#17201a]"
+                      className="absolute z-10 grid max-w-[140px] -translate-x-1/2 -translate-y-1/2 cursor-pointer justify-items-center gap-1 border-0 bg-transparent"
                       key={restaurant._id}
                       style={getMapPosition(restaurant)}
-                      title={`${restaurant.name} · ${restaurant.address}`}
+                      title={restaurant.name}
                       type="button"
                     >
-                      <span className="grid h-[42px] w-[42px] -rotate-45 place-items-center rounded-[50%_50%_50%_8px] border border-[#dce8df] bg-white text-xl">
-                        <span className="rotate-45">📍</span>
+                      <span className="grid h-9 w-9 place-items-center rounded-full bg-orange-500 text-white shadow-md">
+                        <MapPin className="w-5 h-5" />
                       </span>
-                      <b className="rounded-md border border-[#dce8df] bg-white/90 px-[7px] py-1 text-[10px]">
+                      <b className="rounded-lg bg-white px-2 py-0.5 text-[10px] shadow-sm border border-slate-100 font-bold text-slate-800 truncate max-w-[120px]">
                         {restaurant.name}
                       </b>
                     </button>
                   ))}
-                  <span className="absolute bottom-[18%] right-[12%] text-[28px] font-extrabold tracking-[.08em] text-[rgba(23,32,26,.34)]">
-                    Quận 1
-                  </span>
-                  <span className="absolute left-[10%] top-[14%] text-[28px] font-extrabold tracking-[.08em] text-[rgba(23,32,26,.34)]">
-                    Quận 3
-                  </span>
                 </div>
               )}
 
+              {/* Grid List View */}
               {!loading && !error && !showMap && restaurants.length > 0 && (
-                <div className="grid grid-cols-3 items-stretch gap-[22px] max-[760px]:grid-cols-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {restaurants.map((restaurant) => (
-                    <article
-                      className="flex flex-col overflow-hidden rounded-2xl border border-[#e7ece8] bg-white shadow-[0_5px_18px_rgba(34,63,43,.04)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_18px_50px_rgba(32,70,45,.10)]"
-                      key={restaurant._id}
-                    >
-                      <div className="relative h-[190px] overflow-hidden bg-[#dff7e7]">
-                        <Link to={`/restaurants/${restaurant.slug}`} className="block h-full">
-                          <img
-                            className="h-full w-full object-cover"
-                            src={resolveAssetUrl(
-                              restaurant.coverUrl || restaurant.coverImage,
-                              DEFAULT_RESTAURANT_IMAGE_URL,
-                            )}
-                            alt={restaurant.name}
-                            onError={(event) => {
-                              event.currentTarget.onerror = null
-                              event.currentTarget.src = DEFAULT_RESTAURANT_IMAGE_URL
-                            }}
-                          />
-                          <span
-                            className={`absolute left-3 top-3 rounded-[7px] px-[9px] py-1.5 text-[10px] font-extrabold text-white ${
-                              restaurant.isOpenNow ? 'bg-[#ff5a1f]' : 'bg-[#53615a]'
-                            }`}
-                          >
-                            {restaurant.isOpenNow ? 'Mở cửa' : 'Đã đóng'}
-                          </span>
-                        </Link>
-                        <button
-                          type="button"
-                          className={`absolute right-3 top-3 grid h-[34px] w-[34px] cursor-pointer place-items-center rounded-full border border-white/75 bg-white/90 p-0 text-lg transition hover:scale-105 ${
-                            favorites.has(restaurant._id)
-                              ? "bg-white text-[#e34444]"
-                              : "text-[#17201a]"
-                          }`}
-                          onClick={() => toggleFavorite(restaurant._id)}
-                          aria-label={`${favorites.has(restaurant._id) ? "Bỏ yêu thích" : "Yêu thích"} ${restaurant.name}`}
-                        >
-                          {favorites.has(restaurant._id) ? "♥" : "♡"}
-                        </button>
-                      </div>
-                      <div className="flex flex-1 flex-col p-4">
-                        <Link to={`/restaurants/${restaurant.slug}`}>
-                          <h3 className="mb-[5px] text-[15px] font-bold leading-snug transition hover:text-[#ff5a1f]">{restaurant.name}</h3>
-                        </Link>
-                        <p className="mb-0 min-h-[19px] text-xs text-[#68736c]">
-                          {restaurant.cuisineCategories
-                            .map((category) => category.name)
-                            .join(" • ")}
-                        </p>
-                        <p className="mb-2.5 mt-[7px] min-h-[38px] text-xs text-[#68736c]">
-                          📍 {restaurant.address}
-                        </p>
-                        <div className="flex flex-wrap gap-2.5 text-[11px] text-[#68736c]">
-                          <span className="font-bold text-[#e69b00]">
-                            ★ {restaurant.ratingSummary.average.toFixed(1)}
-                          </span>
-                          <span>
-                            ◷ {restaurant.delivery.minMinutes}–
-                            {restaurant.delivery.maxMinutes} phút
-                          </span>
-                          <span>
-                            ₫{" "}
-                            {
-                              PRICE_OPTIONS.find(
-                                (option) =>
-                                  option.value === restaurant.priceRange,
-                              )?.label
-                            }
-                          </span>
-                        </div>
-                        <div className="mt-auto flex items-center justify-between gap-3 pt-6">
-                          <span
-                            className={`text-xs ${
-                              restaurant.delivery.fee === 0
-                                ? "font-bold text-[#167a3e]"
-                                : "text-[#68736c]"
-                            }`}
-                          >
-                            {restaurant.delivery.fee === 0
-                              ? "Miễn phí giao hàng"
-                              : `Phí giao ${formatMoney(restaurant.delivery.fee)}`}
-                          </span>
-                          <Link to={`/restaurants/${restaurant.slug}`} className="shrink-0 font-bold text-[#ff5a1f]">Xem quán →</Link>
-                        </div>
-                      </div>
-                    </article>
+                    <RestaurantCard key={restaurant._id} restaurant={restaurant} />
                   ))}
                 </div>
               )}
 
+              {/* Empty State */}
               {!loading && !error && restaurants.length === 0 && (
-                <div className="rounded-2xl border border-[#e7ece8] bg-white px-6 py-12 text-center text-[#68736c]">
-                  <span className="mb-3 block text-[52px]">🍽️</span>
-                  <h3 className="mb-2 text-lg font-bold text-[#17201a]">
-                    Chưa tìm thấy nhà hàng phù hợp
-                  </h3>
-                  <p>Hãy thử đổi từ khóa hoặc bỏ bớt bộ lọc.</p>
-                  <button
-                    type="button"
-                    className={OUTLINE_BUTTON_CLASS}
-                    onClick={resetFilters}
-                  >
+                <div className="rounded-2xl border border-slate-100 bg-white p-12 text-center text-slate-500 space-y-4">
+                  <Utensils className="w-12 h-12 text-orange-400 mx-auto" />
+                  <div>
+                    <h3 className="text-base font-bold text-slate-800">
+                      Chưa tìm thấy nhà hàng phù hợp
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Hãy thử đổi từ khóa hoặc bỏ bớt bộ lọc.
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={resetFilters}>
                     Xóa bộ lọc
-                  </button>
+                  </Button>
                 </div>
               )}
 
-              {!loading && !error && pagination.totalPages > 1 && (
-                <nav
-                  className="mt-[34px] flex justify-center gap-2"
-                  aria-label="Phân trang nhà hàng"
-                >
-                  <button
-                    className={PAGINATION_BUTTON_CLASS}
-                    type="button"
-                    disabled={pagination.page === 1}
-                    onClick={() =>
-                      updateParams({ page: String(pagination.page - 1) })
-                    }
-                  >
-                    ‹
-                  </button>
-                  {pageNumbers.map((page, index) => {
-                    const previous = pageNumbers[index - 1];
-                    return (
-                      <span className="flex items-center gap-2" key={page}>
-                        {previous && page - previous > 1 && (
-                          <span className="text-[#68736c]">…</span>
-                        )}
-                        <button
-                          type="button"
-                          className={`${PAGINATION_BUTTON_CLASS} ${
-                            page === pagination.page
-                              ? "border-[#ff5a1f] bg-[#ff5a1f] text-white hover:text-white"
-                              : ""
-                          }`}
-                          onClick={() => updateParams({ page: String(page) })}
-                        >
-                          {page}
-                        </button>
-                      </span>
-                    );
-                  })}
-                  <button
-                    className={PAGINATION_BUTTON_CLASS}
-                    type="button"
-                    disabled={pagination.page === pagination.totalPages}
-                    onClick={() =>
-                      updateParams({ page: String(pagination.page + 1) })
-                    }
-                  >
-                    ›
-                  </button>
-                </nav>
+              {/* Pagination */}
+              {!loading && !error && (
+                <Pagination
+                  currentPage={pagination.page}
+                  totalPages={pagination.totalPages}
+                  onPageChange={(page) => updateParams({ page: String(page) })}
+                />
               )}
             </div>
           </div>

@@ -115,7 +115,7 @@ function PaymentSuccessPage() {
     <main className="min-h-screen bg-gray-50 py-12">
       <div className="container mx-auto px-4 max-w-2xl">
         <div className="bg-white p-8 rounded-lg shadow-lg text-center mb-8">
-          <CheckCircle2 className="w-20 h-20 text-green-500 mx-auto mb-4" />
+          <CheckCircle2 className="w-20 h-20 text-orange-500 mx-auto mb-4" />
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
             Đặt hàng thành công!
           </h1>
@@ -189,7 +189,7 @@ function PaymentSuccessPage() {
               </span>
             </div>
             {order.pricing.discountAmount > 0 && (
-              <div className="flex justify-between text-green-600">
+              <div className="flex justify-between text-orange-600">
                 <span className="font-semibold">
                   Mã giảm giá ({order.couponSnapshot?.code})
                 </span>

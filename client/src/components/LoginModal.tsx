@@ -46,7 +46,7 @@ export const LoginModal = ({ isOpen, onClose, itemName }: LoginModalProps) => {
         <div className="mt-6 space-y-3">
           <Link
             to="/login"
-            className="block w-full py-3 text-center text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 rounded-xl shadow-lg shadow-orange-500/25 transition"
+            className="block w-full py-3 text-center text-xs font-bold text-white bg-orange-500 hover:bg-orange-600 rounded-xl shadow-sm transition"
           >
             Đăng nhập ngay
           </Link>

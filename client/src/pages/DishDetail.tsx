@@ -244,8 +244,8 @@ export const DishDetail = () => {
     item.imageUrls.length > 0 ? item.imageUrls : [DEFAULT_DISH_IMAGE_URL];
 
   return (
-    <main className="min-h-screen bg-[#f7faf7] text-[#17201a]">
-      <section className="border-b border-[#e7ece8] bg-[#eef8f1] py-12 max-[760px]:py-8">
+    <main className="min-h-screen bg-slate-50/50 text-slate-800">
+      <section className="border-b border-slate-100 bg-orange-50/60 py-12 max-[760px]:py-8">
         <div className="mx-auto w-[calc(100%-2.5rem)] max-w-[1180px] max-[760px]:w-[calc(100%-1.5rem)]">
           <div className="mb-8 flex flex-wrap items-center gap-2 text-xs text-[#68736c]">
             <Link to="/restaurants" className="hover:text-[#ff5a1f]">
@@ -301,7 +301,7 @@ export const DishDetail = () => {
 
             <div className="rounded-3xl border border-[#dce8df] bg-white p-7 max-[600px]:p-5">
               <div className="mb-3 flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-[#dff7e7] px-3 py-1.5 text-[10px] font-extrabold uppercase text-[#167a3e]">
+                <span className="rounded-full bg-orange-100 px-3 py-1.5 text-[10px] font-extrabold uppercase text-orange-600">
                   {item.menuCategory.name}
                 </span>
                 <span
@@ -411,8 +411,8 @@ export const DishDetail = () => {
                 </p>
               )}
               {addedMessage && (
-                <p className="mb-3 flex items-center gap-2 rounded-xl bg-[#e5f8eb] p-3 text-xs font-semibold text-[#167a3e]">
-                  <Check className="h-4 w-4" />
+                <p className="mb-3 flex items-center gap-2 rounded-xl bg-green-50 p-3 text-xs font-semibold text-green-600">
+                  <Check className="h-4 w-4 text-green-500" />
                   {addedMessage}
                 </p>
               )}
@@ -465,7 +465,7 @@ export const DishDetail = () => {
           <div className="mx-auto w-[calc(100%-2.5rem)] max-w-[1180px] max-[760px]:w-[calc(100%-1.5rem)]">
             <div className="mb-6 flex items-end justify-between gap-4">
               <div>
-                <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-[.12em] text-[#2eae62]">
+                <span className="mb-2 block text-[11px] font-extrabold uppercase tracking-[.12em] text-orange-600">
                   Ăn kèm thật hợp
                 </span>
                 <h2 className="mb-0 text-3xl font-extrabold tracking-[-.03em]">
@@ -486,7 +486,7 @@ export const DishDetail = () => {
                   to={`/restaurants/${item.restaurant.slug}/menu-items/${related.slug}`}
                   className="group overflow-hidden rounded-2xl border border-[#e7ece8] bg-white transition hover:border-[#ffc4ad]"
                 >
-                  <div className="relative h-40 overflow-hidden bg-[#eef8f1]">
+                  <div className="relative h-40 overflow-hidden bg-orange-50">
                     <img
                       src={resolveAssetUrl(
                         related.imageUrl || related.imageUrls?.[0],

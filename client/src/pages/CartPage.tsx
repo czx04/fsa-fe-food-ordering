@@ -342,7 +342,7 @@ function CartPage() {
                   <span>{formatCurrency(deliveryFee)}</span>
                 </div>
                 {discountAmount > 0 && (
-                  <div className="flex justify-between text-sm text-green-600 font-semibold">
+                  <div className="flex justify-between text-sm text-orange-600 font-semibold">
                     <span>
                       Mã giảm giá
                       {displayCart.couponId &&
