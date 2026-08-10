@@ -2,6 +2,7 @@
 import { app } from './app.js'
 import { connectDatabase, disconnectDatabase } from './config/database.js'
 import { env } from './config/env.js'
+import { initSocketServer } from './socket.js'
 
 //dns.setServers(['1.1.1.1', '8.8.8.8'])
 
@@ -12,6 +13,7 @@ const start = async () => {
   await connectDatabase()
 
   server = app.listen(env.port, () => {
+    initSocketServer(server!)
     console.log(`API ready at http://localhost:${env.port}`)
   })
 }

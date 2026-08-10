@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { api } from "../utils/api";
+import { socketService } from "../services/socketService";
 
 interface UserAddress {
   _id?: string;
@@ -48,6 +49,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const initAuth = async () => {
       const token = localStorage.getItem("accessToken");
+      socketService.setAuthToken(token);
       if (token) {
         try {
           const res = await api.get("/auth/me");
@@ -65,12 +67,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = (token: string, userData: User) => {
     localStorage.setItem("accessToken", token);
+    socketService.setAuthToken(token);
     setUser(userData);
   };
 
   const logout = () => {
     localStorage.removeItem("accessToken");
     setUser(null);
+    socketService.setAuthToken(null);
     // Optional: Call backend /auth/logout to invalidate refresh token
   };
 
