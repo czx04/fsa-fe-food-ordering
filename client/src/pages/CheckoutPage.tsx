@@ -11,6 +11,7 @@ import { useCart } from "../contexts/CartContext";
 import { useAuth } from "../contexts/AuthContext";
 import { api } from "../utils/api";
 import { SERVER_STATIC_ASSET_BASE_URL } from "../utils/constants";
+import { useToast } from "../contexts/ToastContext";
 import { userService } from "../services/userService";
 
 const AddressModal = ({
@@ -33,7 +34,7 @@ const AddressModal = ({
     isDefault: false,
   });
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState("");
+  const toast = useToast();
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -49,11 +50,10 @@ const AddressModal = ({
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSaving(true);
-    setError("");
     try {
       await onSave(formData);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Lưu địa chỉ thất bại.");
+      toast.error(err.response?.data?.message || "Lưu địa chỉ thất bại.");
     } finally {
       setIsSaving(false);
     }
@@ -124,7 +124,6 @@ const AddressModal = ({
             />
             <span className="ml-2">Đặt làm địa chỉ mặc định</span>
           </label>
-          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
           <div className="flex justify-end gap-4 mt-6">
             <button
               type="button"
@@ -170,9 +169,9 @@ function CheckoutPage() {
   const [isCalculating, setIsCalculating] = useState(true);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  const [error, setError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"COD" | "VNPAY">("COD");
   const navigate = useNavigate();
+  const toast = useToast();
 
   useEffect(() => {
     if (user?.addresses && user.addresses.length > 0) {
@@ -197,7 +196,7 @@ function CheckoutPage() {
         setPricing(response.data);
       } catch (e) {
         console.error("Lỗi tính toán phí vận chuyển:", e);
-        setError("Không thể tính phí vận chuyển, vui lòng thử lại.");
+        toast.error("Không thể tính phí vận chuyển, vui lòng thử lại.");
       } finally {
         setIsCalculating(false);
       }
@@ -222,12 +221,11 @@ function CheckoutPage() {
 
   const handlePlaceOrder = async () => {
     if (!cart || !selectedAddress) {
-      setError("Vui lòng chọn địa chỉ giao hàng.");
+      toast.error("Vui lòng chọn địa chỉ giao hàng.");
       return;
     }
 
     setIsPlacingOrder(true);
-    setError("");
     try {
       const payload: CreateOrderPayload = {
         paymentMethod: paymentMethod,
@@ -258,7 +256,7 @@ function CheckoutPage() {
       }
     } catch (err: any) {
       console.error("Lỗi đặt hàng:", err);
-      setError(
+      toast.error(
         err.response?.data?.message || "Đặt hàng thất bại. Vui lòng thử lại.",
       );
     } finally {
@@ -294,7 +292,6 @@ function CheckoutPage() {
       <div className="container mx-auto px-4">
         <div className="mb-6">
           <h1 className="text-4xl font-bold text-gray-800 mt-1">Thanh toán</h1>
-          {error && <p className="text-red-500 mt-2">{error}</p>}
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">

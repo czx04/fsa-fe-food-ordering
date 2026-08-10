@@ -7,8 +7,8 @@ export interface AddAddressPayload {
   district: string
   city: string
   location?: {
-    type?: 'Point'
-    coordinates?: number[]
+    type: 'Point'
+    coordinates: [number, number]
   }
   isDefault: boolean
 }

@@ -20,6 +20,7 @@ import { LoginModal } from "../components/LoginModal";
 import { RestaurantChangeModal } from "../components/RestaurantChangeModal";
 import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
+import { useToast } from "../contexts/ToastContext";
 import { api } from "../utils/api";
 import { SERVER_STATIC_ASSET_BASE_URL } from "../utils/constants";
 import { AddToCartPayload, Cart, CartItem } from "../types/cart";
@@ -204,6 +205,7 @@ export const RestaurantDetail = () => {
   const [pendingItemPayload, setPendingItemPayload] =
     useState<AddToCartPayload | null>(null);
   const [conflictError, setConflictError] = useState("");
+  const toast = useToast();
   const [loginItem, setLoginItem] = useState("");
 
   useEffect(() => {
@@ -338,7 +340,9 @@ export const RestaurantDetail = () => {
         setConflictError(err.response.data.message);
         setPendingItemPayload(payload);
       } else {
-        alert(err.response?.data?.message || "Thêm vào giỏ hàng thất bại.");
+        toast.error(
+          err.response?.data?.message || "Thêm vào giỏ hàng thất bại.",
+        );
       }
     }
   };
@@ -357,7 +361,7 @@ export const RestaurantDetail = () => {
       fetchCart();
     } catch (error) {
       console.error("Failed to update quantity:", error);
-      alert("Lỗi cập nhật số lượng. Vui lòng thử lại.");
+      toast.error("Lỗi cập nhật số lượng. Vui lòng thử lại.");
     }
   };
 

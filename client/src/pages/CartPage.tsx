@@ -6,6 +6,7 @@ import { api } from "../utils/api";
 
 import { ConfirmationModal } from "../components/ConfirmationModal";
 import { CartItem as CartItemType } from "../types/cart";
+import { useToast } from "../contexts/ToastContext";
 import { SERVER_STATIC_ASSET_BASE_URL } from "../utils/constants";
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("vi-VN", {
@@ -24,6 +25,7 @@ function CartPage() {
   const [isClearingCart, setIsClearingCart] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
+  const toast = useToast();
 
   useEffect(() => {
     setDisplayCart(contextCart);
@@ -61,7 +63,7 @@ function CartPage() {
       fetchCart();
     } catch (error) {
       console.error("Failed to update quantity:", error);
-      alert("Lỗi cập nhật số lượng. Vui lòng thử lại.");
+      toast.error("Lỗi cập nhật số lượng. Vui lòng thử lại.");
       setDisplayCart(originalCart);
     }
   };
@@ -71,10 +73,11 @@ function CartPage() {
     setIsProcessing(true);
     try {
       await api.delete(`/cart/items/${itemToDelete.menuItemId._id}`);
+      toast.success(`Đã xóa "${itemToDelete.menuItemId.name}" khỏi giỏ hàng.`);
       await fetchCart();
     } catch (error) {
       console.error("Failed to remove item:", error);
-      alert("Lỗi xóa sản phẩm. Vui lòng thử lại.");
+      toast.error("Lỗi xóa sản phẩm. Vui lòng thử lại.");
     } finally {
       setIsProcessing(false);
       setItemToDelete(null);
@@ -85,10 +88,11 @@ function CartPage() {
     setIsProcessing(true);
     try {
       await api.delete("/cart");
+      toast.success("Đã xóa tất cả sản phẩm khỏi giỏ hàng.");
       await fetchCart();
     } catch (error) {
       console.error("Failed to clear cart:", error);
-      alert("Lỗi xóa giỏ hàng. Vui lòng thử lại.");
+      toast.error("Lỗi xóa giỏ hàng. Vui lòng thử lại.");
     } finally {
       setIsProcessing(false);
       setIsClearingCart(false);

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { OrderDetail, CancelOrderPayload } from "../types/order";
 import { orderService } from "../services/orderService";
 import { Loader2, XCircle, CheckCircle2, Trash2, X } from "lucide-react";
+import { useToast } from "../contexts/ToastContext";
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("vi-VN", {
@@ -44,7 +45,7 @@ function OrderDetailPage() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [isCancelling, setIsCancelling] = useState(false);
-  const [cancelError, setCancelError] = useState("");
+  const toast = useToast();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -71,19 +72,19 @@ function OrderDetailPage() {
     if (!id || !cancelReason) return;
 
     setIsCancelling(true);
-    setCancelError("");
     try {
       const payload: CancelOrderPayload = { reason: cancelReason };
       const response = await orderService.cancelOrder(id, payload);
       setOrder(response.order); // Update order with cancelled status
       setShowCancelModal(false);
-      alert("Đơn hàng đã được hủy thành công.");
+      toast.success("Đơn hàng đã được hủy thành công.");
     } catch (err: any) {
       console.error("Lỗi hủy đơn hàng:", err);
-      setCancelError(
+      toast.error(
         err.response?.data?.message ||
           "Không thể hủy đơn hàng. Vui lòng thử lại.",
       );
+      setShowCancelModal(false);
     } finally {
       setIsCancelling(false);
     }
@@ -325,12 +326,6 @@ function OrderDetailPage() {
             <p className="text-gray-600 mb-6">
               Vui lòng chọn lý do hủy đơn hàng của bạn:
             </p>
-            {cancelError && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
-                <strong className="font-bold">Lỗi!</strong>
-                <span className="block sm:inline"> {cancelError}</span>
-              </div>
-            )}
             <div className="space-y-3 mb-6">
               <label className="flex items-center">
                 <input
