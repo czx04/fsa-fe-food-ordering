@@ -18,18 +18,6 @@ npm run dev:dashboard
 
 Vite proxy mặc định chuyển `/api` về port `3000`. Khi deploy riêng origin, sao chép `.env.example` thành `.env` và đặt `VITE_API_BASE_URL`.
 
-## Tài khoản seed
-
-Mật khẩu dùng chung: `password123`.
-
-| Vai trò | Email |
-|---|---|
-| Admin | `admin@foodordering.com` |
-| Owner nhiều nhà hàng | `owner1@foodordering.com` |
-| Owner có đơn/review mẫu | `owner2@foodordering.com` |
-
-Chạy `npm run seed` để tạo lại dữ liệu mẫu. Lệnh seed xóa dữ liệu nghiệp vụ hiện có trong database đã cấu hình, vì vậy chỉ dùng trên môi trường development/test.
-
 ## Lệnh kiểm tra
 
 ```bash
@@ -37,7 +25,6 @@ npm run lint --workspace client-dashboard
 npm run test --workspace client-dashboard
 npm run build --workspace client-dashboard
 npm run typecheck --workspace server
-npm run smoke:dashboard
 ```
 
 ## Kiến trúc chính

@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../utils/api'
 import { ShoppingBag, Store } from 'lucide-react'
+import { HOME_PROMOTION_IMAGE_URL } from '../utils/constants'
 
 export const Register = () => {
   const [fullName, setFullName] = useState('')
@@ -65,7 +66,7 @@ export const Register = () => {
           <div className="relative inline-block mb-8 group">
             <div className="absolute -inset-1 bg-gradient-to-r from-amber-300 to-orange-300 rounded-3xl blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
             <img 
-              src="/assets/chicken.jpg" 
+              src={HOME_PROMOTION_IMAGE_URL} 
               alt="Đăng ký thành viên" 
               className="relative w-72 h-72 object-cover rounded-3xl shadow-2xl mx-auto border-4 border-white/20 transform group-hover:scale-[1.02] transition duration-300"
             />

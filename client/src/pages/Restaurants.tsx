@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import { api } from '../utils/api'
+import { DEFAULT_RESTAURANT_IMAGE_URL, resolveAssetUrl } from '../utils/constants'
 
 interface CuisineCategory {
   _id: string;
@@ -448,8 +449,15 @@ export const Restaurants = () => {
                         <Link to={`/restaurants/${restaurant.slug}`} className="block h-full">
                           <img
                             className="h-full w-full object-cover"
-                            src={restaurant.coverUrl || restaurant.coverImage || '/assets/restaurant.jpg'}
+                            src={resolveAssetUrl(
+                              restaurant.coverUrl || restaurant.coverImage,
+                              DEFAULT_RESTAURANT_IMAGE_URL,
+                            )}
                             alt={restaurant.name}
+                            onError={(event) => {
+                              event.currentTarget.onerror = null
+                              event.currentTarget.src = DEFAULT_RESTAURANT_IMAGE_URL
+                            }}
                           />
                           <span
                             className={`absolute left-3 top-3 rounded-[7px] px-[9px] py-1.5 text-[10px] font-extrabold text-white ${

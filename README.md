@@ -30,11 +30,3 @@ npm run build
 npm run lint --workspace client-dashboard
 npm run test --workspace client-dashboard
 ```
-
-## Seed development
-
-```bash
-npm run seed
-```
-
-Seed sẽ xóa dữ liệu nghiệp vụ trong database hiện tại. Chỉ chạy trên development/test.
