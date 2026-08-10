@@ -1,7 +1,14 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
 import { useCart } from "../contexts/CartContext";
-import { ArrowLeft, Loader2, Minus, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Loader2,
+  Minus,
+  Plus,
+  Trash2,
+  Utensils,
+} from "lucide-react";
 import { api } from "../utils/api";
 
 import { ConfirmationModal } from "../components/ConfirmationModal";
@@ -13,6 +20,42 @@ const formatCurrency = (amount: number) => {
     style: "currency",
     currency: "VND",
   }).format(amount);
+};
+
+const getImageUrl = (
+  imageUrl: string | string[] | undefined,
+): string | null => {
+  if (!imageUrl) return null;
+  const url = Array.isArray(imageUrl) ? imageUrl[0] : imageUrl;
+  if (!url) return null;
+  if (url.startsWith("http")) return url;
+  return `${SERVER_STATIC_ASSET_BASE_URL}${url}`;
+};
+
+const ImageWithFallback = ({ item }: { item: CartItemType }) => {
+  const [hasError, setHasError] = useState(false);
+  const imageUrl = getImageUrl(item.menuItemId.imageUrl);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [imageUrl]);
+
+  if (hasError || !imageUrl) {
+    return (
+      <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 rounded-md">
+        <Utensils className="w-8 h-8" />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={imageUrl}
+      alt={item.menuItemId.name}
+      className="w-full h-full object-cover rounded-md"
+      onError={() => setHasError(true)}
+    />
+  );
 };
 
 function CartPage() {
@@ -203,21 +246,9 @@ function CartPage() {
                 key={item.menuItemId._id}
                 className="flex items-center py-4 border-b last:border-b-0"
               >
-                <img
-                  src={
-                    item.menuItemId.imageUrl
-                      ? `${SERVER_STATIC_ASSET_BASE_URL}${item.menuItemId.imageUrl}`
-                      : "https://via.placeholder.com/80"
-                  }
-                  alt={item.menuItemId.name}
-                  className="w-20 h-20 object-cover rounded-md mr-4"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.onerror = null;
-                    target.src =
-                      "https://via.placeholder.com/80?text=Image+Error";
-                  }}
-                />
+                <div className="w-20 h-20 flex-shrink-0 mr-4">
+                  <ImageWithFallback item={item} />
+                </div>
                 <div className="flex-grow">
                   <h3 className="font-semibold text-gray-800">
                     {item.menuItemId.name}
@@ -260,7 +291,7 @@ function CartPage() {
                     <Plus className="w-3 h-3" />
                   </button>
                 </div>
-                <span className="font-semibold text-gray-800">
+                <span className="font-semibold text-gray-800 w-28 text-right">
                   {formatCurrency(item.price * item.quantity)}
                 </span>
               </div>

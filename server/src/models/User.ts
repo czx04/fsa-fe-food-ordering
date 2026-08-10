@@ -147,9 +147,8 @@ UserSchema.index({ 'addresses.location': '2dsphere' })
 
 UserSchema.pre('save', async function () {
   if (Array.isArray(this.addresses)) {
-    this.addresses.forEach((address: IUserAddress) => {
-      normalizeAddressLocation(address)
-    })
+    this.addresses.forEach(normalizeAddressLocation);
+
   }
 })
 

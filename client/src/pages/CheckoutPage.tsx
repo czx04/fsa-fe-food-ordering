@@ -1,12 +1,13 @@
 import { Link, useNavigate } from "react-router-dom";
 import React, { useState, useEffect, useMemo } from "react";
-import { Edit, PlusCircle, Save, ShoppingBag, X } from "lucide-react";
+import { Edit, PlusCircle, Save, ShoppingBag, Utensils, X } from "lucide-react";
 import { UserAddress, AddAddressPayload } from "../types/user";
 import {
   CreateOrderPayload,
   CreateOrderResponse,
   CheckoutPricing,
 } from "../types/order";
+import { CartItem as CartItemType } from "../types/cart";
 import { useCart } from "../contexts/CartContext";
 import { useAuth } from "../contexts/AuthContext";
 import { api } from "../utils/api";
@@ -157,6 +158,42 @@ const formatCurrency = (amount: number) => {
     style: "currency",
     currency: "VND",
   }).format(amount);
+};
+
+const getImageUrl = (
+  imageUrl: string | string[] | undefined,
+): string | null => {
+  if (!imageUrl) return null;
+  const url = Array.isArray(imageUrl) ? imageUrl[0] : imageUrl;
+  if (!url) return null;
+  if (url.startsWith("http")) return url;
+  return `${SERVER_STATIC_ASSET_BASE_URL}${url}`;
+};
+
+const ImageWithFallback = ({ item }: { item: CartItemType }) => {
+  const [hasError, setHasError] = useState(false);
+  const imageUrl = getImageUrl(item.menuItemId.imageUrl);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [imageUrl]);
+
+  if (hasError || !imageUrl) {
+    return (
+      <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 rounded-md">
+        <Utensils className="w-8 h-8" />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={imageUrl}
+      alt={item.menuItemId.name}
+      className="w-full h-full object-cover rounded-md"
+      onError={() => setHasError(true)}
+    />
+  );
 };
 
 function CheckoutPage() {
@@ -405,23 +442,20 @@ function CheckoutPage() {
               </h2>
               <div className="space-y-4 mb-6">
                 {cart.items.map((item) => (
-                  <div key={item.menuItemId._id} className="flex items-center">
-                    <img
-                      src={
-                        item.menuItemId.imageUrl
-                          ? `${SERVER_STATIC_ASSET_BASE_URL}${item.menuItemId.imageUrl}`
-                          : "https://via.placeholder.com/64"
-                      }
-                      alt={item.menuItemId.name}
-                      className="w-16 h-16 object-cover rounded-md mr-4"
-                    />
+                  <div
+                    key={item.menuItemId._id}
+                    className="flex items-center gap-4"
+                  >
+                    <div className="w-16 h-16 flex-shrink-0">
+                      <ImageWithFallback item={item} />
+                    </div>
                     <div className="flex-grow">
                       <p className="font-semibold">{item.menuItemId.name}</p>
                       <p className="text-sm text-gray-500">
                         SL: {item.quantity}
                       </p>
                     </div>
-                    <span className="font-semibold">
+                    <span className="font-semibold w-28 text-right">
                       {formatCurrency(item.price * item.quantity)}
                     </span>
                   </div>
