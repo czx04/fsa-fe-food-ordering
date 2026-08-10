@@ -53,7 +53,7 @@ const AddressSchema = new Schema<IUserAddress>(
     city: { type: String, required: true },
     location: {
       type: { type: String, enum: ['Point'], default: 'Point' },
-      coordinates: { type: [Number], required: false },
+      coordinates: { type: [Number], default: [105.853, 21.024] },
     },
     isDefault: { type: Boolean, default: false },
   },

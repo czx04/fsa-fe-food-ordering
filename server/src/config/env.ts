@@ -26,5 +26,9 @@ export const env = {
   mongodbUri,
   mongodbDbName,
   jwtSecret,
-  jwtRefreshSecret
+  jwtRefreshSecret,
+  vnpTmnCode: process.env.VNP_TMNCODE ?? 'S4OIPMSN',
+  vnpHashSecret: process.env.VNP_HASHSECRET ?? 'WZQVEDINGLPSQCNTEHYZKSVKGDMFKHXU',
+  vnpUrl: process.env.VNP_URL ?? 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
+  vnpReturnUrl: process.env.VNP_RETURN_URL ?? 'http://localhost:5173/payment/success',
 } as const

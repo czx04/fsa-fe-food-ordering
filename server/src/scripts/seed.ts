@@ -296,7 +296,9 @@ const seedData = async () => {
           price: 20000,
         },
       ],
-      total: 190000,
+      subtotal: 190000,
+      discountAmount: 0,
+      grandTotal: 190000,
     })
 
     console.log('Creating order...')

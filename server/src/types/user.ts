@@ -6,5 +6,9 @@ export interface AddAddressPayload {
   ward: string;
   district: string;
   city: string;
+  location?: {
+    type: 'Point';
+    coordinates: [number, number];
+  };
   isDefault: boolean;
 }

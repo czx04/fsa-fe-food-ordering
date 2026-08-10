@@ -9,6 +9,8 @@ import { Restaurant } from '../models/Restaurant.js'
 import { MenuItem } from '../models/MenuItem.js'
 import { Order, IOrderItemSnapshot, IStatusHistory } from '../models/Order.js'
 import * as cartService from './cartService.js'
+import { createVnpayPaymentUrl } from './paymentService.js'
+import { sendOrderConfirmationEmail } from './emailService.js'
 
 const DEFAULT_PAGE = 1
 const DEFAULT_LIMIT = 10
@@ -171,10 +173,14 @@ export const createOrderFromCart = async (
 
   await cartService.clearCart(userId)
 
-  // 8. Handle Payment Redirection
+  // 8. Handle Payment Redirection & Email Trigger
   let paymentUrl: string | undefined
-  if (paymentMethod === 'VNPAY' || paymentMethod === 'MOMO') {
-    paymentUrl = `/payment/mock-redirect?orderId=${newOrder._id}&method=${paymentMethod}`
+  if (paymentMethod.toUpperCase() === 'VNPAY') {
+    paymentUrl = createVnpayPaymentUrl(newOrder)
+  } else if (paymentMethod.toUpperCase() === 'COD') {
+    sendOrderConfirmationEmail(newOrder).catch(err =>
+      console.error('❌ Error sending COD order confirmation email:', err)
+    )
   }
 
   return {

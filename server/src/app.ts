@@ -10,7 +10,7 @@ import orderRouter from './routes/orderRoutes.js'
 import userRouter from './routes/userRoutes.js'
 import { ownerRouter } from './routes/ownerRoutes.js'
 import { adminRouter } from './routes/adminRoutes.js'
-
+import paymentRouter from './routes/paymentRoutes.js'
 
 export const app = express()
 
@@ -25,6 +25,7 @@ app.use('/api/orders', orderRouter)
 app.use('/api/users', userRouter)
 app.use('/api/owner', ownerRouter)
 app.use('/api/admin', adminRouter)
+app.use('/api/payments', paymentRouter)
 
 app.get('/api/health', (_request, response) => {
   response.status(200).json({
@@ -39,7 +40,9 @@ app.use((_request, response) => {
 
 const errorHandler: ErrorRequestHandler = (error, _request, response, _next) => {
   console.error(error)
-  response.status(500).json({ message: 'Internal server error' })
+  const status = error.status || error.statusCode || 500
+  const message = error.message || 'Internal server error'
+  response.status(status).json({ message })
 }
 
 app.use(errorHandler)
