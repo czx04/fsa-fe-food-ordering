@@ -23,7 +23,20 @@ export const addAddress = async (
     payload.isDefault = true;
   }
 
-  user.addresses.push(payload);
+  // Đảm bảo GeoJSON Point location hợp lệ với 2dsphere index của MongoDB
+  const validLocation =
+    payload.location &&
+    Array.isArray(payload.location.coordinates) &&
+    payload.location.coordinates.length === 2
+      ? payload.location
+      : { type: 'Point' as const, coordinates: [105.853, 21.024] as [number, number] };
+
+  const addressToSave = {
+    ...payload,
+    location: validLocation,
+  };
+
+  user.addresses.push(addressToSave);
   await user.save();
   return user;
 };

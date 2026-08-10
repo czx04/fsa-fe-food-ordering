@@ -67,7 +67,6 @@ const AddressModal = ({
       <div className="bg-white p-8 rounded-lg shadow-xl max-w-lg w-full mx-4">
         <h2 className="text-2xl font-bold mb-4">Thêm địa chỉ mới</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Form fields for address */}
           <input
             name="recipientName"
             value={formData.recipientName}
@@ -88,31 +87,33 @@ const AddressModal = ({
             name="line1"
             value={formData.line1}
             onChange={handleChange}
-            placeholder="Số nhà, tên đường"
+            placeholder="Số nhà, tên đường (vd: 123 Nguyễn Huệ)"
             required
             className="w-full p-2 border rounded"
           />
-          <input
-            name="ward"
-            value={formData.ward}
-            onChange={handleChange}
-            placeholder="Phường/Xã"
-            required
-            className="w-full p-2 border rounded"
-          />
-          <input
-            name="district"
-            value={formData.district}
-            onChange={handleChange}
-            placeholder="Quận/Huyện"
-            required
-            className="w-full p-2 border rounded"
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <input
+              name="ward"
+              value={formData.ward}
+              onChange={handleChange}
+              placeholder="Phường / Xã (vd: Phường Bến Nghé)"
+              required
+              className="w-full p-2 border rounded"
+            />
+            <input
+              name="district"
+              value={formData.district}
+              onChange={handleChange}
+              placeholder="Quận / Huyện (vd: Quận 1)"
+              required
+              className="w-full p-2 border rounded"
+            />
+          </div>
           <input
             name="city"
             value={formData.city}
             onChange={handleChange}
-            placeholder="Tỉnh/Thành phố"
+            placeholder="Tỉnh / Thành phố (vd: TP. Hồ Chí Minh)"
             required
             className="w-full p-2 border rounded"
           />
@@ -202,21 +203,21 @@ function CheckoutPage() {
   const [selectedAddress, setSelectedAddress] = useState<UserAddress | null>(
     null,
   );
+  const [paymentMethod, setPaymentMethod] = useState<"COD" | "VNPAY">("COD");
   const [pricing, setPricing] = useState<CheckoutPricing | null>(null);
   const [isCalculating, setIsCalculating] = useState(true);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"COD" | "VNPAY">("COD");
   const navigate = useNavigate();
   const toast = useToast();
 
   useEffect(() => {
-    if (!isAuthLoading && user?.addresses && user.addresses.length > 0) {
+    if (user?.addresses && user.addresses.length > 0) {
       const defaultAddr =
         user.addresses.find((addr) => addr.isDefault) || user.addresses[0];
       setSelectedAddress(defaultAddr);
     }
-  }, [user, isAuthLoading]);
+  }, [user]);
 
   useEffect(() => {
     const calculateTotals = async () => {
@@ -380,53 +381,52 @@ function CheckoutPage() {
               <div className="space-y-4">
                 <label
                   htmlFor="payment-cod"
-                  className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all ${paymentMethod === "COD" ? "border-orange-500 ring-2 ring-orange-200" : "border-gray-200"}`}
+                  className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${
+                    paymentMethod === "COD" ? "border-orange-500 bg-orange-50/30" : "border-gray-200"
+                  }`}
                   onClick={() => setPaymentMethod("COD")}
                 >
                   <input
                     type="radio"
                     name="payment"
                     id="payment-cod"
-                    className="h-5 w-5 text-orange-600"
-                    aria-labelledby="payment-cod-label"
+                    className="h-5 w-5 text-orange-600 focus:ring-orange-500"
                     checked={paymentMethod === "COD"}
-                    readOnly
+                    onChange={() => setPaymentMethod("COD")}
                   />
                   <span className="ml-4">
-                    <span
-                      id="payment-cod-label"
-                      className="font-semibold block"
-                    >
+                    <span className="font-semibold block text-gray-800">
                       Thanh toán khi nhận hàng (COD)
                     </span>
                     <span className="text-sm text-gray-500">
-                      Thanh toán bằng tiền mặt cho tài xế
+                      Thanh toán bằng tiền mặt khi nhận đồ ăn
                     </span>
                   </span>
                 </label>
                 <label
                   htmlFor="payment-vnpay"
-                  className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all ${paymentMethod === "VNPAY" ? "border-orange-500 ring-2 ring-orange-200" : "border-gray-200"}`}
+                  className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${
+                    paymentMethod === "VNPAY" ? "border-blue-500 bg-blue-50/30" : "border-gray-200"
+                  }`}
                   onClick={() => setPaymentMethod("VNPAY")}
                 >
                   <input
                     type="radio"
                     name="payment"
                     id="payment-vnpay"
-                    className="h-5 w-5 text-orange-600"
-                    aria-labelledby="payment-vnpay-label"
+                    className="h-5 w-5 text-blue-600 focus:ring-blue-500"
                     checked={paymentMethod === "VNPAY"}
-                    readOnly
+                    onChange={() => setPaymentMethod("VNPAY")}
                   />
-                  <span className="ml-4">
-                    <span
-                      id="payment-vnpay-label"
-                      className="font-semibold block"
-                    >
-                      Thanh toán qua VNPAY
+                  <span className="ml-4 flex-grow">
+                    <span className="font-semibold block text-gray-800 flex items-center justify-between">
+                      <span>Cổng thanh toán VNPAY</span>
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-bold">
+                        Sandbox Test
+                      </span>
                     </span>
                     <span className="text-sm text-gray-500">
-                      Sử dụng ví điện tử VNPAY hoặc MOMO.
+                      Thanh toán an toàn qua Ví VNPAY, Thẻ ATM Nội địa & QR Code
                     </span>
                   </span>
                 </label>

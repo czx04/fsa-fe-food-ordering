@@ -11,9 +11,13 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(1).default('fallback_secret'),
   JWT_REFRESH_SECRET: z.string().min(1).default('fallback_refresh_secret'),
 
-  // For VNPAY mock payment flow
-  VNPAY_MODE: z.enum(['mock', 'real']).default('mock'),
+  // VNPAY config
+  VNPAY_MODE: z.enum(['mock', 'real']).default('real'),
   CLIENT_URL: z.string().url().default('http://localhost:5173'),
+  VNP_TMNCODE: z.string().default('S4OIPMSN'),
+  VNP_HASHSECRET: z.string().default('WZQVEDINGLPSQCNTEHYZKSVKGDMFKHXU'),
+  VNP_URL: z.string().default('https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'),
+  VNP_RETURN_URL: z.string().default('http://localhost:5173/payment/success'),
 })
 
 const parsedEnv = envSchema.safeParse(process.env)
@@ -43,4 +47,8 @@ export const env = {
   jwtRefreshSecret: parsedEnv.data.JWT_REFRESH_SECRET,
   VNPAY_MODE: parsedEnv.data.VNPAY_MODE,
   CLIENT_URL: parsedEnv.data.CLIENT_URL,
+  vnpTmnCode: parsedEnv.data.VNP_TMNCODE,
+  vnpHashSecret: parsedEnv.data.VNP_HASHSECRET,
+  vnpUrl: parsedEnv.data.VNP_URL,
+  vnpReturnUrl: parsedEnv.data.VNP_RETURN_URL,
 } as const

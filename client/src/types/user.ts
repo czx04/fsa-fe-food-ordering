@@ -7,6 +7,10 @@ export interface UserAddress {
   ward: string;
   district: string;
   city: string;
+  location?: {
+    type: 'Point';
+    coordinates: [number, number];
+  };
   isDefault: boolean;
 }
 
@@ -28,5 +32,9 @@ export interface AddAddressPayload {
   ward: string;
   district: string;
   city: string;
+  location?: {
+    type: 'Point';
+    coordinates: [number, number];
+  };
   isDefault: boolean;
 }
