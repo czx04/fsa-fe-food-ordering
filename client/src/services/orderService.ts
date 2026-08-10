@@ -7,6 +7,8 @@ import {
   ReorderResponse,
   CancelOrderPayload,
   CancelOrderResponse,
+  ReviewPayload,
+  ReviewResponse,
 } from '../types/order';
 
 const getOrderHistory = async (status?: string, page = 1, limit = 10): Promise<OrderHistoryResponse> => {
@@ -38,10 +40,28 @@ const cancelOrder = async (orderId: string, payload: CancelOrderPayload): Promis
   return response.data;
 };
 
+const createReview = async (orderId: string, payload: ReviewPayload): Promise<ReviewResponse> => {
+  const response = await api.post<ReviewResponse>(`/orders/${orderId}/review`, payload);
+  return response.data;
+};
+
+const updateReview = async (orderId: string, payload: ReviewPayload): Promise<ReviewResponse> => {
+  const response = await api.patch<ReviewResponse>(`/orders/${orderId}/review`, payload);
+  return response.data;
+};
+
+const deleteReview = async (orderId: string): Promise<{ message: string }> => {
+  const response = await api.delete<{ message: string }>(`/orders/${orderId}/review`);
+  return response.data;
+};
+
 export const orderService = {
   getOrderHistory,
   getOrderDetail,
   createOrder,
   reorder,
   cancelOrder,
+  createReview,
+  updateReview,
+  deleteReview,
 };

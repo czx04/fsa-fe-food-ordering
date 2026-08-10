@@ -1,3 +1,18 @@
+export interface CustomerReview {
+  _id: string;
+  orderId: string;
+  restaurantId: string;
+  rating: number;
+  content: string;
+  visibilityStatus: "visible" | "hidden" | "flagged";
+  ownerReply: {
+    content: string;
+    createdAt: string;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface OrderSummary {
   _id: string;
   orderNumber: string;
@@ -13,6 +28,7 @@ export interface OrderSummary {
     quantity: number;
   }>;
   orderStatus: string;
+  review?: CustomerReview | null;
 }
 
 export interface OrderHistoryPagination {
@@ -154,4 +170,14 @@ export interface CancelOrderPayload {
 export interface CancelOrderResponse {
   message: string;
   order: OrderDetail;
+}
+
+export interface ReviewPayload {
+  rating: number;
+  content: string;
+}
+
+export interface ReviewResponse {
+  message: string;
+  review: CustomerReview;
 }
