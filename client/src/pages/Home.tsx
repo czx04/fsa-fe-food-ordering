@@ -46,7 +46,7 @@ interface MenuItem {
   slug: string;
   description?: string;
   price: number;
-  imageUrl?: string;
+  imageUrls?: string[];
   restaurantId?: {
     _id: string;
     name: string;
@@ -313,13 +313,20 @@ export const Home = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {menuItems.map((f, i) => (
-                <article className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl transition duration-300 overflow-hidden flex flex-col group" key={f._id}>
+                <article
+                  className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl transition duration-300 overflow-hidden flex flex-col group"
+                  key={f._id}
+                >
                   <Link
-                    to={f.restaurantId?.slug ? `/restaurants/${f.restaurantId.slug}/menu-items/${f.slug}` : '/restaurants'}
+                    to={
+                      f.restaurantId?.slug
+                        ? `/restaurants/${f.restaurantId.slug}/menu-items/${f.slug}`
+                        : "/restaurants"
+                    }
                     className="relative block aspect-[4/3] overflow-hidden"
                   >
                     <img
-                      src={f.imageUrl || "/assets/noodles.jpg"}
+                      src={f.imageUrls?.[0] || "/assets/noodles.jpg"}
                       alt={f.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                     />
@@ -430,9 +437,15 @@ export const Home = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {restaurants.map((r, i) => (
-                <article className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl transition duration-300 overflow-hidden flex flex-col group" key={r._id}>
+                <article
+                  className="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl transition duration-300 overflow-hidden flex flex-col group"
+                  key={r._id}
+                >
                   <div className="relative aspect-[16/9] overflow-hidden">
-                    <Link to={`/restaurants/${r.slug}`} className="block h-full">
+                    <Link
+                      to={`/restaurants/${r.slug}`}
+                      className="block h-full"
+                    >
                       <img
                         src={r.coverImage || "/assets/restaurant.jpg"}
                         alt={r.name}
@@ -449,9 +462,13 @@ export const Home = () => {
                   <div className="p-5 flex-1 flex flex-col justify-between space-y-3">
                     <div>
                       <Link to={`/restaurants/${r.slug}`}>
-                        <h3 className="font-bold text-slate-900 group-hover:text-orange-600 transition text-base line-clamp-1">{r.name}</h3>
+                        <h3 className="font-bold text-slate-900 group-hover:text-orange-600 transition text-base line-clamp-1">
+                          {r.name}
+                        </h3>
                       </Link>
-                      <p className="text-xs text-slate-400 mt-1 line-clamp-1">{r.address}</p>
+                      <p className="text-xs text-slate-400 mt-1 line-clamp-1">
+                        {r.address}
+                      </p>
                     </div>
                     <div className="flex items-center gap-4 text-xs font-medium text-slate-500">
                       <span className="flex items-center gap-1 text-amber-500 font-bold">
@@ -465,7 +482,10 @@ export const Home = () => {
                     </div>
                     <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs font-medium">
                       <span className="text-slate-400">Miễn phí giao hàng</span>
-                      <Link to={`/restaurants/${r.slug}`} className="font-bold text-orange-600 hover:text-orange-700 transition flex items-center gap-1">
+                      <Link
+                        to={`/restaurants/${r.slug}`}
+                        className="font-bold text-orange-600 hover:text-orange-700 transition flex items-center gap-1"
+                      >
                         <span>Xem quán</span>
                         <ArrowRight className="w-3.5 h-3.5" />
                       </Link>
