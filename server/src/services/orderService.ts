@@ -6,12 +6,13 @@ import { AddToCartRequest } from '../types/cart.js'
 import * as cartRepository from '../repositories/cartRepository.js'
 import { User } from '../models/User.js'
 import { Restaurant } from '../models/Restaurant.js'
-import { MenuItem } from '../models/MenuItem.js'
-import { Order, IOrderItemSnapshot, IStatusHistory } from '../models/Order.js'
+import { MenuItem } from '../models/MenuItem.js' // Import IOrder
+import { Order, IOrderItemSnapshot, IStatusHistory, IOrder } from '../models/Order.js'
 import * as cartService from './cartService.js'
 import { createVnpayPaymentUrl } from './paymentService.js'
 import { sendOrderConfirmationEmail } from './emailService.js'
 import { getReviewsForCustomerOrders } from './reviewService.js'
+import { emitOrderUpdate } from './socketService.js'
 
 const DEFAULT_PAGE = 1
 const DEFAULT_LIMIT = 10
@@ -289,5 +290,71 @@ export const cancelOrder = async (
 
   await order.save()
 
-  return orderRepository.findOrderById(orderId) as Promise<OrderDetail>
+  const updatedOrder = await orderRepository.findOrderById(orderId) as OrderDetail
+  emitOrderUpdate(updatedOrder) // Emit socket event
+
+  return updatedOrder
+}
+
+const ownerNextOrderStatuses: Record<string, string[]> = {
+  pending: ['confirmed', 'cancelled'],
+  confirmed: ['preparing', 'cancelled'],
+  preparing: ['delivering'],
+  delivering: ['delivered'],
+}
+
+export const updateOrderStatusByOwner = async (
+  ownerUserId: string,
+  orderId: string,
+  restaurantId: string,
+  nextStatus: string,
+  reason?: string,
+  note?: string,
+): Promise<OrderDetail> => {
+  if (!Types.ObjectId.isValid(orderId)) {
+    throw createError(400, 'ID đơn hàng không hợp lệ.')
+  }
+
+  const order = await Order.findOne({ _id: orderId, restaurantId: new Types.ObjectId(restaurantId) })
+
+  if (!order) {
+    throw createError(404, 'Không tìm thấy đơn hàng hoặc đơn không thuộc nhà hàng này.')
+  }
+
+  if (!ownerNextOrderStatuses[order.orderStatus]?.includes(nextStatus)) {
+    throw createError(409, `Không thể chuyển đơn từ ${order.orderStatus} sang ${nextStatus}.`)
+  }
+
+  if (nextStatus === 'cancelled' && !reason?.trim()) {
+    throw createError(400, 'Vui lòng nhập lý do hủy đơn.')
+  }
+
+  const previousStatus = order.orderStatus
+  const changedAt = new Date()
+  const historyEntry: IStatusHistory = {
+    from: previousStatus,
+    to: nextStatus,
+    changedBy: new Types.ObjectId(ownerUserId),
+    changedByRole: 'restaurant_owner',
+    reason: reason?.trim() || undefined,
+    note: note?.trim() || undefined,
+    changedAt,
+  }
+
+  order.orderStatus = nextStatus as IOrder['orderStatus']
+  order.statusHistory.push(historyEntry)
+
+  if (nextStatus === 'confirmed') order.confirmedAt = changedAt
+  if (nextStatus === 'delivered') order.deliveredAt = changedAt
+  if (nextStatus === 'cancelled') {
+    order.cancelledAt = changedAt
+    order.cancellation = { cancelledBy: new Types.ObjectId(ownerUserId), reason: reason!.trim(), cancelledAt: changedAt }
+  }
+
+  await order.save()
+
+  const updatedOrder = await orderRepository.findOrderById(orderId) as OrderDetail
+  emitOrderUpdate(updatedOrder) // Emit socket event
+
+  return updatedOrder
 }
