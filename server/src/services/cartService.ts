@@ -14,21 +14,18 @@ const getIdString = (field: any): string => {
 };
 
 /**
- * Recalculates subtotal, discount, and grand total for the cart.
- * If a coupon is applied, it re-validates and applies it.
- * @param cart - The cart object.
- * @returns The updated cart with the new total.
+ * Calculates the discount for a given cart and coupon.
+ * @param cart The cart object.
+ * @returns The discount amount.
  */
-const recalculateCart = async (cart: ICart): Promise<ICart> => {
-  cart.subtotal = cart.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
-
-  let discount = 0;
+const calculateDiscount = async (cart: ICart): Promise<number> => {
   if (cart.couponId) {
     const couponIdStr = getIdString(cart.couponId);
     const coupon = (cart.couponId as any)?.code ? (cart.couponId as any) : await Coupon.findById(couponIdStr);
 
     if (coupon?.status === 'active' && new Date() >= new Date(coupon.startsAt) && new Date() <= new Date(coupon.endsAt)) {
       if (cart.subtotal >= coupon.minOrderAmount) {
+        let discount = 0;
         if (coupon.discountType === 'fixed') {
           discount = coupon.discountValue;
         } else { // percentage
@@ -37,17 +34,29 @@ const recalculateCart = async (cart: ICart): Promise<ICart> => {
             discount = coupon.maxDiscountAmount;
           }
         }
-      } else {
-        // Coupon not applicable anymore due to subtotal change, so remove it
-        cart.couponId = null;
+        return discount;
       }
-    } else {
-      // Coupon is invalid/expired, remove it
-      cart.couponId = null;
     }
   }
+  return 0;
+};
 
-  cart.discountAmount = discount;
+/**
+ * Recalculates subtotal, discount, and grand total for the cart.
+ * If a coupon is applied, it re-validates and applies it.
+ * @param cart - The cart object.
+ * @returns The updated cart with the new total.
+ */
+const recalculateCart = async (cart: ICart): Promise<ICart> => {
+  cart.subtotal = cart.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+  const discountAmount = await calculateDiscount(cart);
+
+  if (discountAmount === 0 && cart.couponId) {
+    cart.couponId = null; // Coupon is no longer valid or applicable
+  }
+
+  cart.discountAmount = discountAmount;
   cart.grandTotal = cart.subtotal - cart.discountAmount;
   if (cart.grandTotal < 0) cart.grandTotal = 0;
 
@@ -61,6 +70,43 @@ const recalculateCart = async (cart: ICart): Promise<ICart> => {
  */
 export const getCart = async (userId: string): Promise<ICart | null> => {
   return cartRepository.findCartByUserId(userId);
+};
+
+const createNewCartWithItem = async (userId: string, restaurantId: string, menuItem: any, quantity: number): Promise<ICart> => {
+  const itemPrice = menuItem.salePrice ?? menuItem.basePrice ?? 0;
+  const newCartItems = [{
+    menuItemId: new Types.ObjectId(menuItem._id),
+    quantity,
+    price: itemPrice,
+  } as ICartItem];
+  const subtotal = itemPrice * quantity;
+  return cartRepository.createCart(
+    new Types.ObjectId(userId),
+    new Types.ObjectId(restaurantId),
+    newCartItems,
+    { subtotal, discountAmount: 0, grandTotal: subtotal }
+  );
+};
+
+const updateExistingCartWithItem = async (cart: ICart, menuItem: any, quantity: number): Promise<ICart> => {
+  const menuItemIdStr = getIdString(menuItem._id);
+  const itemIndex = cart.items.findIndex((item) => {
+    return getIdString(item.menuItemId) === menuItemIdStr;
+  });
+
+  if (itemIndex > -1) {
+    cart.items[itemIndex]!.quantity += quantity;
+  } else {
+    const itemPrice = menuItem.salePrice ?? menuItem.basePrice ?? 0;
+    cart.items.push({
+      menuItemId: new Types.ObjectId(menuItem._id),
+      quantity,
+      price: itemPrice,
+    } as ICartItem);
+  }
+
+  const updatedCart = await recalculateCart(cart);
+  return updatedCart.save();
 };
 
 /**
@@ -100,52 +146,17 @@ export const addItemToCart = async (
       cart = null; // Set cart to null to create a new one.
     } else {
       // Conflict: cart has items from another restaurant.
-      const existingRestaurantName = (cart.restaurantId as any)?.name || 'quán ăn khác';
-      throw createError(409, `Giỏ hàng của bạn đang có món từ "${existingRestaurantName}". Bạn có muốn xóa giỏ hàng cũ và thêm món ăn này không?`);
+      const restaurant = cart.restaurantId as any;
+      const existingRestaurantName = (restaurant && 'name' in restaurant) ? restaurant.name : 'quán ăn khác';
+      throw createError(409, `Giỏ hàng của bạn đang có món từ nhà hàng "${existingRestaurantName}". Bạn có muốn xóa giỏ hàng cũ và thêm món ăn này không?`);
     }
   }
 
   if (!cart) {
-    // Create a new cart
-    const itemPrice = menuItem.salePrice ?? menuItem.basePrice ?? 0;
-    const newCartItems = [{
-      menuItemId: new Types.ObjectId(menuItemId),
-      quantity,
-      price: itemPrice,
-    } as ICartItem];
-    const subtotal = itemPrice * quantity;
-    const newCart = await cartRepository.createCart(
-      new Types.ObjectId(userId),
-      new Types.ObjectId(restaurantId),
-      newCartItems,
-      { subtotal, discountAmount: 0, grandTotal: subtotal }
-    );
-    return newCart;
+    return createNewCartWithItem(userId, restaurantId, menuItem, quantity);
   }
 
-  // Update existing cart
-  const itemIndex = cart.items.findIndex((item) => {
-    return getIdString(item.menuItemId) === menuItemId;
-  });
-
-  if (itemIndex > -1) {
-    // Item exists, update quantity
-    const currentItem = cart.items[itemIndex];
-    if (currentItem) {
-      currentItem.quantity += quantity;
-    }
-  } else {
-    // Item does not exist, add it
-    const itemPrice = menuItem.salePrice ?? menuItem.basePrice ?? 0;
-    cart.items.push({
-      menuItemId: new Types.ObjectId(menuItemId),
-      quantity,
-      price: itemPrice,
-    } as ICartItem);
-  }
-
-  const updatedCart = await recalculateCart(cart);
-  return updatedCart.save();
+  return updateExistingCartWithItem(cart, menuItem, quantity);
 };
 
 /**
@@ -164,7 +175,7 @@ export const calculateCheckout = async (
   }
 
   const restaurant = cart.restaurantId as any;
-  if (!restaurant || typeof restaurant.delivery?.fee === 'undefined') {
+  if (!restaurant || restaurant.delivery?.fee == null) {
     throw createError(404, 'Không tìm thấy thông tin nhà hàng hoặc phí vận chuyển.');
   }
 

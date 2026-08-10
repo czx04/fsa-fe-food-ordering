@@ -66,6 +66,7 @@ export const getOrderDetail = async (
 export const createOrderFromCart = async (
   userId: string,
   payload: CreateOrderPayload,
+  req?: any,
 ): Promise<{ order: { _id: string; orderNumber: string }; paymentUrl?: string }> => {
   const { paymentMethod, deliveryAddress, note } = payload
 
@@ -176,7 +177,7 @@ export const createOrderFromCart = async (
   // 8. Handle Payment Redirection & Email Trigger
   let paymentUrl: string | undefined
   if (paymentMethod.toUpperCase() === 'VNPAY') {
-    paymentUrl = createVnpayPaymentUrl(newOrder)
+    paymentUrl = createVnpayPaymentUrl(newOrder, req?.ip)
   } else if (paymentMethod.toUpperCase() === 'COD') {
     sendOrderConfirmationEmail(newOrder).catch(err =>
       console.error('❌ Error sending COD order confirmation email:', err)
@@ -232,9 +233,9 @@ export const reorderOrder = async (
     }
   }
 
-  // Clear current cart if it's from a different restaurant, then add items
   const currentCart = await cartRepository.findCartByUserId(userId)
-  if (currentCart && currentCart.restaurantId.toString() !== restaurantId.toString()) {
+  const currentCartRestId = currentCart?.restaurantId ? ((currentCart.restaurantId as any)._id?.toString() || currentCart.restaurantId.toString()) : ''
+  if (currentCart && currentCartRestId !== restaurantId.toString()) {
     await cartService.clearCart(userId)
   }
 

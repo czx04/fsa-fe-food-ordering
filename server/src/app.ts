@@ -1,5 +1,7 @@
 import cors from 'cors'
 import express, { type ErrorRequestHandler } from 'express'
+import { ZodError } from 'zod'
+import createError from 'http-errors'
 
 import { env } from './config/env.js'
 
@@ -16,6 +18,9 @@ export const app = express()
 
 app.disable('x-powered-by')
 app.use(cors({ origin: env.clientOrigin }))
+
+// Serve static files from the 'public' directory
+app.use(express.static('public'))
 app.use(express.json())
 
 app.use('/api/auth', authRouter)
@@ -35,13 +40,35 @@ app.get('/api/health', (_request, response) => {
 })
 
 app.use((_request, response) => {
-  response.status(404).json({ message: 'Route not found' })
+  response.status(404).json({ message: 'API Route not found' })
 })
 
 const errorHandler: ErrorRequestHandler = (error, _request, response, _next) => {
   console.error(error)
+
+  if (error instanceof ZodError) {
+    return response.status(400).json({
+      message: 'Dữ liệu đầu vào không hợp lệ.',
+      errors: error.format(),
+    })
+  }
+
+  if (createError.isHttpError(error)) {
+    return response.status(error.statusCode).json({ message: error.message })
+  }
+
+  // Handle Mongoose duplicate key error
+  if (error.name === 'MongoServerError' && (error as any).code === 11000) {
+    return response.status(409).json({ message: 'Dữ liệu bị trùng lặp. Vui lòng kiểm tra lại thông tin.' })
+  }
+
+  // Handle Mongoose validation error
+  if (error.name === 'ValidationError') {
+    return response.status(400).json({ message: error.message })
+  }
+
   const status = error.status || error.statusCode || 500
-  const message = error.message || 'Internal server error'
+  const message = error.message || 'Đã có lỗi xảy ra ở máy chủ.'
   response.status(status).json({ message })
 }
 

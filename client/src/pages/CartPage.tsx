@@ -1,14 +1,61 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
 import { useCart } from "../contexts/CartContext";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Loader2,
+  Minus,
+  Plus,
+  Trash2,
+  Utensils,
+} from "lucide-react";
 import { api } from "../utils/api";
 
+import { ConfirmationModal } from "../components/ConfirmationModal";
+import { CartItem as CartItemType } from "../types/cart";
+import { useToast } from "../contexts/ToastContext";
+import { SERVER_STATIC_ASSET_BASE_URL } from "../utils/constants";
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
   }).format(amount);
+};
+
+const getImageUrl = (
+  imageUrl: string | string[] | undefined,
+): string | null => {
+  if (!imageUrl) return null;
+  const url = Array.isArray(imageUrl) ? imageUrl[0] : imageUrl;
+  if (!url) return null;
+  if (url.startsWith("http")) return url;
+  return `${SERVER_STATIC_ASSET_BASE_URL}${url}`;
+};
+
+const ImageWithFallback = ({ item }: { item: CartItemType }) => {
+  const [hasError, setHasError] = useState(false);
+  const imageUrl = getImageUrl(item.menuItemId.imageUrl);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [imageUrl]);
+
+  if (hasError || !imageUrl) {
+    return (
+      <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400 rounded-md">
+        <Utensils className="w-8 h-8" />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={imageUrl}
+      alt={item.menuItemId.name}
+      className="w-full h-full object-cover rounded-md"
+      onError={() => setHasError(true)}
+    />
+  );
 };
 
 function CartPage() {
@@ -17,11 +64,13 @@ function CartPage() {
   const [couponCodeInput, setCouponCodeInput] = useState("");
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [couponError, setCouponError] = useState("");
-  const [removingItems, setRemovingItems] = useState<string[]>([]);
+  const [itemToDelete, setItemToDelete] = useState<CartItemType | null>(null);
+  const [isClearingCart, setIsClearingCart] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
+  const toast = useToast();
 
   useEffect(() => {
-    // Sync local state with context state
     setDisplayCart(contextCart);
     if (contextCart?.couponId?.code) {
       setCouponCodeInput(contextCart.couponId.code);
@@ -57,40 +106,39 @@ function CartPage() {
       fetchCart();
     } catch (error) {
       console.error("Failed to update quantity:", error);
-      alert("Lỗi cập nhật số lượng. Vui lòng thử lại.");
+      toast.error("Lỗi cập nhật số lượng. Vui lòng thử lại.");
       setDisplayCart(originalCart);
     }
   };
 
-  const handleRemoveItem = async (menuItemId: string) => {
-    if (!displayCart) return;
-
-    // Start fade-out animation
-    setRemovingItems((prev) => [...prev, menuItemId]);
-
-    // Wait for animation to finish before removing from state and calling API
-    setTimeout(async () => {
-      try {
-        await api.delete(`/cart/items/${menuItemId}`);
-        fetchCart(); // This will update context and trigger re-render
-      } catch (error) {
-        console.error("Failed to remove item:", error);
-        alert("Lỗi xóa sản phẩm. Vui lòng thử lại.");
-        // Rollback animation
-        setRemovingItems((prev) => prev.filter((id) => id !== menuItemId));
-      }
-    }, 300); // Corresponds to transition duration
+  const handleConfirmRemoveItem = async () => {
+    if (!itemToDelete) return;
+    setIsProcessing(true);
+    try {
+      await api.delete(`/cart/items/${itemToDelete.menuItemId._id}`);
+      toast.success(`Đã xóa "${itemToDelete.menuItemId.name}" khỏi giỏ hàng.`);
+      await fetchCart();
+    } catch (error) {
+      console.error("Failed to remove item:", error);
+      toast.error("Lỗi xóa sản phẩm. Vui lòng thử lại.");
+    } finally {
+      setIsProcessing(false);
+      setItemToDelete(null);
+    }
   };
 
-  const handleClearCart = async () => {
-    if (window.confirm("Bạn có chắc muốn xóa toàn bộ giỏ hàng?")) {
-      try {
-        await api.delete("/cart");
-        fetchCart();
-      } catch (error) {
-        console.error("Failed to clear cart:", error);
-        alert("Lỗi xóa giỏ hàng. Vui lòng thử lại.");
-      }
+  const handleConfirmClearCart = async () => {
+    setIsProcessing(true);
+    try {
+      await api.delete("/cart");
+      toast.success("Đã xóa tất cả sản phẩm khỏi giỏ hàng.");
+      await fetchCart();
+    } catch (error) {
+      console.error("Failed to clear cart:", error);
+      toast.error("Lỗi xóa giỏ hàng. Vui lòng thử lại.");
+    } finally {
+      setIsProcessing(false);
+      setIsClearingCart(false);
     }
   };
 
@@ -112,6 +160,15 @@ function CartPage() {
     }
   };
 
+  const renderCouponButtonContent = () =>
+    isApplyingCoupon ? (
+      <Loader2 className="w-4 h-4 animate-spin" />
+    ) : displayCart?.couponId ? (
+      "Đã áp dụng"
+    ) : (
+      "Áp dụng"
+    );
+
   if (isCartLoading) {
     return (
       <main className="container mx-auto p-4">
@@ -132,7 +189,8 @@ function CartPage() {
           to="/restaurants"
           className="mt-6 inline-block text-orange-500 hover:underline"
         >
-          <ArrowLeft className="inline w-4 h-4" /> Bắt đầu mua sắm
+          <ArrowLeft className="inline w-4 h-4" /> Thêm sản phẩm vào giỏ hàng
+          trước
         </Link>
       </main>
     );
@@ -161,7 +219,7 @@ function CartPage() {
           </h1>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col lg:flex-row lg:items-start gap-8">
           {/* Left Section: Cart Items */}
           <div className="lg:w-2/3 bg-white p-6 rounded-lg shadow-md">
             <div className="flex justify-between items-center mb-6 border-b pb-4">
@@ -176,42 +234,34 @@ function CartPage() {
               </div>
               <button
                 type="button"
-                onClick={handleClearCart}
-                className="text-red-500 hover:text-red-700 text-sm font-medium"
+                onClick={() => setIsClearingCart(true)}
+                className="text-red-500 hover:text-red-700 text-sm font-medium flex items-center gap-1"
               >
-                Xóa tất cả
+                <Trash2 className="w-4 h-4" /> Xóa tất cả
               </button>
             </div>
 
             {displayCart.items.map((item) => (
               <div
                 key={item.menuItemId._id}
-                className={`flex items-center py-4 border-b last:border-b-0 transition-opacity duration-300 ${
-                  removingItems.includes(item.menuItemId._id)
-                    ? "opacity-0"
-                    : "opacity-100"
-                }`}
+                className="flex items-center py-4 border-b last:border-b-0"
               >
-                <img
-                  src={
-                    item.menuItemId.imageUrl || "https://via.placeholder.com/80"
-                  }
-                  alt={item.menuItemId.name}
-                  className="w-20 h-20 object-cover rounded-md mr-4"
-                />
+                <div className="w-20 h-20 flex-shrink-0 mr-4">
+                  <ImageWithFallback item={item} />
+                </div>
                 <div className="flex-grow">
                   <h3 className="font-semibold text-gray-800">
                     {item.menuItemId.name}
                   </h3>
                   <button
                     type="button"
-                    onClick={() => handleRemoveItem(item.menuItemId._id)}
-                    className="text-red-500 hover:text-red-700 text-xs mt-1"
+                    onClick={() => setItemToDelete(item)}
+                    className="text-red-500 hover:text-red-700 text-xs mt-1 flex items-center gap-1"
                   >
-                    Xóa
+                    <Trash2 className="w-3 h-3" /> Xóa
                   </button>
                 </div>
-                <div className="flex items-center space-x-2 mr-4">
+                <div className="inline-flex items-center overflow-hidden rounded-lg border border-gray-200 mr-4">
                   <button
                     type="button"
                     onClick={() =>
@@ -221,11 +271,13 @@ function CartPage() {
                       )
                     }
                     disabled={item.quantity <= 1}
-                    className="bg-gray-200 text-gray-700 px-2 py-1 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="grid h-9 w-9 place-items-center bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    -
+                    <Minus className="w-3 h-3" />
                   </button>
-                  <span className="font-medium">{item.quantity}</span>
+                  <span className="grid h-9 min-w-9 place-items-center text-sm font-bold">
+                    {item.quantity}
+                  </span>
                   <button
                     type="button"
                     onClick={() =>
@@ -234,12 +286,12 @@ function CartPage() {
                         item.quantity + 1,
                       )
                     }
-                    className="bg-gray-200 text-gray-700 px-2 py-1 rounded-md hover:bg-gray-300"
+                    className="grid h-9 w-9 place-items-center bg-white text-gray-700 hover:bg-gray-100"
                   >
-                    +
+                    <Plus className="w-3 h-3" />
                   </button>
                 </div>
-                <span className="font-semibold text-gray-800">
+                <span className="font-semibold text-gray-800 w-28 text-right">
                   {formatCurrency(item.price * item.quantity)}
                 </span>
               </div>
@@ -249,16 +301,6 @@ function CartPage() {
           {/* Right Section: Order Summary */}
           <div className="lg:w-1/3">
             <div className="bg-white p-6 rounded-lg shadow-md sticky top-24">
-              <Link
-                to={
-                  restaurant.slug
-                    ? `/restaurants/${restaurant.slug}`
-                    : "/restaurants"
-                }
-                className="text-orange-500 hover:underline text-sm font-medium"
-              >
-                ← Chọn thêm món
-              </Link>
               <h2 className="text-xl font-bold text-gray-800 my-4">
                 Tóm tắt đơn hàng
               </h2>
@@ -282,13 +324,7 @@ function CartPage() {
                     disabled={isApplyingCoupon || !!displayCart.couponId}
                     className="bg-orange-500 text-white px-4 py-2 hover:bg-orange-600 transition-colors duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center w-28"
                   >
-                    {isApplyingCoupon ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : displayCart.couponId ? (
-                      "Đã áp dụng"
-                    ) : (
-                      "Áp dụng"
-                    )}
+                    {renderCouponButtonContent()}
                   </button>
                 </div>
                 {couponError && (
@@ -340,6 +376,28 @@ function CartPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={!!itemToDelete}
+        onClose={() => setItemToDelete(null)}
+        onConfirm={handleConfirmRemoveItem}
+        title="Xác nhận xóa món"
+        message={`Bạn có chắc muốn xóa món "${itemToDelete?.menuItemId.name}" khỏi giỏ hàng?`}
+        confirmText="Xóa"
+        isDestructive
+        isConfirming={isProcessing}
+      />
+
+      <ConfirmationModal
+        isOpen={isClearingCart}
+        onClose={() => setIsClearingCart(false)}
+        onConfirm={handleConfirmClearCart}
+        title="Xác nhận xóa giỏ hàng"
+        message="Bạn có chắc muốn xóa tất cả các món trong giỏ hàng không? Hành động này không thể hoàn tác."
+        confirmText="Xóa tất cả"
+        isDestructive
+        isConfirming={isProcessing}
+      />
     </main>
   );
 }

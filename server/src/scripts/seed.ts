@@ -82,6 +82,8 @@ const seedData = async () => {
       passwordHash,
       fullName: 'System Admin',
       role: 'admin',
+      status: 'active',
+      emailVerifiedAt: new Date(),
     })
 
     const owner1 = await User.create({
@@ -90,6 +92,8 @@ const seedData = async () => {
       passwordHash,
       fullName: 'Restaurant Owner 1',
       role: 'restaurant_owner',
+      status: 'active',
+      emailVerifiedAt: new Date(),
     })
 
     const owner2 = await User.create({
@@ -98,6 +102,8 @@ const seedData = async () => {
       passwordHash,
       fullName: 'Restaurant Owner 2',
       role: 'restaurant_owner',
+      status: 'active',
+      emailVerifiedAt: new Date(),
     })
 
     const customer = await User.create({
@@ -106,6 +112,8 @@ const seedData = async () => {
       passwordHash,
       fullName: 'John Customer',
       role: 'customer',
+      status: 'active',
+      emailVerifiedAt: new Date(),
       addresses: [
         {
           label: 'Nhà riêng',
@@ -318,6 +326,11 @@ const seedData = async () => {
         phone: res3.phone,
         logoUrl: res3.logoUrl,
         addressText: buildAddressText(res3.address.line1, res3.address.ward, res3.address.district, res3.address.city),
+        delivery: {
+          fee: res3.delivery.fee,
+          minMinutes: res3.delivery.minMinutes,
+          maxMinutes: res3.delivery.maxMinutes,
+        },
       },
       recipient: {
         fullName: customer.fullName,
