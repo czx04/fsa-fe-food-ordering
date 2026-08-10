@@ -45,7 +45,8 @@ const ReviewSchema = new Schema<IReview>(
   }
 )
 
-ReviewSchema.index({ restaurantId: 1, rating: -1 })
+ReviewSchema.index({ restaurantId: 1, visibilityStatus: 1, createdAt: -1 })
+ReviewSchema.index({ restaurantId: 1, rating: -1, createdAt: -1 })
 ReviewSchema.index({ customerId: 1 })
 
 export const Review = mongoose.model<IReview>('Review', ReviewSchema)

@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../utils/api";
+import {
+  DEFAULT_DISH_IMAGE_URL,
+  DEFAULT_RESTAURANT_IMAGE_URL,
+  HOME_PROMOTION_IMAGE_URL,
+  resolveAssetUrl,
+} from "../utils/constants";
 import { useAuth } from "../contexts/AuthContext";
 import { LoginModal } from "../components/LoginModal";
 import {
@@ -46,6 +52,7 @@ interface MenuItem {
   slug: string;
   description?: string;
   price: number;
+  imageUrl?: string | null;
   imageUrls?: string[];
   restaurantId?: {
     _id: string;
@@ -183,7 +190,7 @@ export const Home = () => {
               <div className="relative mx-auto w-full max-w-md">
                 <div className="absolute -inset-4 bg-gradient-to-r from-orange-400 to-amber-300 rounded-3xl blur-2xl opacity-20"></div>
                 <img
-                  src="/assets/noodles.jpg"
+                  src={DEFAULT_DISH_IMAGE_URL}
                   alt="Món ăn nổi bật"
                   className="relative rounded-3xl shadow-2xl w-full h-[400px] object-cover border-4 border-white"
                 />
@@ -326,9 +333,16 @@ export const Home = () => {
                     className="relative block aspect-[4/3] overflow-hidden"
                   >
                     <img
-                      src={f.imageUrls?.[0] || "/assets/noodles.jpg"}
+                      src={resolveAssetUrl(
+                        f.imageUrl || f.imageUrls?.[0],
+                        DEFAULT_DISH_IMAGE_URL,
+                      )}
                       alt={f.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                      onError={(event) => {
+                        event.currentTarget.onerror = null;
+                        event.currentTarget.src = DEFAULT_DISH_IMAGE_URL;
+                      }}
                     />
                     <span className="absolute top-3 left-3 px-2.5 py-1 bg-orange-500 text-white text-[10px] font-bold rounded-lg uppercase shadow">
                       {i % 2 === 0 ? "-20%" : "Bán chạy"}
@@ -403,7 +417,7 @@ export const Home = () => {
               </Link>
             </div>
             <img
-              src="/assets/chicken.jpg"
+              src={HOME_PROMOTION_IMAGE_URL}
               alt="Khuyến mãi"
               className="w-72 h-48 object-cover rounded-2xl shadow-2xl transform md:rotate-3 border-4 border-white/20 relative z-10"
             />
@@ -447,9 +461,16 @@ export const Home = () => {
                       className="block h-full"
                     >
                       <img
-                        src={r.coverImage || "/assets/restaurant.jpg"}
+                        src={resolveAssetUrl(
+                          r.coverImage,
+                          DEFAULT_RESTAURANT_IMAGE_URL,
+                        )}
                         alt={r.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                        onError={(event) => {
+                          event.currentTarget.onerror = null;
+                          event.currentTarget.src = DEFAULT_RESTAURANT_IMAGE_URL;
+                        }}
                       />
                       <span className="absolute top-3 left-3 px-2.5 py-1 bg-emerald-500 text-white text-[10px] font-bold rounded-lg uppercase shadow">
                         {i === 0 ? "Hot" : "Mở cửa"}

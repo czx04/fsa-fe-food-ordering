@@ -1,66 +1,85 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router";
-import SignIn from "./pages/auth/SignIn";
-import SignUp from "./pages/auth/SignUp";
-import NotFound from "./pages/OtherPage/NotFound";
-import UserProfiles from "./pages/UserProfiles";
-import Videos from "./pages/UiElements/Videos";
-import Images from "./pages/UiElements/Images";
-import Alerts from "./pages/UiElements/Alerts";
-import Badges from "./pages/UiElements/Badges";
-import Avatars from "./pages/UiElements/Avatars";
-import Buttons from "./pages/UiElements/Buttons";
-import LineChart from "./pages/Charts/LineChart";
-import BarChart from "./pages/Charts/BarChart";
-import Calendar from "./pages/Calendar";
-import BasicTables from "./pages/Tables/BasicTables";
-import FormElements from "./pages/Forms/FormElements";
-import Blank from "./pages/Blank";
-import AppLayout from "./layout/AppLayout";
-import { ScrollToTop } from "./components/common/ScrollToTop";
-import Home from "./pages/Dashboard/Home";
+import { lazy, Suspense } from "react";
+import { Route, Routes } from "react-router";
+import { AuthenticatedRoute, RoleRoute } from "./app/route-guards";
+import { PageLoader } from "./components/ui";
+import { AuthLayout } from "./layouts/AuthLayout";
+import { DashboardLayout } from "./layouts/DashboardLayout";
+
+const LoginPage = lazy(() => import("./pages/auth").then((module) => ({ default: module.LoginPage })));
+const ForgotPasswordPage = lazy(() => import("./pages/auth").then((module) => ({ default: module.ForgotPasswordPage })));
+const ResetPasswordPage = lazy(() => import("./pages/auth").then((module) => ({ default: module.ResetPasswordPage })));
+const VerifyEmailPage = lazy(() => import("./pages/auth").then((module) => ({ default: module.VerifyEmailPage })));
+const AccountPage = lazy(() => import("./pages/common").then((module) => ({ default: module.AccountPage })));
+const ForbiddenPage = lazy(() => import("./pages/common").then((module) => ({ default: module.ForbiddenPage })));
+const NotFoundPage = lazy(() => import("./pages/common").then((module) => ({ default: module.NotFoundPage })));
+const RoleHomeRedirect = lazy(() => import("./pages/common").then((module) => ({ default: module.RoleHomeRedirect })));
+const OwnerHomePage = lazy(() => import("./pages/owner").then((module) => ({ default: module.OwnerHomePage })));
+const OwnerMenuItemEditorPage = lazy(() => import("./pages/owner").then((module) => ({ default: module.OwnerMenuItemEditorPage })));
+const OwnerMenuPage = lazy(() => import("./pages/owner").then((module) => ({ default: module.OwnerMenuPage })));
+const OwnerOnboardingPage = lazy(() => import("./pages/owner").then((module) => ({ default: module.OwnerOnboardingPage })));
+const OwnerOrderDetailPage = lazy(() => import("./pages/owner").then((module) => ({ default: module.OwnerOrderDetailPage })));
+const OwnerOrdersPage = lazy(() => import("./pages/owner").then((module) => ({ default: module.OwnerOrdersPage })));
+const OwnerOverviewPage = lazy(() => import("./pages/owner").then((module) => ({ default: module.OwnerOverviewPage })));
+const OwnerRestaurantsPage = lazy(() => import("./pages/owner").then((module) => ({ default: module.OwnerRestaurantsPage })));
+const OwnerReviewsPage = lazy(() => import("./pages/owner").then((module) => ({ default: module.OwnerReviewsPage })));
+const OwnerSettingsPage = lazy(() => import("./pages/owner").then((module) => ({ default: module.OwnerSettingsPage })));
+const AdminAnalyticsPage = lazy(() => import("./pages/admin").then((module) => ({ default: module.AdminAnalyticsPage })));
+const AdminAuditLogsPage = lazy(() => import("./pages/admin").then((module) => ({ default: module.AdminAuditLogsPage })));
+const AdminCouponsPage = lazy(() => import("./pages/admin").then((module) => ({ default: module.AdminCouponsPage })));
+const AdminCuisinesPage = lazy(() => import("./pages/admin").then((module) => ({ default: module.AdminCuisinesPage })));
+const AdminOrderDetailPage = lazy(() => import("./pages/admin").then((module) => ({ default: module.AdminOrderDetailPage })));
+const AdminOrdersPage = lazy(() => import("./pages/admin").then((module) => ({ default: module.AdminOrdersPage })));
+const AdminOverviewPage = lazy(() => import("./pages/admin").then((module) => ({ default: module.AdminOverviewPage })));
+const AdminRestaurantDetailPage = lazy(() => import("./pages/admin").then((module) => ({ default: module.AdminRestaurantDetailPage })));
+const AdminRestaurantsPage = lazy(() => import("./pages/admin").then((module) => ({ default: module.AdminRestaurantsPage })));
+const AdminReviewsPage = lazy(() => import("./pages/admin").then((module) => ({ default: module.AdminReviewsPage })));
+const AdminUserDetailPage = lazy(() => import("./pages/admin").then((module) => ({ default: module.AdminUserDetailPage })));
+const AdminUsersPage = lazy(() => import("./pages/admin").then((module) => ({ default: module.AdminUsersPage })));
 
 export default function App() {
   return (
-    <>
-      <Router>
-        <ScrollToTop />
-        <Routes>
-          {/* Dashboard Layout */}
-          <Route element={<AppLayout />}>
-            <Route index path="/" element={<Home />} />
-
-            {/* Others Page */}
-            <Route path="/profile" element={<UserProfiles />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/blank" element={<Blank />} />
-
-            {/* Forms */}
-            <Route path="/form-elements" element={<FormElements />} />
-
-            {/* Tables */}
-            <Route path="/basic-tables" element={<BasicTables />} />
-
-            {/* Ui Elements */}
-            <Route path="/alerts" element={<Alerts />} />
-            <Route path="/avatars" element={<Avatars />} />
-            <Route path="/badge" element={<Badges />} />
-            <Route path="/buttons" element={<Buttons />} />
-            <Route path="/images" element={<Images />} />
-            <Route path="/videos" element={<Videos />} />
-
-            {/* Charts */}
-            <Route path="/line-chart" element={<LineChart />} />
-            <Route path="/bar-chart" element={<BarChart />} />
+    <Suspense fallback={<PageLoader />}><Routes>
+      <Route element={<AuthLayout />}>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
+      </Route>
+      <Route element={<AuthenticatedRoute />}>
+        <Route element={<DashboardLayout />}>
+          <Route index element={<RoleHomeRedirect />} />
+          <Route path="/account" element={<AccountPage />} />
+          <Route path="/forbidden" element={<ForbiddenPage />} />
+          <Route element={<RoleRoute role="restaurant_owner" />}>
+            <Route path="/owner" element={<OwnerHomePage />} />
+            <Route path="/owner/onboarding" element={<OwnerOnboardingPage />} />
+            <Route path="/owner/restaurants" element={<OwnerRestaurantsPage />} />
+            <Route path="/owner/restaurants/:restaurantId/overview" element={<OwnerOverviewPage />} />
+            <Route path="/owner/restaurants/:restaurantId/orders" element={<OwnerOrdersPage />} />
+            <Route path="/owner/restaurants/:restaurantId/orders/:orderId" element={<OwnerOrderDetailPage />} />
+            <Route path="/owner/restaurants/:restaurantId/menu" element={<OwnerMenuPage />} />
+            <Route path="/owner/restaurants/:restaurantId/menu/items/new" element={<OwnerMenuItemEditorPage />} />
+            <Route path="/owner/restaurants/:restaurantId/menu/items/:itemId/edit" element={<OwnerMenuItemEditorPage />} />
+            <Route path="/owner/restaurants/:restaurantId/reviews" element={<OwnerReviewsPage />} />
+            <Route path="/owner/restaurants/:restaurantId/settings" element={<OwnerSettingsPage />} />
           </Route>
-
-          {/* Auth Layout */}
-          <Route path="/signin" element={<SignIn />} />
-          <Route path="/signup" element={<SignUp />} />
-
-          {/* Fallback Route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Router>
-    </>
+          <Route element={<RoleRoute role="admin" />}>
+            <Route path="/admin/overview" element={<AdminOverviewPage />} />
+            <Route path="/admin/restaurants" element={<AdminRestaurantsPage />} />
+            <Route path="/admin/restaurants/:restaurantId" element={<AdminRestaurantDetailPage />} />
+            <Route path="/admin/users" element={<AdminUsersPage />} />
+            <Route path="/admin/users/:userId" element={<AdminUserDetailPage />} />
+            <Route path="/admin/orders" element={<AdminOrdersPage />} />
+            <Route path="/admin/orders/:orderId" element={<AdminOrderDetailPage />} />
+            <Route path="/admin/cuisines" element={<AdminCuisinesPage />} />
+            <Route path="/admin/coupons" element={<AdminCouponsPage />} />
+            <Route path="/admin/reviews" element={<AdminReviewsPage />} />
+            <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
+            <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />
+          </Route>
+        </Route>
+      </Route>
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes></Suspense>
   );
 }

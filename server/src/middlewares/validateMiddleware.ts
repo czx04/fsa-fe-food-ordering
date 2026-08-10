@@ -33,8 +33,11 @@ export const validate = (options: ValidateOptions | ZodSchema) => {
     } catch (error) {
       if (error instanceof ZodError) {
         const firstError = error.issues[0]?.message || 'Dữ liệu không hợp lệ.'
+        const fieldErrors = Object.fromEntries(error.issues.map((issue) => [issue.path.join('.'), issue.message]))
         res.status(400).json({
           message: firstError,
+          code: 'VALIDATION_ERROR',
+          fieldErrors,
           errors: error.issues.map((issue) => ({
             field: issue.path.join('.'),
             message: issue.message,

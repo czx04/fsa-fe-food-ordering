@@ -1,9 +1,9 @@
 import bcrypt from 'bcrypt'
 import { User, IUser } from '../models/User.js'
-import { generateTokens } from '../utils/jwt.js'
+import { generateTokens, verifyRefreshToken } from '../utils/jwt.js'
 
 export const loginUser = async (email: string, passwordRaw: string) => {
-  const user = await User.findOne({ email: email.toLowerCase().trim() }).select('+passwordHash +refreshTokens')
+  const user = await User.findOne({ email: email.toLowerCase().trim(), deletedAt: null }).select('+passwordHash +refreshTokens')
   if (!user) {
     throw new Error('Email hoặc mật khẩu không chính xác.')
   }
@@ -51,9 +51,13 @@ export const loginUser = async (email: string, passwordRaw: string) => {
       _id: user._id,
       fullName: user.fullName,
       email: user.email,
+      phone: user.phone,
       role: user.role,
       status: user.status,
       avatarUrl: user.avatarUrl,
+      emailVerifiedAt: user.emailVerifiedAt,
+      lastLoginAt: user.lastLoginAt,
+      createdAt: user.createdAt,
     },
     accessToken,
     refreshToken,
@@ -64,6 +68,32 @@ export const getMe = async (userId: string) => {
   const user = await User.findById(userId).select('-passwordHash -refreshTokens')
   if (!user) throw new Error('Người dùng không tồn tại.')
   return user
+}
+
+export const refreshSession = async (refreshToken: string) => {
+  const decoded = verifyRefreshToken(refreshToken)
+  if (!decoded) throw new Error('Phiên đăng nhập không hợp lệ hoặc đã hết hạn.')
+
+  const user = await User.findOne({ _id: decoded.userId, deletedAt: null }).select('+refreshTokens')
+  if (!user || !user.refreshTokens.includes(refreshToken)) {
+    throw new Error('Phiên đăng nhập không còn hiệu lực.')
+  }
+  if (user.status === 'locked') throw new Error('Tài khoản đang bị khóa.')
+
+  const tokens = generateTokens(user)
+  user.refreshTokens = user.refreshTokens.filter((token) => token !== refreshToken)
+  user.refreshTokens.push(tokens.refreshToken)
+  await user.save()
+  return tokens
+}
+
+export const logoutSession = async (refreshToken: string) => {
+  const decoded = verifyRefreshToken(refreshToken)
+  if (!decoded) return
+  const user = await User.findById(decoded.userId).select('+refreshTokens')
+  if (!user) return
+  user.refreshTokens = user.refreshTokens.filter((token) => token !== refreshToken)
+  await user.save()
 }
 
 export interface RegisterPayload {
@@ -227,5 +257,3 @@ export const resetPasswordWithToken = async (email: string, resetTokenRaw: strin
 
   return { message: 'Đặt lại mật khẩu thành công. Vui lòng đăng nhập với mật khẩu mới.' }
 }
-
-

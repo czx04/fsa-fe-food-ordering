@@ -15,7 +15,7 @@ import { RestaurantChangeModal } from "../components/RestaurantChangeModal";
 import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
 import { api } from "../utils/api";
-import { SERVER_STATIC_ASSET_BASE_URL } from "../utils/constants";
+import { DEFAULT_DISH_IMAGE_URL, resolveAssetUrl } from "../utils/constants";
 import { AddToCartPayload } from "../types/cart";
 
 interface ItemOption {
@@ -37,7 +37,8 @@ interface RelatedItem {
   _id: string;
   name: string;
   slug: string;
-  imageUrls: string[];
+  imageUrl?: string | null;
+  imageUrls?: string[];
   basePrice: number;
   salePrice: number | null;
   effectivePrice: number;
@@ -240,7 +241,7 @@ export const DishDetail = () => {
   }
 
   const images =
-    item.imageUrls.length > 0 ? item.imageUrls : ["/assets/noodles.jpg"];
+    item.imageUrls.length > 0 ? item.imageUrls : [DEFAULT_DISH_IMAGE_URL];
 
   return (
     <main className="min-h-screen bg-[#f7faf7] text-[#17201a]">
@@ -265,9 +266,13 @@ export const DishDetail = () => {
             <div>
               <div className="overflow-hidden rounded-3xl border border-[#dce8df] bg-white">
                 <img
-                  src={`${SERVER_STATIC_ASSET_BASE_URL}${images[activeImage]}`}
+                  src={resolveAssetUrl(images[activeImage], DEFAULT_DISH_IMAGE_URL)}
                   alt={item.name}
                   className="h-[500px] w-full object-cover max-[600px]:h-[340px]"
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = DEFAULT_DISH_IMAGE_URL;
+                  }}
                 />
               </div>
               {images.length > 1 && (
@@ -280,9 +285,13 @@ export const DishDetail = () => {
                       className={`h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 bg-white p-0 ${activeImage === index ? "border-[#ff5a1f]" : "border-transparent"}`}
                     >
                       <img
-                        src={image}
+                        src={resolveAssetUrl(image, DEFAULT_DISH_IMAGE_URL)}
                         alt=""
                         className="h-full w-full object-cover"
+                        onError={(event) => {
+                          event.currentTarget.onerror = null;
+                          event.currentTarget.src = DEFAULT_DISH_IMAGE_URL;
+                        }}
                       />
                     </button>
                   ))}
@@ -479,9 +488,16 @@ export const DishDetail = () => {
                 >
                   <div className="relative h-40 overflow-hidden bg-[#eef8f1]">
                     <img
-                      src={`${SERVER_STATIC_ASSET_BASE_URL}${related.imageUrls?.[0] || "/assets/noodles.jpg"}`}
+                      src={resolveAssetUrl(
+                        related.imageUrl || related.imageUrls?.[0],
+                        DEFAULT_DISH_IMAGE_URL,
+                      )}
                       alt={related.name}
                       className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                      onError={(event) => {
+                        event.currentTarget.onerror = null;
+                        event.currentTarget.src = DEFAULT_DISH_IMAGE_URL;
+                      }}
                     />
                     {!related.isAvailable && (
                       <span className="absolute inset-0 grid place-items-center bg-slate-900/50 text-xs font-extrabold text-white">

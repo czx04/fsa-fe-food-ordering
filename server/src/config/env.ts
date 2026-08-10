@@ -4,6 +4,7 @@ import { z } from 'zod'
 const envSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   CLIENT_ORIGIN: z.string().url().default('http://localhost:5173'),
+  CLIENT_ORIGINS: z.string().optional(),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   MONGODB_URI: z.string().min(1).default('mongodb://127.0.0.1:27017'),
   MONGODB_DB_NAME: z.string().min(1).default('food_ordering'),
@@ -29,9 +30,16 @@ if (!parsedEnv.success) {
   throw new Error('Invalid environment variables.')
 }
 
+const clientOrigins = (parsedEnv.data.CLIENT_ORIGINS
+  ? parsedEnv.data.CLIENT_ORIGINS.split(',')
+  : [parsedEnv.data.CLIENT_ORIGIN, 'http://localhost:5174'])
+  .map((origin) => origin.trim())
+  .filter((origin, index, values) => Boolean(origin) && values.indexOf(origin) === index)
+
 export const env = {
   port: parsedEnv.data.PORT,
   clientOrigin: parsedEnv.data.CLIENT_ORIGIN,
+  clientOrigins,
   nodeEnv: parsedEnv.data.NODE_ENV,
   mongodbUri: parsedEnv.data.MONGODB_URI,
   mongodbDbName: parsedEnv.data.MONGODB_DB_NAME,

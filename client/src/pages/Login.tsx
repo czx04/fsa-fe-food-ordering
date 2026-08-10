@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { api } from "../utils/api";
+import { DEFAULT_DISH_IMAGE_URL } from "../utils/constants";
 
 export const Login = () => {
   const [email, setEmail] = useState("customer@foodordering.com");
@@ -37,7 +38,7 @@ export const Login = () => {
           <div className="relative inline-block mb-8 group">
             <div className="absolute -inset-1 bg-gradient-to-r from-amber-300 to-orange-300 rounded-3xl blur opacity-30 group-hover:opacity-60 transition duration-500"></div>
             <img
-              src="/assets/noodles.jpg"
+              src={DEFAULT_DISH_IMAGE_URL}
               alt="Món ngon"
               className="relative w-72 h-72 object-cover rounded-3xl shadow-2xl mx-auto border-4 border-white/20 transform group-hover:scale-[1.02] transition duration-300"
             />

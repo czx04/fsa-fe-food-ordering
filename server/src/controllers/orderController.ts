@@ -71,7 +71,11 @@ export const createOrderFromCartHandler = async (
       throw createError(400, 'Thông tin thanh toán hoặc địa chỉ giao hàng bị thiếu.')
     }
 
-    const { order, paymentUrl } = await orderService.createOrderFromCart(req.user!.userId, payload)
+    const { order, paymentUrl } = await orderService.createOrderFromCart(
+      req.user!.userId,
+      payload,
+      req,
+    )
 
     res.status(201).json({
       message: 'Đơn hàng đã được tạo thành công.',

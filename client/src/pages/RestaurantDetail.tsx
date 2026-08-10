@@ -22,7 +22,11 @@ import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
 import { useToast } from "../contexts/ToastContext";
 import { api } from "../utils/api";
-import { SERVER_STATIC_ASSET_BASE_URL } from "../utils/constants";
+import {
+  DEFAULT_DISH_IMAGE_URL,
+  DEFAULT_RESTAURANT_IMAGE_URL,
+  resolveAssetUrl,
+} from "../utils/constants";
 import { AddToCartPayload, Cart, CartItem } from "../types/cart";
 
 interface CuisineCategory {
@@ -87,7 +91,8 @@ interface MenuItem {
   name: string;
   slug: string;
   shortDescription: string;
-  imageUrls: string[];
+  imageUrl?: string | null;
+  imageUrls?: string[];
   basePrice: number;
   salePrice: number | null;
   effectivePrice: number;
@@ -310,9 +315,6 @@ export const RestaurantDetail = () => {
     };
   }, [restaurantSlug, reviewPage, reviewRating]);
 
-  const currentRestaurantCart =
-    restaurant && cart?.restaurantId._id === restaurant._id ? cart : null;
-
   const submitMenuSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMenuSearch(draftMenuSearch.trim());
@@ -403,9 +405,16 @@ export const RestaurantDetail = () => {
     <main className="min-h-screen bg-[#f7faf7] text-[#17201a]">
       <section className="relative h-[360px] overflow-hidden max-[760px]:h-[470px]">
         <img
-          src={`${SERVER_STATIC_ASSET_BASE_URL}${restaurant.coverUrl || "/assets/restaurant.jpg"}`}
+          src={resolveAssetUrl(
+            restaurant.coverUrl,
+            DEFAULT_RESTAURANT_IMAGE_URL,
+          )}
           alt={restaurant.name}
           className="h-full w-full object-cover"
+          onError={(event) => {
+            event.currentTarget.onerror = null;
+            event.currentTarget.src = DEFAULT_RESTAURANT_IMAGE_URL;
+          }}
         />
         <div className="absolute inset-0 bg-[#0d1811]/55" />
         <div className="absolute inset-0 flex items-end pb-10 text-white max-[760px]:pb-7">
@@ -441,13 +450,17 @@ export const RestaurantDetail = () => {
               </div>
               <div className="mb-4 flex items-center gap-4">
                 <img
-                  src={
+                  src={resolveAssetUrl(
                     restaurant.logoUrl ||
-                    restaurant.coverUrl ||
-                    "/assets/restaurant.jpg"
-                  }
+                      restaurant.coverUrl,
+                    DEFAULT_RESTAURANT_IMAGE_URL,
+                  )}
                   alt={`Logo ${restaurant.name}`}
                   className="h-16 w-16 shrink-0 rounded-2xl border-2 border-white/80 bg-white object-cover shadow-lg max-[600px]:h-14 max-[600px]:w-14"
+                  onError={(event) => {
+                    event.currentTarget.onerror = null;
+                    event.currentTarget.src = DEFAULT_RESTAURANT_IMAGE_URL;
+                  }}
                 />
                 <h1 className="mb-0 text-[42px] font-extrabold leading-tight tracking-[-.04em] max-[760px]:text-[34px]">
                   {restaurant.name}
@@ -593,9 +606,16 @@ export const RestaurantDetail = () => {
                       className="relative block overflow-hidden rounded-xl"
                     >
                       <img
-                        src={`${SERVER_STATIC_ASSET_BASE_URL}${item.imageUrls?.[0] || "/assets/noodles.jpg"}`}
+                        src={resolveAssetUrl(
+                          item.imageUrl || item.imageUrls?.[0],
+                          DEFAULT_DISH_IMAGE_URL,
+                        )}
                         alt={item.name}
                         className="h-24 w-[125px] object-cover max-[600px]:h-20 max-[600px]:w-[88px]"
+                        onError={(event) => {
+                          event.currentTarget.onerror = null;
+                          event.currentTarget.src = DEFAULT_DISH_IMAGE_URL;
+                        }}
                       />
                       {!item.isAvailable && (
                         <span className="absolute inset-0 grid place-items-center bg-slate-900/55 text-[10px] font-extrabold uppercase text-white">

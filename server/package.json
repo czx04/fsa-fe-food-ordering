@@ -8,8 +8,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit --pretty false",
-    "start": "node dist/index.js",
-    "db:seed": "tsx src/scripts/seed.ts"
+    "start": "node dist/index.js"
   },
   "engines": {
     "node": ">=20"

@@ -17,7 +17,13 @@ import paymentRouter from './routes/paymentRoutes.js'
 export const app = express()
 
 app.disable('x-powered-by')
-app.use(cors({ origin: env.clientOrigin }))
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || env.clientOrigins.includes(origin)) callback(null, true)
+    else callback(new Error('Origin is not allowed by CORS'))
+  },
+  credentials: true,
+}))
 
 // Serve static files from the 'public' directory
 app.use(express.static('public'))
