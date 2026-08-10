@@ -11,7 +11,8 @@
     "smoke:dashboard": "node scripts/smoke-dashboard.mjs",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit --pretty false",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "db:seed": "tsx src/scripts/seed.ts"
   },
   "engines": {
     "node": ">=20"

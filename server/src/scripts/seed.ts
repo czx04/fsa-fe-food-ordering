@@ -393,6 +393,11 @@ const seedData = async () => {
         phone: res3.phone,
         logoUrl: res3.logoUrl,
         addressText: buildAddressText(res3.address.line1, res3.address.ward, res3.address.district, res3.address.city),
+        delivery: {
+          fee: res3.delivery.fee,
+          minMinutes: res3.delivery.minMinutes,
+          maxMinutes: res3.delivery.maxMinutes,
+        },
       },
       recipient: {
         fullName: customer.fullName,

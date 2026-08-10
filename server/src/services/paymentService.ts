@@ -13,6 +13,7 @@ import { OrderDetail } from '../types/order.js';
 export const verifyVnpayReturn = async (vnpayParams: any): Promise<OrderDetail> => {
   const orderId = vnpayParams.vnp_TxnRef;
   const responseCode = vnpayParams.vnp_ResponseCode;
+  const isMock = vnpayParams.mock === 'true';
 
   if (!orderId) {
     throw createError(400, 'Thông tin giao dịch không hợp lệ.');
@@ -30,6 +31,13 @@ export const verifyVnpayReturn = async (vnpayParams: any): Promise<OrderDetail> 
 
   if (!order) {
     throw createError(404, 'Không tìm thấy đơn hàng tương ứng với giao dịch.');
+  }
+
+  // Nếu là giao dịch giả lập và thanh toán thành công, cập nhật trạng thái trực tiếp.
+  // Điều này mô phỏng công việc của webhook.
+  if (isMock && order.paymentStatus !== 'paid' && responseCode === '00') {
+    order.paymentStatus = 'paid';
+    await order.save();
   }
 
   // Webhook/IPN là nguồn tin cậy duy nhất cho trạng thái thanh toán.
