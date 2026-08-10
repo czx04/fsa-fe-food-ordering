@@ -2,6 +2,7 @@ import { Link, useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { OrderDetail, CancelOrderPayload } from "../types/order";
 import { orderService } from "../services/orderService";
+import { socketService } from "../services/socketService";
 import { Loader2, XCircle, CheckCircle2, Trash2, X, Star } from "lucide-react";
 import { useToast } from "../contexts/ToastContext";
 import { ReviewModal } from "../components/ReviewModal";
@@ -50,25 +51,56 @@ function OrderDetailPage() {
   const toast = useToast();
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
+    if (!id) {
+      setError("Không tìm thấy ID đơn hàng.");
+      setLoading(false);
+      return;
+    }
+
+    const fetchOrder = async () => {
       try {
-        if (id) {
-          const orderData = await orderService.getOrderDetail(id);
-          setOrder(orderData);
-        } else {
-          setError("Không tìm thấy ID đơn hàng.");
-        }
-      } catch (error) {
-        console.error("Lỗi tải dữ liệu trang đơn hàng:", error);
+        const orderData = await orderService.getOrderDetail(id);
+        setOrder(orderData);
+      } catch (err) {
+        console.error("Lỗi tải dữ liệu trang đơn hàng:", err);
         setError("Không thể tải chi tiết đơn hàng. Vui lòng thử lại.");
-      } finally {
-        setLoading(false);
       }
     };
 
-    fetchData();
-  }, [id]); // Re-fetch when ID changes
+    const setupSocket = () => {
+      try {
+        const socket = socketService.connect();
+
+        socket.on("connect", () => {
+          console.log("Socket connected, joining order room...");
+          socket.emit("join:order", id);
+          fetchOrder(); // Fetch lại dữ liệu mới nhất khi kết nối lại
+        });
+
+        socket.on("order:updated", (updatedOrder: OrderDetail) => {
+          if (updatedOrder._id === id) {
+            toast.info(
+              `Đơn hàng #${updatedOrder.orderNumber} đã được cập nhật trạng thái.`,
+            );
+            setOrder(updatedOrder);
+          }
+        });
+      } catch (error) {
+        console.error("Socket connection failed:", error);
+        toast.error("Không thể kết nối real-time. Vui lòng tải lại trang.");
+      }
+    };
+
+    setLoading(true);
+    fetchOrder().finally(() => setLoading(false));
+    setupSocket();
+
+    return () => {
+      socketService.disconnect();
+    };
+    // `toast` is intentionally omitted from the dependency array to prevent an infinite loop
+    // caused by an unstable function reference from the ToastContext.
+  }, [id]);
 
   const handleCancelOrder = async () => {
     if (!id || !cancelReason) return;
@@ -76,8 +108,7 @@ function OrderDetailPage() {
     setIsCancelling(true);
     try {
       const payload: CancelOrderPayload = { reason: cancelReason };
-      const response = await orderService.cancelOrder(id, payload);
-      setOrder(response.order); // Update order with cancelled status
+      await orderService.cancelOrder(id, payload);
       setShowCancelModal(false);
       toast.success("Đơn hàng đã được hủy thành công.");
     } catch (err: any) {
@@ -262,7 +293,9 @@ function OrderDetailPage() {
                       : "bg-blue-500 hover:bg-blue-600"
                   }`}
                 >
-                  <Star className={`h-4 w-4 ${order.review ? "fill-white" : ""}`} />
+                  <Star
+                    className={`h-4 w-4 ${order.review ? "fill-white" : ""}`}
+                  />
                   {order.review ? "Sửa đánh giá" : "Đánh giá nhà hàng"}
                 </button>
               )}

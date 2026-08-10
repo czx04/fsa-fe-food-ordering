@@ -1,4 +1,4 @@
-import { Response } from 'express'
+import { NextFunction, Response } from 'express'
 import { Types } from 'mongoose'
 import { AuthRequest } from '../middlewares/authMiddleware.js'
 import { Restaurant } from '../models/Restaurant.js'
@@ -13,16 +13,16 @@ import {
   paginationFrom,
   paginationMeta,
   recordAudit,
-  toObjectId,
 } from '../utils/dashboard.js'
+import * as orderService from '../services/orderService.js'
 
 const slugify = (value: string) => value
   .toLowerCase()
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '')
-  .replace(/đ/g, 'd')
-  .replace(/[^a-z0-9]+/g, '-')
-  .replace(/^-+|-+$/g, '')
+  .replaceAll('đ', 'd')
+  .replaceAll(/[^a-z0-9]+/g, '-')
+  .replace(/^-+/, '').replace(/-+$/, '') // Simplified regex
 
 const ownerId = (req: AuthRequest) => req.user!.userId
 
@@ -188,13 +188,15 @@ const orderSummary = async (restaurantId: Types.ObjectId, from: Date, to: Date) 
     revenue: number
   }>([
     { $match: { restaurantId, placedAt: { $gte: from, $lte: to } } },
-    { $group: {
-      _id: null,
-      totalOrders: { $sum: 1 },
-      deliveredOrders: { $sum: { $cond: [{ $eq: ['$orderStatus', 'delivered'] }, 1, 0] } },
-      cancelledOrders: { $sum: { $cond: [{ $eq: ['$orderStatus', 'cancelled'] }, 1, 0] } },
-      revenue: { $sum: { $cond: [{ $eq: ['$orderStatus', 'delivered'] }, '$pricing.grandTotal', 0] } },
-    } },
+    {
+      $group: {
+        _id: null,
+        totalOrders: { $sum: 1 },
+        deliveredOrders: { $sum: { $cond: [{ $eq: ['$orderStatus', 'delivered'] }, 1, 0] } },
+        cancelledOrders: { $sum: { $cond: [{ $eq: ['$orderStatus', 'cancelled'] }, 1, 0] } },
+        revenue: { $sum: { $cond: [{ $eq: ['$orderStatus', 'delivered'] }, '$pricing.grandTotal', 0] } },
+      }
+    },
   ])
   return result ?? { totalOrders: 0, deliveredOrders: 0, cancelledOrders: 0, revenue: 0 }
 }
@@ -260,13 +262,16 @@ export const getOwnerOrders = async (req: AuthRequest, res: Response) => {
     if (!restaurant) return
     const { page, limit, skip } = paginationFrom(req.query)
     const filter: Record<string, any> = { restaurantId: restaurant._id }
-    if (typeof req.query.status === 'string' && req.query.status) filter.orderStatus = req.query.status
-    if (typeof req.query.paymentStatus === 'string' && req.query.paymentStatus) filter.paymentStatus = req.query.paymentStatus
-    if (req.query.from || req.query.to) {
-      filter.placedAt = {}
-      if (typeof req.query.from === 'string' && req.query.from) filter.placedAt.$gte = new Date(`${req.query.from}T00:00:00.000Z`)
-      if (typeof req.query.to === 'string' && req.query.to) filter.placedAt.$lte = new Date(`${req.query.to}T23:59:59.999Z`)
+    if (typeof req.query.status === 'string' && req.query.status) {
+      filter.orderStatus = req.query.status
     }
+    if (typeof req.query.paymentStatus === 'string' && req.query.paymentStatus) {
+      filter.paymentStatus = req.query.paymentStatus
+    }
+    const fromDate = typeof req.query.from === 'string' && req.query.from ? req.query.from : undefined
+    const toDate = typeof req.query.to === 'string' && req.query.to ? req.query.to : undefined
+    if (fromDate) { filter.placedAt = { ...filter.placedAt, $gte: new Date(`${fromDate}T00:00:00.000Z`) } }
+    if (toDate) { filter.placedAt = { ...filter.placedAt, $lte: new Date(`${toDate}T23:59:59.999Z`) } }
     if (typeof req.query.search === 'string' && req.query.search.trim()) {
       const expression = new RegExp(escapeRegex(req.query.search.trim()), 'i')
       filter.$or = [{ orderNumber: expression }, { 'recipient.fullName': expression }, { 'recipient.phone': expression }]
@@ -296,62 +301,33 @@ export const getOwnerOrderDetail = async (req: AuthRequest, res: Response) => {
   }
 }
 
-const nextOrderStatuses: Record<string, string[]> = {
-  pending: ['confirmed', 'cancelled'],
-  confirmed: ['preparing', 'cancelled'],
-  preparing: ['delivering'],
-  delivering: ['delivered'],
-}
-
-export const updateOwnerOrderStatus = async (req: AuthRequest, res: Response) => {
+export const updateOwnerOrderStatus = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const restaurant = await findOwnedRestaurant(req, res)
     if (!restaurant) return
-    const order = await Order.findOne({ _id: req.params.orderId, restaurantId: restaurant._id })
-    if (!order) {
-      res.status(404).json({ message: 'Không tìm thấy đơn hàng.' })
-      return
+
+    const { orderId } = req.params
+    if (typeof orderId !== 'string') {
+      return res.status(400).json({ message: 'ID đơn hàng không hợp lệ.' })
     }
-    const nextStatus = req.body.status
-    if (!nextOrderStatuses[order.orderStatus]?.includes(nextStatus)) {
-      res.status(409).json({ message: `Không thể chuyển đơn từ ${order.orderStatus} sang ${nextStatus}.` })
-      return
+
+    const { status, reason, note } = req.body
+    if (!status) {
+      return res.status(400).json({ message: 'Trạng thái mới là bắt buộc.' })
     }
-    if (nextStatus === 'cancelled' && !req.body.reason?.trim()) {
-      res.status(400).json({ message: 'Vui lòng nhập lý do hủy đơn.' })
-      return
-    }
-    const previousStatus = order.orderStatus
-    const changedAt = new Date()
-    const historyEntry = {
-      from: previousStatus,
-      to: nextStatus,
-      changedBy: toObjectId(ownerId(req)),
-      changedByRole: 'restaurant_owner',
-      reason: req.body.reason?.trim() || null,
-      note: req.body.note?.trim() || null,
-      changedAt,
-    }
-    const statusFields: Record<string, any> = { orderStatus: nextStatus }
-    if (nextStatus === 'confirmed') statusFields.confirmedAt = changedAt
-    if (nextStatus === 'delivered') statusFields.deliveredAt = changedAt
-    if (nextStatus === 'cancelled') {
-      statusFields.cancelledAt = changedAt
-      statusFields.cancellation = { cancelledBy: toObjectId(ownerId(req)), reason: req.body.reason.trim(), cancelledAt: changedAt }
-    }
-    const updatedOrder = await Order.findOneAndUpdate(
-      { _id: order._id, restaurantId: restaurant._id, orderStatus: previousStatus },
-      { $set: statusFields, $push: { statusHistory: historyEntry } },
-      { new: true, runValidators: true },
+
+    const updatedOrder = await orderService.updateOrderStatusByOwner(
+      ownerId(req),
+      orderId,
+      restaurant.id,
+      status,
+      reason,
+      note,
     )
-    if (!updatedOrder) {
-      res.status(409).json({ message: 'Đơn đã được cập nhật ở phiên khác. Vui lòng tải lại dữ liệu.' })
-      return
-    }
-    await recordAudit({ request: req, actorId: ownerId(req), actorRole: 'restaurant_owner', action: 'order.status_changed', entityType: 'Order', entityId: order.id, reason: req.body.reason, before: previousStatus, after: nextStatus })
+
     res.json({ message: 'Đã cập nhật trạng thái đơn.', order: updatedOrder })
   } catch (error: any) {
-    res.status(400).json({ message: error.message || 'Không thể cập nhật đơn hàng.' })
+    next(error)
   }
 }
 
