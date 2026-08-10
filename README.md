@@ -1,5 +1,6 @@
-# Food Ordering
+# MămMăm Food Ordering
 
+Monorepo gồm customer web, dashboard Owner/Admin và API server.
 
 ## Yêu cầu
 
@@ -10,13 +11,22 @@
 ## Chạy local
 
 ```bash
-./run.sh
+npm install
+npm run dev
 ```
 
-
-- Frontend: http://localhost:5173
+- Customer web: http://localhost:5173
+- Owner/Admin dashboard: http://localhost:5174
 - Backend: http://localhost:3000
 - Health check: http://localhost:3000/api/health
 
+Tài liệu dashboard và tài khoản development nằm tại [`client-dashboard/README.md`](client-dashboard/README.md). API contract nằm tại [`server/docs/dashboard-api.md`](server/docs/dashboard-api.md).
 
--- test dev branch
+## Kiểm tra trước khi bàn giao
+
+```bash
+npm run typecheck
+npm run build
+npm run lint --workspace client-dashboard
+npm run test --workspace client-dashboard
+```
