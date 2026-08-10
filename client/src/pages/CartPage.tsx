@@ -59,7 +59,14 @@ const ImageWithFallback = ({ item }: { item: CartItemType }) => {
 };
 
 function CartPage() {
-  const { cart: contextCart, isLoading: isCartLoading, fetchCart } = useCart();
+  const {
+    cart: contextCart,
+    isLoading: isCartLoading,
+    fetchCart,
+    updateItemQuantity,
+    removeItemFromCart,
+    clearCart,
+  } = useCart();
   const [displayCart, setDisplayCart] = useState(contextCart);
   const [couponCodeInput, setCouponCodeInput] = useState("");
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
@@ -85,29 +92,19 @@ function CartPage() {
     menuItemId: string,
     newQuantity: number,
   ) => {
-    if (!displayCart) return;
-
-    const originalCart = { ...displayCart };
-    const itemIndex = displayCart.items.findIndex(
-      (item) => item.menuItemId._id === menuItemId,
-    );
-    if (itemIndex === -1) return;
-
-    // Optimistic update
-    const updatedItems = [...displayCart.items];
-    updatedItems[itemIndex] = {
-      ...updatedItems[itemIndex],
-      quantity: newQuantity,
-    };
-    setDisplayCart({ ...displayCart, items: updatedItems });
+    if (newQuantity <= 0) {
+      const item = displayCart?.items.find(
+        (i) => i.menuItemId._id === menuItemId,
+      );
+      if (item) setItemToDelete(item);
+      return;
+    }
 
     try {
-      await api.patch(`/cart/items/${menuItemId}`, { quantity: newQuantity });
-      fetchCart();
+      await updateItemQuantity(menuItemId, newQuantity);
     } catch (error) {
       console.error("Failed to update quantity:", error);
       toast.error("Lỗi cập nhật số lượng. Vui lòng thử lại.");
-      setDisplayCart(originalCart);
     }
   };
 
@@ -115,9 +112,8 @@ function CartPage() {
     if (!itemToDelete) return;
     setIsProcessing(true);
     try {
-      await api.delete(`/cart/items/${itemToDelete.menuItemId._id}`);
+      await removeItemFromCart(itemToDelete.menuItemId._id);
       toast.success(`Đã xóa "${itemToDelete.menuItemId.name}" khỏi giỏ hàng.`);
-      await fetchCart();
     } catch (error) {
       console.error("Failed to remove item:", error);
       toast.error("Lỗi xóa sản phẩm. Vui lòng thử lại.");
@@ -130,9 +126,8 @@ function CartPage() {
   const handleConfirmClearCart = async () => {
     setIsProcessing(true);
     try {
-      await api.delete("/cart");
+      await clearCart();
       toast.success("Đã xóa tất cả sản phẩm khỏi giỏ hàng.");
-      await fetchCart();
     } catch (error) {
       console.error("Failed to clear cart:", error);
       toast.error("Lỗi xóa giỏ hàng. Vui lòng thử lại.");
@@ -270,8 +265,8 @@ function CartPage() {
                         item.quantity - 1,
                       )
                     }
-                    disabled={item.quantity <= 1}
-                    className="grid h-9 w-9 place-items-center bg-white text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="grid h-9 w-9 place-items-center bg-white text-gray-700 hover:bg-gray-100 transition hover:text-red-500"
+                    title={item.quantity === 1 ? "Xóa sản phẩm" : "Giảm số lượng"}
                   >
                     <Minus className="w-3 h-3" />
                   </button>

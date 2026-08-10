@@ -20,7 +20,8 @@ export const MiniCart: React.FC<MiniCartProps> = ({
   deliveryFee = 0,
   onUpdateQuantity,
 }) => {
-  const { cart, isLoading, clearCart } = useCart()
+  const { cart, isLoading, clearCart, updateItemQuantity } = useCart()
+  const handleQuantityUpdate = onUpdateQuantity || updateItemQuantity
 
   if (isLoading) {
     return (
@@ -98,9 +99,9 @@ export const MiniCart: React.FC<MiniCartProps> = ({
                   <div className="inline-flex items-center overflow-hidden rounded-lg border border-slate-200">
                     <button
                       type="button"
-                      onClick={() => onUpdateQuantity(item.menuItemId._id, item.quantity - 1)}
-                      className="grid h-6 w-6 place-items-center bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40"
-                      disabled={item.quantity <= 1}
+                      onClick={() => handleQuantityUpdate(item.menuItemId._id, item.quantity - 1)}
+                      className="grid h-6 w-6 place-items-center bg-white text-slate-600 hover:bg-slate-50 transition hover:text-rose-500"
+                      title={item.quantity === 1 ? "Xóa món" : "Giảm số lượng"}
                     >
                       <Minus className="h-3 w-3" />
                     </button>
@@ -109,7 +110,7 @@ export const MiniCart: React.FC<MiniCartProps> = ({
                     </span>
                     <button
                       type="button"
-                      onClick={() => onUpdateQuantity(item.menuItemId._id, item.quantity + 1)}
+                      onClick={() => handleQuantityUpdate(item.menuItemId._id, item.quantity + 1)}
                       className="grid h-6 w-6 place-items-center bg-white text-slate-600 hover:bg-slate-50"
                     >
                       <Plus className="h-3 w-3" />
