@@ -9,6 +9,7 @@ import { Restaurant } from '../models/Restaurant.js'
 import { MenuItem } from '../models/MenuItem.js'
 import { Order, IOrderItemSnapshot, IStatusHistory } from '../models/Order.js'
 import * as cartService from './cartService.js'
+import { createVnpayPaymentUrl } from './vnpayService.js'
 
 const DEFAULT_PAGE = 1
 const DEFAULT_LIMIT = 10
@@ -64,6 +65,7 @@ export const getOrderDetail = async (
 export const createOrderFromCart = async (
   userId: string,
   payload: CreateOrderPayload,
+  req: any, // Thêm req để lấy IP cho VNPAY thật
 ): Promise<{ order: { _id: string; orderNumber: string }; paymentUrl?: string }> => {
   const { paymentMethod, deliveryAddress, note } = payload
 
@@ -173,8 +175,8 @@ export const createOrderFromCart = async (
 
   // 8. Handle Payment Redirection
   let paymentUrl: string | undefined
-  if (paymentMethod === 'VNPAY' || paymentMethod === 'MOMO') {
-    paymentUrl = `/payment/mock-redirect?orderId=${newOrder._id}&method=${paymentMethod}`
+  if (paymentMethod.toUpperCase() === 'VNPAY') {
+    paymentUrl = createVnpayPaymentUrl(newOrder, req)
   }
 
   return {

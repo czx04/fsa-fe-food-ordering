@@ -36,10 +36,14 @@ function PaymentSuccessPage() {
       try {
         let orderData: OrderDetail;
         const vnp_TxnRef = searchParams.get("vnp_TxnRef");
+        const isMock = searchParams.get("mock") === "true";
 
         if (vnp_TxnRef) {
-          // Luồng thanh toán online: chờ một chút để webhook xử lý
-          await new Promise((resolve) => setTimeout(resolve, 1500));
+          // Luồng thanh toán online: chờ một chút để webhook xử lý.
+          // Bỏ qua độ trễ nếu đây là giao dịch giả lập.
+          if (!isMock) {
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+          }
           const verifyResponse = await api.get(
             `/payments/vnpay/verify-return?${searchParams.toString()}`,
           );

@@ -211,12 +211,12 @@ function CheckoutPage() {
   const toast = useToast();
 
   useEffect(() => {
-    if (user?.addresses && user.addresses.length > 0) {
+    if (!isAuthLoading && user?.addresses && user.addresses.length > 0) {
       const defaultAddr =
         user.addresses.find((addr) => addr.isDefault) || user.addresses[0];
       setSelectedAddress(defaultAddr);
     }
-  }, [user]);
+  }, [user, isAuthLoading]);
 
   useEffect(() => {
     const calculateTotals = async () => {
@@ -426,7 +426,7 @@ function CheckoutPage() {
                       Thanh toán qua VNPAY
                     </span>
                     <span className="text-sm text-gray-500">
-                      Sử dụng thẻ ATM, thẻ tín dụng hoặc ví VNPAY.
+                      Sử dụng ví điện tử VNPAY hoặc MOMO.
                     </span>
                   </span>
                 </label>
