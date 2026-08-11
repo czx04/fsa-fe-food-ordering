@@ -14,9 +14,39 @@ export interface IUserAddress {
   city: string
   location?: {
     type: 'Point'
-    coordinates: [number, number] // [lng, lat]
+    coordinates: [number, number]
   }
   isDefault: boolean
+}
+
+const normalizeAddressLocation = (address: IUserAddress): IUserAddress => {
+  const rawLocation = address.location
+
+  if (!rawLocation?.coordinates) {
+    address.location = undefined
+    return address
+  }
+
+  const [longitude, latitude] = rawLocation.coordinates
+  const hasValidCoordinates =
+    Array.isArray(rawLocation.coordinates) &&
+    rawLocation.coordinates.length === 2 &&
+    typeof longitude === 'number' &&
+    typeof latitude === 'number' &&
+    Number.isFinite(longitude) &&
+    Number.isFinite(latitude)
+
+  if (!hasValidCoordinates) {
+    address.location = undefined
+    return address
+  }
+
+  address.location = {
+    type: 'Point',
+    coordinates: [Number(longitude), Number(latitude)],
+  }
+
+  return address
 }
 
 export interface IUser extends Document {
@@ -29,12 +59,15 @@ export interface IUser extends Document {
   avatarUrl?: string | null
   dateOfBirth?: Date | null
   emailVerifiedAt?: Date | null
+  emailVerificationToken?: string | null
+  emailVerificationExpires?: Date | null
   termsAcceptedAt: Date
   failedLoginCount: number
   lockedUntil?: Date | null
   lastLoginAt?: Date | null
   refreshTokens: string[]
   addresses: IUserAddress[]
+  favoriteRestaurantIds?: mongoose.Types.ObjectId[]
   createdAt: Date
   updatedAt: Date
   deletedAt?: Date | null
@@ -51,7 +84,7 @@ const AddressSchema = new Schema<IUserAddress>(
     city: { type: String, required: true },
     location: {
       type: { type: String, enum: ['Point'], default: 'Point' },
-      coordinates: { type: [Number], default: [0, 0] },
+      coordinates: { type: [Number], default: [105.853, 21.024] },
     },
     isDefault: { type: Boolean, default: false },
   },
@@ -69,7 +102,11 @@ const UserSchema = new Schema<IUser>(
       trim: true,
     },
     phone: { type: String, required: true, unique: true, trim: true },
-    passwordHash: { type: String, required: true },
+    passwordHash: {
+      type: String,
+      required: true,
+      select: false, // BẢO MẬT: Ẩn mặc định khi query
+    },
     role: {
       type: String,
       enum: ['customer', 'restaurant_owner', 'admin'],
@@ -79,18 +116,25 @@ const UserSchema = new Schema<IUser>(
     status: {
       type: String,
       enum: ['active', 'locked', 'pending_verification'],
-      default: 'active',
+      default: 'pending_verification',
       required: true,
     },
     avatarUrl: { type: String, default: null },
     dateOfBirth: { type: Date, default: null },
     emailVerifiedAt: { type: Date, default: null },
+    emailVerificationToken: { type: String, default: null, select: false },
+    emailVerificationExpires: { type: Date, default: null, select: false },
     termsAcceptedAt: { type: Date, default: Date.now },
     failedLoginCount: { type: Number, default: 0 },
     lockedUntil: { type: Date, default: null },
     lastLoginAt: { type: Date, default: null },
-    refreshTokens: { type: [String], default: [] },
+    refreshTokens: {
+      type: [String],
+      default: [],
+      select: false, // BẢO MẬT: Ẩn mặc định khi query
+    },
     addresses: { type: [AddressSchema], default: [] },
+    favoriteRestaurantIds: [{ type: Schema.Types.ObjectId, ref: 'Restaurant' }],
     deletedAt: { type: Date, default: null },
   },
   {
@@ -98,7 +142,15 @@ const UserSchema = new Schema<IUser>(
   }
 )
 
-// Index cho tìm kiếm và lọc
+// Index cho tìm kiếm và lọc cơ bản
 UserSchema.index({ role: 1, status: 1 })
+// Index hỗ trợ tìm kiếm khoảng cách theo địa chỉ
+UserSchema.index({ 'addresses.location': '2dsphere' })
+
+UserSchema.pre('save', async function () {
+  if (Array.isArray(this.addresses)) {
+    this.addresses.forEach(normalizeAddressLocation);
+  }
+})
 
 export const User = mongoose.model<IUser>('User', UserSchema)

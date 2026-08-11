@@ -8,3 +8,8 @@ dist/
 .vscode/
 coverage/
 
+# Deployment-only configuration (examples remain tracked)
+deploy/deploy.env
+deploy/server.env
+
+reference/

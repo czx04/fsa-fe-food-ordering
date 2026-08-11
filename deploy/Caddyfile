@@ -1,0 +1,25 @@
+{$CUSTOMER_DOMAIN} {
+    encode zstd gzip
+
+    @backend path /api/* /socket.io/*
+    handle @backend {
+        reverse_proxy server:3000
+    }
+
+    handle {
+        reverse_proxy client:80
+    }
+}
+
+{$DASHBOARD_DOMAIN} {
+    encode zstd gzip
+
+    @backend path /api/* /socket.io/*
+    handle @backend {
+        reverse_proxy server:3000
+    }
+
+    handle {
+        reverse_proxy dashboard:80
+    }
+}
