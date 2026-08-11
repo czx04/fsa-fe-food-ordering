@@ -225,6 +225,7 @@ export interface DashboardMetric {
 
 export interface OwnerDashboard {
   range: { from: string; to: string };
+  granularity: "day" | "month" | "year";
   metrics: {
     revenue: DashboardMetric;
     orders: DashboardMetric;
@@ -235,6 +236,7 @@ export interface OwnerDashboard {
   chart: Array<{ date: string; revenue: number; orders: number }>;
   orderStatus: Array<{ status: OrderStatus; count: number }>;
   topItems: Array<{ itemId: string; name: string; quantity: number; revenue: number }>;
+  categoryBreakdown: Array<{ label: string; orders: number; revenue: number; quantity: number }>;
   recentOrders: Order[];
 }
 

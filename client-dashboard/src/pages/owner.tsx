@@ -15,7 +15,6 @@ import {
   PackageCheck,
   Pencil,
   Plus,
-  ReceiptText,
   RefreshCcw,
   Save,
   ShoppingBag,
@@ -58,9 +57,9 @@ import {
   Textarea,
 } from "../components/ui";
 import { RestaurantForm } from "../features/RestaurantForm";
+import { analyticsRange, formatAnalyticsPeriod, formatCompactMoney, type AnalyticsGranularity } from "../lib/analytics";
 import { api } from "../lib/api";
 import {
-  formatDate,
   formatDateTime,
   formatMoney,
   formatNumber,
@@ -68,6 +67,7 @@ import {
   orderStatusLabels,
   readEntityId,
 } from "../lib/format";
+import { dashboardChartTheme } from "../lib/theme";
 import type {
   ListResponse,
   MenuCategory,
@@ -153,16 +153,12 @@ export function OwnerOnboardingPage() {
 
 export function OwnerOverviewPage() {
   const { restaurantId = "" } = useParams();
-  const [range, setRange] = useState("30");
-  const dates = useMemo(() => {
-    const to = new Date();
-    const from = new Date();
-    from.setDate(to.getDate() - (Number(range) - 1));
-    return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) };
-  }, [range]);
+  const [granularity, setGranularity] = useState<AnalyticsGranularity>("day");
+  const [dates, setDates] = useState(() => analyticsRange("day"));
+  const dashboardParams = useMemo(() => ({ ...dates, granularity }), [dates, granularity]);
   const query = useQuery({
-    queryKey: ["owner", restaurantId, "dashboard", dates],
-    queryFn: () => api.get<OwnerDashboard>(`/owner/restaurants/${restaurantId}/dashboard`, { params: dates }).then((response) => response.data),
+    queryKey: ["owner", restaurantId, "dashboard", dashboardParams],
+    queryFn: () => api.get<OwnerDashboard>(`/owner/restaurants/${restaurantId}/dashboard`, { params: dashboardParams }).then((response) => response.data),
     enabled: Boolean(restaurantId),
     refetchInterval: 60_000,
   });
@@ -178,28 +174,67 @@ export function OwnerOverviewPage() {
   if (!data || !restaurant) return null;
   const chartOptions: ApexOptions = {
     chart: { toolbar: { show: false }, fontFamily: "inherit", zoom: { enabled: false } },
-    colors: ["#e95d18", "#146f5c"],
+    colors: [dashboardChartTheme.primary, dashboardChartTheme.secondary],
     stroke: { curve: "smooth", width: [3, 2] },
-    fill: { type: ["gradient", "solid"], gradient: { opacityFrom: 0.28, opacityTo: 0.02 } },
+    fill: { type: ["gradient", "solid"], gradient: { opacityFrom: 0.18, opacityTo: 0.02 } },
     dataLabels: { enabled: false },
-    grid: { borderColor: "#ece7df", strokeDashArray: 4 },
-    xaxis: { categories: data.chart.map((point) => formatDate(point.date)), labels: { rotate: 0, hideOverlappingLabels: true } },
-    yaxis: [{ labels: { formatter: (value) => `${Math.round(value / 1_000_000)}tr` } }, { opposite: true, labels: { formatter: (value) => Math.round(value).toString() } }],
+    grid: { borderColor: dashboardChartTheme.grid, strokeDashArray: 4 },
+    xaxis: { categories: data.chart.map((point) => formatAnalyticsPeriod(point.date, data.granularity)), labels: { rotate: 0, hideOverlappingLabels: true } },
+    yaxis: [{ labels: { formatter: (value) => formatCompactMoney(value) } }, { opposite: true, labels: { formatter: (value) => formatNumber(Math.round(value)) } }],
     legend: { position: "top", horizontalAlign: "right" },
     tooltip: { shared: true, y: { formatter: (value, options) => options.seriesIndex === 0 ? formatMoney(value) : `${formatNumber(value)} đơn` } },
   };
+  const categoryChartOptions: ApexOptions = {
+    chart: { toolbar: { show: false }, fontFamily: "inherit" },
+    colors: [dashboardChartTheme.primary],
+    plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: "55%" } },
+    dataLabels: { enabled: false },
+    grid: { borderColor: dashboardChartTheme.grid, strokeDashArray: 4 },
+    xaxis: {
+      categories: data.categoryBreakdown.map((item) => item.label),
+      labels: { formatter: (value) => formatCompactMoney(Number(value)) },
+    },
+    tooltip: { y: { formatter: (value) => formatMoney(value) } },
+  };
+
+  const changeGranularity = (value: AnalyticsGranularity) => {
+    setGranularity(value);
+    setDates(analyticsRange(value));
+  };
+
   return (
     <>
       <PageHeader
         title={`Tổng quan ${restaurant.name}`}
-        description="Số liệu chỉ tính theo nhà hàng và khoảng ngày đang chọn."
-        actions={<Select value={range} onChange={(event) => setRange(event.target.value)}><option value="7">7 ngày qua</option><option value="30">30 ngày qua</option><option value="90">90 ngày qua</option></Select>}
+        description="Doanh thu, đơn hàng và món bán chạy chỉ tính cho nhà hàng đang chọn."
       />
       {restaurant.approvalStatus !== "approved" && <div className={`inline-alert ${restaurant.approvalStatus === "rejected" ? "danger" : "warning"}`}><b>{restaurant.approvalStatus === "rejected" ? "Hồ sơ bị từ chối." : "Hồ sơ đang chờ duyệt."}</b> {restaurant.rejectionReason || "Các tính năng nhận đơn chỉ mở sau khi được duyệt."} <Link to={`/owner/restaurants/${restaurantId}/settings`}>Xem hồ sơ</Link></div>}
+
+      <Card className="analytics-filter-card">
+        <div className="analytics-filter-bar">
+          <label className="analytics-filter-field">
+            <span>Thống kê theo</span>
+            <Select value={granularity} onChange={(event) => changeGranularity(event.target.value as AnalyticsGranularity)}>
+              <option value="day">Ngày</option>
+              <option value="month">Tháng</option>
+              <option value="year">Năm</option>
+            </Select>
+          </label>
+          <label className="analytics-filter-field">
+            <span>Từ ngày</span>
+            <Input type="date" value={dates.from} onChange={(event) => setDates((current) => ({ ...current, from: event.target.value }))} />
+          </label>
+          <label className="analytics-filter-field">
+            <span>Đến ngày</span>
+            <Input type="date" value={dates.to} onChange={(event) => setDates((current) => ({ ...current, to: event.target.value }))} />
+          </label>
+        </div>
+      </Card>
+
       <div className="metric-grid">
         <MetricCard icon={CircleDollarSign} label="Doanh thu đơn hoàn tất" value={formatMoney(data.metrics.revenue.current)} metric={data.metrics.revenue} />
         <MetricCard icon={ShoppingBag} label="Tổng đơn hàng" value={formatNumber(data.metrics.orders.current)} metric={data.metrics.orders} />
-        <MetricCard icon={ReceiptText} label="Giá trị đơn trung bình" value={formatMoney(data.metrics.averageOrderValue.current)} metric={data.metrics.averageOrderValue} />
+        <MetricCard icon={Utensils} label="Món ăn bán chạy" value={data.topItems[0]?.name ?? "Chưa có dữ liệu"} />
         <MetricCard icon={TrendingDown} label="Tỷ lệ hủy" value={`${data.metrics.cancellationRate.current.toFixed(1)}%`} metric={data.metrics.cancellationRate} inverse />
       </div>
       <div className="attention-grid">
@@ -207,18 +242,22 @@ export function OwnerOverviewPage() {
         <Link to={`/owner/restaurants/${restaurantId}/menu?availability=unavailable`}><span className="attention-icon danger"><Utensils size={20} /></span><div><b>{data.attention.unavailableItems}</b><p>Món đang hết hàng</p></div><ChevronRight size={18} /></Link>
         <Link to={`/owner/restaurants/${restaurantId}/reviews?reply=unanswered`}><span className="attention-icon info"><MessageSquareReply size={20} /></span><div><b>{data.attention.unansweredReviews}</b><p>Đánh giá chưa phản hồi</p></div><ChevronRight size={18} /></Link>
       </div>
-      <div className="dashboard-grid">
+      <div className="analytics-chart-grid">
         <Card className="chart-card">
-          <div className="card-heading"><div><h2>Doanh thu và đơn hàng</h2><p>Đơn hoàn tất theo ngày.</p></div></div>
-          {data.chart.length ? <Suspense fallback={<SkeletonRows count={3} />}><AnalyticsChart options={chartOptions} series={[{ name: "Doanh thu", type: "area", data: data.chart.map((point) => point.revenue) }, { name: "Đơn hàng", type: "line", data: data.chart.map((point) => point.orders) }]} /></Suspense> : <EmptyState title="Chưa có số liệu" description="Khoảng ngày này chưa có đơn hoàn tất." />}
+          <div className="card-heading"><div><h2>Doanh thu và đơn hàng</h2><p>Đơn hoàn tất theo {data.granularity === "day" ? "ngày" : data.granularity === "month" ? "tháng" : "năm"}.</p></div></div>
+          {data.chart.length ? <Suspense fallback={<SkeletonRows count={3} />}><AnalyticsChart options={chartOptions} series={[{ name: "Doanh thu", type: "area", data: data.chart.map((point) => point.revenue) }, { name: "Đơn hàng", type: "line", data: data.chart.map((point) => point.orders) }]} height={340} /></Suspense> : <EmptyState title="Chưa có số liệu" description="Khoảng thời gian này chưa có đơn hoàn tất." />}
         </Card>
-        <Card>
-          <div className="card-heading"><div><h2>Top món bán chạy</h2><p>Theo số lượng trong đơn hoàn tất.</p></div></div>
-          <div className="rank-list">
-            {data.topItems.length ? data.topItems.map((item, index) => <div key={item.itemId}><span>{index + 1}</span><div><b>{item.name}</b><small>{formatNumber(item.quantity)} phần</small></div><strong>{formatMoney(item.revenue)}</strong></div>) : <EmptyState icon={Utensils} title="Chưa có món bán chạy" description="Dữ liệu sẽ xuất hiện khi có đơn hoàn tất." />}
-          </div>
+        <Card className="chart-card">
+          <div className="card-heading"><div><h2>Doanh thu theo danh mục món</h2><p>Top 10 danh mục của nhà hàng.</p></div></div>
+          {data.categoryBreakdown.length ? <Suspense fallback={<SkeletonRows count={3} />}><AnalyticsChart options={categoryChartOptions} series={[{ name: "Doanh thu", type: "bar", data: data.categoryBreakdown.map((item) => item.revenue) }]} height={340} /></Suspense> : <EmptyState title="Chưa có dữ liệu" description="Chưa có doanh thu theo danh mục trong kỳ này." />}
         </Card>
       </div>
+      <Card className="owner-top-items-card">
+        <div className="card-heading"><div><h2>Top món bán chạy</h2><p>Theo số lượng trong đơn hoàn tất.</p></div></div>
+        <div className="rank-list">
+          {data.topItems.length ? data.topItems.map((item, index) => <div key={item.itemId}><span>{index + 1}</span><div><b>{item.name}</b><small>{formatNumber(item.quantity)} phần</small></div><strong>{formatMoney(item.revenue)}</strong></div>) : <EmptyState icon={Utensils} title="Chưa có món bán chạy" description="Dữ liệu sẽ xuất hiện khi có đơn hoàn tất." />}
+        </div>
+      </Card>
       <Card>
         <div className="card-heading"><div><h2>Đơn hàng gần đây</h2><p>Cập nhật tự động mỗi phút.</p></div><Link to={`/owner/restaurants/${restaurantId}/orders`}>Xem tất cả <ArrowRight size={15} /></Link></div>
         <OrdersTable orders={data.recentOrders} restaurantId={restaurantId} />
@@ -227,8 +266,8 @@ export function OwnerOverviewPage() {
   );
 }
 
-function MetricCard({ icon: Icon, label, value, metric, inverse }: { icon: typeof Store; label: string; value: string; metric: { changePercent: number | null }; inverse?: boolean }) {
-  const change = metric.changePercent;
+function MetricCard({ icon: Icon, label, value, metric, inverse }: { icon: typeof Store; label: string; value: string; metric?: { changePercent: number | null }; inverse?: boolean }) {
+  const change = metric?.changePercent ?? null;
   const positive = change !== null && (inverse ? change <= 0 : change >= 0);
   return (
     <Card className="metric-card"><span className="metric-icon"><Icon size={21} /></span><div><p>{label}</p><strong>{value}</strong></div>{change !== null && <span className={`metric-change ${positive ? "positive" : "negative"}`}>{change >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}{Math.abs(change).toFixed(1)}% <small>so với kỳ trước</small></span>}</Card>
