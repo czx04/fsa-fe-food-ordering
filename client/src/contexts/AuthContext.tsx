@@ -18,6 +18,7 @@ interface User {
   _id: string;
   email: string;
   fullName: string;
+  phone?: string;
   role: string;
   status?: string;
   avatarUrl?: string;
@@ -28,7 +29,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (token: string, userData: User) => void;
+  login: (accessToken: string, refreshToken: string, userData: User) => void;
   logout: () => void;
   updateUser: (newUserData: User) => void;
 }
@@ -37,9 +38,9 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
   isLoading: true,
-  login: () => {},
-  logout: () => {},
-  updateUser: () => {},
+  login: () => { },
+  logout: () => { },
+  updateUser: () => { },
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -65,17 +66,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     initAuth();
   }, []);
 
-  const login = (token: string, userData: User) => {
-    localStorage.setItem("accessToken", token);
-    socketService.setAuthToken(token);
+  const login = (accessToken: string, refreshToken: string, userData: User) => {
+    localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("refreshToken", refreshToken);
+    socketService.setAuthToken(accessToken);
     setUser(userData);
   };
 
   const logout = () => {
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (refreshToken) {
+      // Background call to invalidate the refresh token on the server
+      api.post("/auth/logout", { refreshToken }).catch(console.error);
+    }
     localStorage.removeItem("accessToken");
-    setUser(null);
+    localStorage.removeItem("refreshToken");
     socketService.setAuthToken(null);
-    // Optional: Call backend /auth/logout to invalidate refresh token
+    setUser(null);
   };
 
   const updateUser = (newUserData: User) => {
