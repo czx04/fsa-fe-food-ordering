@@ -20,7 +20,7 @@ export const Login = () => {
 
     try {
       const res = await api.post("/auth/login", { email, password });
-      login(res.data.accessToken, res.data.user);
+      login(res.data.accessToken, res.data.refreshToken, res.data.user);
     } catch (err: any) {
       setError(err.response?.data?.message || "Đăng nhập thất bại");
     } finally {

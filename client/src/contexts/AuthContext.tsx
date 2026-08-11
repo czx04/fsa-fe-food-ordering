@@ -28,7 +28,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (token: string, userData: User) => void;
+  login: (token: string, refreshToken: string, userData: User) => void;
   logout: () => void;
   updateUser: (newUserData: User) => void;
 }
@@ -57,6 +57,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } catch (error) {
           console.error("Failed to restore session", error);
           localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
         }
       }
       setIsLoading(false);
@@ -65,14 +66,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     initAuth();
   }, []);
 
-  const login = (token: string, userData: User) => {
+  const login = (token: string, refreshToken: string, userData: User) => {
     localStorage.setItem("accessToken", token);
+    localStorage.setItem("refreshToken", refreshToken);
     socketService.setAuthToken(token);
     setUser(userData);
   };
 
   const logout = () => {
     localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
     setUser(null);
     socketService.setAuthToken(null);
     // Optional: Call backend /auth/logout to invalidate refresh token

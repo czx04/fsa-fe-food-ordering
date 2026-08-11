@@ -205,9 +205,9 @@ function CartPage() {
                 ? `/restaurants/${restaurant.slug}`
                 : "/restaurants"
             }
-            className="text-orange-500 hover:underline text-sm font-medium"
+            className="text-orange-500 hover:underline text-sm font-medium flex items-center gap-1"
           >
-            ← Chọn thêm món
+            <ArrowLeft className="w-4 h-4" /> Chọn thêm món
           </Link>
           <h1 className="text-4xl font-bold text-gray-800 mt-1">
             Giỏ hàng của bạn
@@ -266,7 +266,9 @@ function CartPage() {
                       )
                     }
                     className="grid h-9 w-9 place-items-center bg-white text-gray-700 hover:bg-gray-100 transition hover:text-red-500"
-                    title={item.quantity === 1 ? "Xóa sản phẩm" : "Giảm số lượng"}
+                    title={
+                      item.quantity === 1 ? "Xóa sản phẩm" : "Giảm số lượng"
+                    }
                   >
                     <Minus className="w-3 h-3" />
                   </button>

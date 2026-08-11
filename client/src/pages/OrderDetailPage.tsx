@@ -3,7 +3,15 @@ import { useState, useEffect } from "react";
 import { OrderDetail, CancelOrderPayload } from "../types/order";
 import { orderService } from "../services/orderService";
 import { socketService } from "../services/socketService";
-import { Loader2, XCircle, CheckCircle2, Trash2, X, Star } from "lucide-react";
+import {
+  Loader2,
+  XCircle,
+  CheckCircle2,
+  Trash2,
+  X,
+  Star,
+  ArrowLeft,
+} from "lucide-react";
 import { useToast } from "../contexts/ToastContext";
 import { ReviewModal } from "../components/ReviewModal";
 
@@ -22,7 +30,7 @@ const formatDateTime = (dateString: string) => {
 };
 
 const statusTranslations: { [key: string]: string } = {
-  delivered: "Đã giao",
+  delivered: "Đã giao xong",
   pending: "Chờ xác nhận",
   cancelled: "Đã hủy",
   preparing: "Đang chuẩn bị",
@@ -173,9 +181,9 @@ function OrderDetailPage() {
         <div className="mb-6">
           <Link
             to="/orders"
-            className="text-orange-500 hover:underline text-sm font-medium mb-2 block"
+            className="text-orange-500 hover:underline text-sm font-medium mb-2 inline-flex items-center gap-1"
           >
-            ← Quay lại danh sách
+            <ArrowLeft className="w-4 h-4" /> Quay lại
           </Link>
           <h1 className="text-4xl font-bold text-gray-800">
             Đơn hàng #{order.orderNumber}
