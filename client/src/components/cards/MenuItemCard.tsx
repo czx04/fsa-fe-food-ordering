@@ -32,6 +32,8 @@ export interface MenuItemCardData {
 interface MenuItemCardProps {
   item: MenuItemCardData
   onAddToCart?: (item: MenuItemCardData) => void
+  onItemClick?: (item: MenuItemCardData) => void
+  reasonLabel?: string
   isFavorite?: boolean
   onToggleFavorite?: (id: string) => void
 }
@@ -41,6 +43,8 @@ const formatMoney = (val: number) => `${new Intl.NumberFormat('vi-VN').format(va
 export const MenuItemCard: React.FC<MenuItemCardProps> = ({
   item,
   onAddToCart,
+  onItemClick,
+  reasonLabel,
   isFavorite = false,
   onToggleFavorite,
 }) => {
@@ -59,10 +63,10 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
   const displayPrice = item.effectivePrice ?? item.salePrice ?? item.price ?? item.basePrice ?? 0
   const originalPrice = item.salePrice && item.basePrice ? item.basePrice : null
 
-  const ratingAvg = item.restaurantId?.ratingSummary?.average ?? 4.8
+  const ratingAvg = item.restaurantId?.ratingSummary?.average
   const deliveryTime = item.restaurantId?.delivery
     ? `${item.restaurantId.delivery.minMinutes}–${item.restaurantId.delivery.maxMinutes} phút`
-    : '20–30 phút'
+    : null
 
   const restaurantName = item.restaurantId?.name || 'Nhà hàng'
   const restaurantSlug = item.restaurantId?.slug
@@ -75,7 +79,7 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-md">
       {/* Image Header */}
       <div className="relative block aspect-[4/3] overflow-hidden bg-slate-100">
-        <Link to={detailUrl} className="block h-full">
+        <Link to={detailUrl} className="block h-full" onClick={() => onItemClick?.(item)}>
           <img
             src={image}
             alt={item.name}
@@ -95,7 +99,12 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
       {/* Body Info */}
       <div className="flex flex-1 flex-col justify-between p-4 space-y-3">
         <div>
-          <Link to={detailUrl}>
+          {reasonLabel && (
+            <span className="mb-2 inline-flex rounded-full bg-orange-50 px-2.5 py-1 text-[10px] font-bold text-orange-600">
+              {reasonLabel}
+            </span>
+          )}
+          <Link to={detailUrl} onClick={() => onItemClick?.(item)}>
             <h3 className="font-bold text-slate-800 transition group-hover:text-orange-500 line-clamp-1 text-base">
               {item.name}
             </h3>
@@ -104,16 +113,22 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
         </div>
 
         {/* Rating & Delivery Info */}
-        <div className="flex items-center gap-3 text-xs font-semibold text-slate-500">
-          <span className="flex items-center gap-1 text-amber-500 font-bold">
-            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-            {Number(ratingAvg).toFixed(1)}
-          </span>
-          <span className="flex items-center gap-1 text-slate-500">
-            <Clock className="h-3.5 w-3.5 text-slate-400" />
-            {deliveryTime}
-          </span>
-        </div>
+        {(ratingAvg !== undefined || deliveryTime) && (
+          <div className="flex items-center gap-3 text-xs font-semibold text-slate-500">
+            {ratingAvg !== undefined && (
+              <span className="flex items-center gap-1 text-amber-500 font-bold">
+                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                {Number(ratingAvg).toFixed(1)}
+              </span>
+            )}
+            {deliveryTime && (
+              <span className="flex items-center gap-1 text-slate-500">
+                <Clock className="h-3.5 w-3.5 text-slate-400" />
+                {deliveryTime}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Price & Add to Cart */}
         <div className="flex items-center justify-between pt-3 border-t border-slate-100">
@@ -130,7 +145,8 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({
           <button
             type="button"
             onClick={() => onAddToCart?.(item)}
-            className="grid h-9 w-9 place-items-center rounded-xl bg-orange-50 text-orange-600 font-bold transition hover:bg-orange-500 hover:text-white"
+            disabled={item.isAvailable === false}
+            className="grid h-9 w-9 place-items-center rounded-xl bg-orange-50 text-orange-600 font-bold transition hover:bg-orange-500 hover:text-white disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
             title="Thêm vào giỏ"
             aria-label={`Thêm ${item.name} vào giỏ hàng`}
           >

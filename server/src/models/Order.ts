@@ -176,6 +176,7 @@ const orderSchema = new Schema<IOrder>(
 
 orderSchema.index({ customerId: 1, checkoutKey: 1 }, { unique: true })
 orderSchema.index({ customerId: 1, createdAt: -1 })
+orderSchema.index({ customerId: 1, orderStatus: 1, placedAt: -1 })
 orderSchema.index({ restaurantId: 1, orderStatus: 1, createdAt: -1 })
 orderSchema.index({ restaurantId: 1, paymentStatus: 1, createdAt: -1 })
 orderSchema.index({ createdAt: -1, orderStatus: 1 })

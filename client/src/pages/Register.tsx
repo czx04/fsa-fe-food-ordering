@@ -157,8 +157,8 @@ export const Register = () => {
                   Mật khẩu
                 </label>
                 <div className="relative">
-                  <input 
-                    type={showPassword ? "text" : "password"} 
+                  <input
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
@@ -180,8 +180,8 @@ export const Register = () => {
                   Nhập lại mật khẩu
                 </label>
                 <div className="relative">
-                  <input 
-                    type={showConfirmPassword ? "text" : "password"} 
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="••••••••"

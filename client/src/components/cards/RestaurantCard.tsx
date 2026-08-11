@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { Link } from 'react-router-dom'
 import { Star, Clock, MapPin, Heart, ChevronRight } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
@@ -44,13 +44,13 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({
 }) => {
   const { user, isAuthenticated, updateUser } = useAuth()
   const toast = useToast()
-  
+
   const isFav = user?.favoriteRestaurantIds?.includes(restaurant._id) ?? isFavorite
 
   const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    
+
     if (!isAuthenticated) {
       toast.info('Vui lòng đăng nhập để lưu quán yêu thích')
       return
