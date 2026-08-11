@@ -42,7 +42,7 @@ export const Pagination: React.FC<PaginationProps> = ({
               variant="pagination"
               className={
                 isCurrent
-                  ? 'border-orange-500 bg-orange-500 text-white hover:bg-orange-600 hover:text-white'
+                  ? '!border-orange-500 !bg-orange-500 !text-white hover:!bg-orange-600 hover:!text-white'
                   : ''
               }
               onClick={() => onPageChange(page)}

@@ -193,39 +193,44 @@ function OrderDetailPage() {
               <h2 className="text-xl font-bold text-gray-800 mb-6">
                 Trạng thái đơn hàng
               </h2>
-              <ol className="flex items-center w-full text-center text-sm font-medium text-gray-500 sm:text-base">
-                {orderStatusSteps.map((statusKey, index) => (
-                  <li
-                    key={statusKey}
-                    className={`flex md:w-full items-center ${
-                      index <= currentStepIndex
-                        ? "text-orange-600 after:border-orange-200"
-                        : "after:border-gray-200"
-                    } ${
-                      index < orderStatusSteps.length - 1
-                        ? "after:content-[''] after:w-full after:h-1 after:border-b after:border-4 after:inline-block"
-                        : ""
-                    }`}
-                  >
-                    <div
-                      className={`flex items-center justify-center w-10 h-10 rounded-full ring-0 shrink-0 ${
-                        index <= currentStepIndex
-                          ? "bg-orange-600 text-white"
-                          : "bg-gray-100 text-gray-500"
-                      }`}
-                    >
-                      {index < currentStepIndex ? (
-                        <CheckCircle2 className="w-5 h-5" />
-                      ) : (
-                        index + 1
-                      )}
-                    </div>
-                    <h3 className="ml-3 font-semibold text-gray-900">
-                      {statusTranslations[statusKey]}
-                    </h3>
-                  </li>
-                ))}
-              </ol>
+              <div className="overflow-x-auto pb-4 no-scrollbar">
+                <ol className="flex items-center w-full min-w-[600px] text-center text-sm font-medium text-gray-500 sm:text-base">
+                  {orderStatusSteps.map((statusKey, index) => {
+                    const isCompleted = index <= currentStepIndex;
+                    const isCurrent = index === currentStepIndex;
+                    return (
+                      <li
+                        key={statusKey}
+                        className={`relative flex flex-col items-center flex-1 ${
+                          index < orderStatusSteps.length - 1
+                            ? "after:content-[''] after:absolute after:top-5 after:left-[50%] after:w-full after:h-1 after:-z-10 " +
+                              (isCompleted && !isCurrent ? "after:bg-orange-500" : "after:bg-gray-200")
+                            : ""
+                        }`}
+                      >
+                        <div
+                          className={`flex items-center justify-center w-10 h-10 rounded-full ring-4 ring-white mb-2 z-10 shadow-sm transition-colors ${
+                            isCompleted
+                              ? "bg-orange-500 text-white"
+                              : "bg-gray-100 text-gray-400"
+                          }`}
+                        >
+                          {index < currentStepIndex ? (
+                            <CheckCircle2 className="w-5 h-5" />
+                          ) : isCurrent ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <span className="font-bold text-sm">{index + 1}</span>
+                          )}
+                        </div>
+                        <h3 className={`font-semibold text-xs sm:text-sm px-2 text-center whitespace-normal min-h-[40px] flex items-center ${isCompleted ? "text-orange-600" : "text-gray-500"}`}>
+                          {statusTranslations[statusKey]}
+                        </h3>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
             </div>
 
             {/* Delivery Info */}
@@ -290,7 +295,7 @@ function OrderDetailPage() {
                   className={`mt-5 inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 font-semibold text-white transition-colors ${
                     order.review
                       ? "bg-amber-500 hover:bg-amber-600"
-                      : "bg-blue-500 hover:bg-blue-600"
+                      : "bg-orange-500 hover:bg-orange-600"
                   }`}
                 >
                   <Star
