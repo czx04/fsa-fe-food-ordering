@@ -10,11 +10,11 @@ export const generateTokens = (user: IUser) => {
   }
 
   const accessToken = jwt.sign(payload, env.jwtSecret, {
-    expiresIn: '15m',
+    expiresIn: env.jwtExpiresIn as any,
   })
 
   const refreshToken = jwt.sign(payload, env.jwtRefreshSecret, {
-    expiresIn: '7d',
+    expiresIn: env.jwtRefreshExpiresIn as any,
   })
 
   return { accessToken, refreshToken }

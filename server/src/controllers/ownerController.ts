@@ -7,6 +7,8 @@ import { MenuItem } from '../models/MenuItem.js'
 import { Order } from '../models/Order.js'
 import { Review } from '../models/Review.js'
 import {
+  dashboardDateFormat,
+  dashboardGranularityFrom,
   dateRangeFrom,
   escapeRegex,
   metric,
@@ -206,13 +208,14 @@ export const getOwnerDashboard = async (req: AuthRequest, res: Response) => {
     const restaurant = await findOwnedRestaurant(req, res)
     if (!restaurant) return
     const range = dateRangeFrom(req.query)
+    const granularity = dashboardGranularityFrom(req.query)
     const restaurantObjectId = restaurant._id as Types.ObjectId
-    const [current, previous, chart, orderStatus, topItems, recentOrders, unavailableItems, unansweredReviews] = await Promise.all([
+    const [current, previous, chart, orderStatus, topItems, categoryBreakdown, recentOrders, unavailableItems, unansweredReviews] = await Promise.all([
       orderSummary(restaurantObjectId, range.from, range.to),
       orderSummary(restaurantObjectId, range.previousFrom, range.previousTo),
       Order.aggregate<{ _id: string; revenue: number; orders: number }>([
         { $match: { restaurantId: restaurantObjectId, orderStatus: 'delivered', placedAt: { $gte: range.from, $lte: range.to } } },
-        { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$placedAt', timezone: 'Asia/Ho_Chi_Minh' } }, revenue: { $sum: '$pricing.grandTotal' }, orders: { $sum: 1 } } },
+        { $group: { _id: { $dateToString: { format: dashboardDateFormat(granularity), date: '$placedAt', timezone: 'Asia/Ho_Chi_Minh' } }, revenue: { $sum: '$pricing.grandTotal' }, orders: { $sum: 1 } } },
         { $sort: { _id: 1 } },
       ]),
       Order.aggregate<{ _id: string; count: number }>([
@@ -225,6 +228,28 @@ export const getOwnerDashboard = async (req: AuthRequest, res: Response) => {
         { $group: { _id: '$items.menuItemId', name: { $first: '$items.name' }, quantity: { $sum: '$items.quantity' }, revenue: { $sum: '$items.lineTotal' } } },
         { $sort: { quantity: -1 } }, { $limit: 5 },
       ]),
+      Order.aggregate<{ label: string; orders: number; revenue: number; quantity: number }>([
+        { $match: { restaurantId: restaurantObjectId, orderStatus: 'delivered', placedAt: { $gte: range.from, $lte: range.to } } },
+        { $unwind: '$items' },
+        { $lookup: { from: 'menuItems', localField: 'items.menuItemId', foreignField: '_id', as: 'menuItem' } },
+        { $set: { menuCategoryId: { $arrayElemAt: ['$menuItem.menuCategoryId', 0] } } },
+        { $lookup: { from: 'menuCategories', localField: 'menuCategoryId', foreignField: '_id', as: 'menuCategory' } },
+        { $set: { categoryLabel: { $ifNull: [{ $arrayElemAt: ['$menuCategory.name', 0] }, 'Chưa phân loại'] } } },
+        { $group: {
+          _id: { label: '$categoryLabel', orderId: '$_id' },
+          revenue: { $sum: '$items.lineTotal' },
+          quantity: { $sum: '$items.quantity' },
+        } },
+        { $group: {
+          _id: '$_id.label',
+          orders: { $sum: 1 },
+          revenue: { $sum: '$revenue' },
+          quantity: { $sum: '$quantity' },
+        } },
+        { $sort: { revenue: -1 } },
+        { $limit: 10 },
+        { $project: { _id: 0, label: '$_id', orders: 1, revenue: 1, quantity: 1 } },
+      ]),
       Order.find({ restaurantId: restaurantObjectId }).sort({ placedAt: -1 }).limit(6).lean(),
       MenuItem.countDocuments({ restaurantId: restaurantObjectId, isAvailable: false, deletedAt: null }),
       Review.countDocuments({ restaurantId: restaurantObjectId, visibilityStatus: 'visible', ownerReply: null, deletedAt: null }),
@@ -235,6 +260,7 @@ export const getOwnerDashboard = async (req: AuthRequest, res: Response) => {
     const previousCancellation = previous.totalOrders ? previous.cancelledOrders / previous.totalOrders * 100 : 0
     res.json({
       range: { from: range.from.toISOString(), to: range.to.toISOString() },
+      granularity,
       metrics: {
         revenue: metric(current.revenue, previous.revenue),
         orders: metric(current.totalOrders, previous.totalOrders),
@@ -249,6 +275,7 @@ export const getOwnerDashboard = async (req: AuthRequest, res: Response) => {
       chart: chart.map((point) => ({ date: point._id, revenue: point.revenue, orders: point.orders })),
       orderStatus: orderStatus.map((item) => ({ status: item._id, count: item.count })),
       topItems: topItems.map((item) => ({ itemId: item._id.toString(), name: item.name, quantity: item.quantity, revenue: item.revenue })),
+      categoryBreakdown,
       recentOrders,
     })
   } catch (error: any) {

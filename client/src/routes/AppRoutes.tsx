@@ -18,6 +18,7 @@ import PaymentFailedPage from "../pages/PaymentFailedPage";
 import OrderHistoryPage from "../pages/OrderHistoryPage";
 import OrderDetailPage from "../pages/OrderDetailPage";
 import { ProfilePage } from "../pages/ProfilePage";
+import PendingVnpayOrderBanner from "../components/PendingVnpayOrderBanner";
 import { CartProvider } from "../contexts/CartContext";
 import { ToastProvider } from "../contexts/ToastContext";
 
@@ -83,6 +84,7 @@ function AppRoutes() {
                 />
               </Route>
             </Routes>
+            <PendingVnpayOrderBanner />
           </CartProvider>
         </ToastProvider>
       </AuthProvider>

@@ -3,6 +3,19 @@ import { Types } from 'mongoose'
 import { AuditLog } from '../models/AuditLog.js'
 import type { UserRole } from '../models/User.js'
 
+export type DashboardGranularity = 'day' | 'month' | 'year'
+
+const dashboardDateFormats: Record<DashboardGranularity, string> = {
+  day: '%Y-%m-%d',
+  month: '%Y-%m',
+  year: '%Y',
+}
+
+export const dashboardGranularityFrom = (query: Record<string, unknown>): DashboardGranularity =>
+  query.granularity === 'month' || query.granularity === 'year' ? query.granularity : 'day'
+
+export const dashboardDateFormat = (granularity: DashboardGranularity) => dashboardDateFormats[granularity]
+
 export const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 export const paginationFrom = (query: Record<string, unknown>) => {

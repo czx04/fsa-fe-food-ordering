@@ -26,6 +26,7 @@ import {
   Trash2,
   Unlock,
   Users,
+  Utensils,
   X,
 } from "lucide-react";
 import { lazy, Suspense, useMemo, useState } from "react";
@@ -60,6 +61,7 @@ import {
   Textarea,
 } from "../components/ui";
 import { api } from "../lib/api";
+import { analyticsRange, formatAnalyticsPeriod, formatCompactMoney, type AnalyticsGranularity } from "../lib/analytics";
 import {
   formatDate,
   formatDateTime,
@@ -69,6 +71,7 @@ import {
   orderStatusLabels,
   roleLabels,
 } from "../lib/format";
+import { dashboardChartTheme } from "../lib/theme";
 import type {
   AdminDashboard,
   AuditLog,
@@ -104,8 +107,8 @@ export function AdminOverviewPage() {
   if (query.isError || !query.data) return <ErrorState message={getErrorMessage(query.error)} onRetry={() => void query.refetch()} />;
   const data = query.data;
   const chartOptions: ApexOptions = {
-    chart: { toolbar: { show: false }, fontFamily: "inherit" }, colors: ["#e95d18", "#146f5c"], stroke: { curve: "smooth", width: [3, 2] }, dataLabels: { enabled: false },
-    fill: { type: ["gradient", "solid"], gradient: { opacityFrom: 0.25, opacityTo: 0.02 } }, grid: { borderColor: "#ece7df", strokeDashArray: 4 },
+    chart: { toolbar: { show: false }, fontFamily: "inherit" }, colors: [dashboardChartTheme.primary, dashboardChartTheme.secondary], stroke: { curve: "smooth", width: [3, 2] }, dataLabels: { enabled: false },
+    fill: { type: ["gradient", "solid"], gradient: { opacityFrom: 0.18, opacityTo: 0.02 } }, grid: { borderColor: dashboardChartTheme.grid, strokeDashArray: 4 },
     xaxis: { categories: data.chart.map((point) => formatDate(point.date)) }, yaxis: [{ labels: { formatter: (value) => `${Math.round(value / 1_000_000)}tr` } }, { opposite: true, labels: { formatter: (value) => Math.round(value).toString() } }],
     legend: { position: "top", horizontalAlign: "right" }, tooltip: { shared: true, y: { formatter: (value, options) => options.seriesIndex === 0 ? formatMoney(value) : `${formatNumber(value)} đơn` } },
   };
@@ -266,27 +269,164 @@ export function AdminReviewsPage() {
   return <><PageHeader title="Kiểm duyệt đánh giá" description="Ẩn hoặc khôi phục hiển thị mà không chỉnh sửa nội dung người dùng." /><Card><div className="filter-bar"><SearchInput value={params.get("search") ?? ""} onChange={(value) => setQueryValue(params, setParams, "search", value)} placeholder="Nội dung, nhà hàng, khách hàng..." /><Select value={params.get("visibilityStatus") ?? ""} onChange={(event) => setQueryValue(params, setParams, "visibilityStatus", event.target.value)}><option value="">Mọi trạng thái</option><option value="flagged">Cần kiểm duyệt</option><option value="visible">Đang hiển thị</option><option value="hidden">Đã ẩn</option></Select><Select value={params.get("rating") ?? ""} onChange={(event) => setQueryValue(params, setParams, "rating", event.target.value)}><option value="">Mọi số sao</option>{[1, 2, 3, 4, 5].map((rating) => <option value={rating} key={rating}>{rating} sao</option>)}</Select></div>{query.isLoading ? <SkeletonRows /> : query.isError ? <ErrorState message={getErrorMessage(query.error)} onRetry={() => void query.refetch()} /> : !query.data?.data.length ? <EmptyState icon={MessageSquareWarning} title="Không có đánh giá" description="Hàng đợi kiểm duyệt hiện đang trống." /> : <><div className="review-list admin-review-list">{query.data.data.map((review) => { const restaurant = typeof review.restaurantId === "string" ? null : review.restaurantId; const customer = typeof review.customerId === "string" ? null : review.customerId; return <article className="review-card" key={review._id}><div className="review-head"><div className="avatar">{customer?.fullName.charAt(0) ?? "K"}</div><div><b>{customer?.fullName ?? "Khách hàng"}</b><span className="stars">{Array.from({ length: 5 }, (_, index) => <Star size={15} key={index} fill={index < review.rating ? "currentColor" : "none"} />)}</span><small>{restaurant?.name ?? "Nhà hàng"} · {formatDateTime(review.createdAt)}</small></div><ReviewBadge value={review.visibilityStatus} /></div><p className="review-content">{review.content}</p><div className="review-actions">{review.visibilityStatus !== "visible" && <Button onClick={() => moderate(review, "visible")}><Eye size={16} /> Cho hiển thị</Button>}{review.visibilityStatus !== "hidden" && <Button variant="danger" onClick={() => moderate(review, "hidden")}><EyeOff size={16} /> Ẩn đánh giá</Button>}{review.visibilityStatus !== "flagged" && <Button variant="secondary" onClick={() => moderate(review, "flagged")}><ShieldAlert size={16} /> Đánh dấu</Button>}</div></article>; })}</div><Pagination meta={query.data.meta} onPage={(page) => setQueryValue(params, setParams, "page", String(page))} /></>}</Card><Modal open={Boolean(active)} title="Xác nhận kiểm duyệt" description={`Chuyển đánh giá sang trạng thái “${nextVisibility}”.`} onClose={() => setActive(null)}><div className="modal-body"><Field label="Lý do" required><Textarea rows={4} value={reason} onChange={(event) => setReason(event.target.value)} /></Field></div><div className="modal-actions"><Button variant="secondary" onClick={() => setActive(null)}>Hủy</Button><Button variant={nextVisibility === "visible" ? "primary" : "danger"} disabled={reason.trim().length < 3} loading={mutation.isPending} onClick={() => mutation.mutate()}>Xác nhận</Button></div></Modal></>;
 }
 
+type AnalyticsGroup = "restaurant" | "category";
+
+interface AnalyticsItem {
+  itemId: string;
+  name: string;
+  quantity: number;
+  revenue: number;
+}
+
 interface AnalyticsData {
   range: { from: string; to: string };
-  cityBreakdown: Array<{ label: string; orders: number; gmv: number }>;
-  categoryBreakdown: Array<{ label: string; orders: number; gmv: number }>;
-  paymentBreakdown: Array<{ label: string; count: number; amount: number }>;
-  cancellationReasons: Array<{ label: string; count: number }>;
+  granularity: AnalyticsGranularity;
+  groupBy: AnalyticsGroup;
+  metrics: {
+    totalRevenue: number;
+    totalOrders: number;
+    deliveredOrders: number;
+    topItem: AnalyticsItem | null;
+  };
+  trend: Array<{ period: string; revenue: number; orders: number }>;
+  groupBreakdown: Array<{ label: string; orders: number; revenue: number; quantity: number }>;
+  topItems: AnalyticsItem[];
 }
 
 export function AdminAnalyticsPage() {
   const [params, setParams] = useSearchParams(dateRangeDefaults());
   const query = useQuery({ queryKey: ["admin", "analytics", Object.fromEntries(params)], queryFn: () => api.get<AnalyticsData>("/admin/analytics", { params: Object.fromEntries(params) }).then((response) => response.data) });
-  if (query.isLoading) return <SkeletonRows count={6} />; if (query.isError || !query.data) return <ErrorState message={getErrorMessage(query.error)} onRetry={() => void query.refetch()} />;
+  if (query.isLoading) return <SkeletonRows count={6} />;
+  if (query.isError || !query.data) return <ErrorState message={getErrorMessage(query.error)} onRetry={() => void query.refetch()} />;
   const data = query.data;
-  return <><PageHeader title="Phân tích nền tảng" description="Breakdown từ dữ liệu đơn hàng thực tế." actions={<div className="date-range"><Input type="date" value={params.get("from") ?? ""} onChange={(event) => setQueryValue(params, setParams, "from", event.target.value)} /><span>đến</span><Input type="date" value={params.get("to") ?? ""} onChange={(event) => setQueryValue(params, setParams, "to", event.target.value)} /></div>} /><div className="analytics-grid"><BreakdownCard title="Theo thành phố" icon={Store} items={data.cityBreakdown} /><BreakdownCard title="Theo loại ẩm thực" icon={Tags} items={data.categoryBreakdown} /><BreakdownCard title="Phương thức thanh toán" icon={CircleDollarSign} items={data.paymentBreakdown.map((item) => ({ label: item.label, orders: item.count, gmv: item.amount }))} /><Card><div className="card-heading"><div><span className="section-icon"><ClipboardCheck size={18} /></span><h2>Lý do hủy đơn</h2></div></div><div className="simple-bars">{data.cancellationReasons.map((item) => { const max = Math.max(...data.cancellationReasons.map((entry) => entry.count), 1); return <div key={item.label}><div><span>{item.label}</span><b>{item.count}</b></div><i><span style={{ width: `${(item.count / max) * 100}%` }} /></i></div>; })}</div></Card></div></>;
+  const granularity = data.granularity;
+  const groupLabel = data.groupBy === "restaurant" ? "nhà hàng" : "danh mục món ăn";
+  const trendOptions: ApexOptions = {
+    chart: { toolbar: { show: false }, fontFamily: "inherit", zoom: { enabled: false } },
+    colors: [dashboardChartTheme.primary, dashboardChartTheme.secondary],
+    stroke: { curve: "smooth", width: [3, 2] },
+    fill: { type: ["gradient", "solid"], gradient: { opacityFrom: 0.18, opacityTo: 0.02 } },
+    dataLabels: { enabled: false },
+    grid: { borderColor: dashboardChartTheme.grid, strokeDashArray: 4 },
+    xaxis: { categories: data.trend.map((item) => formatAnalyticsPeriod(item.period, granularity)), labels: { hideOverlappingLabels: true } },
+    yaxis: [
+      { labels: { formatter: (value) => formatCompactMoney(value) } },
+      { opposite: true, labels: { formatter: (value) => formatNumber(Math.round(value)) } },
+    ],
+    legend: { position: "top", horizontalAlign: "right" },
+    tooltip: { shared: true, y: { formatter: (value, options) => options.seriesIndex === 0 ? formatMoney(value) : `${formatNumber(value)} đơn` } },
+  };
+  const breakdownOptions: ApexOptions = {
+    chart: { toolbar: { show: false }, fontFamily: "inherit" },
+    colors: [dashboardChartTheme.primary],
+    plotOptions: { bar: { horizontal: true, borderRadius: 4, barHeight: "55%" } },
+    dataLabels: { enabled: false },
+    grid: { borderColor: dashboardChartTheme.grid, strokeDashArray: 4 },
+    xaxis: {
+      categories: data.groupBreakdown.map((item) => item.label),
+      labels: { formatter: (value) => formatCompactMoney(Number(value)) },
+    },
+    tooltip: { y: { formatter: (value) => formatMoney(value) } },
+  };
+
+  const changeGranularity = (value: AnalyticsGranularity) => {
+    const next = new URLSearchParams(params);
+    const range = analyticsRange(value);
+    next.set("granularity", value);
+    next.set("from", range.from);
+    next.set("to", range.to);
+    setParams(next);
+  };
+
+  return (
+    <>
+      <PageHeader title="Phân tích nền tảng" description="Doanh thu, đơn hàng và món bán chạy từ dữ liệu đơn hàng thực tế." />
+
+      <Card className="analytics-filter-card">
+        <div className="analytics-filter-bar">
+          <label className="analytics-filter-field">
+            <span>Thống kê theo</span>
+            <Select value={granularity} onChange={(event) => changeGranularity(event.target.value as AnalyticsGranularity)}>
+              <option value="day">Ngày</option>
+              <option value="month">Tháng</option>
+              <option value="year">Năm</option>
+            </Select>
+          </label>
+          <label className="analytics-filter-field">
+            <span>Phân nhóm</span>
+            <Select value={data.groupBy} onChange={(event) => setQueryValue(params, setParams, "groupBy", event.target.value)}>
+              <option value="restaurant">Nhà hàng</option>
+              <option value="category">Danh mục món ăn</option>
+            </Select>
+          </label>
+          <label className="analytics-filter-field">
+            <span>Từ ngày</span>
+            <Input type="date" value={params.get("from") ?? ""} onChange={(event) => setQueryValue(params, setParams, "from", event.target.value)} />
+          </label>
+          <label className="analytics-filter-field">
+            <span>Đến ngày</span>
+            <Input type="date" value={params.get("to") ?? ""} onChange={(event) => setQueryValue(params, setParams, "to", event.target.value)} />
+          </label>
+        </div>
+      </Card>
+
+      <div className="metric-grid analytics-metric-grid">
+        <AdminMetric icon={CircleDollarSign} label="Tổng doanh thu" value={formatMoney(data.metrics.totalRevenue)} />
+        <AdminMetric icon={ShoppingBag} label="Tổng đơn hàng" value={formatNumber(data.metrics.totalOrders)} />
+        <AdminMetric icon={Utensils} label="Món ăn bán chạy" value={data.metrics.topItem?.name ?? "Chưa có dữ liệu"} />
+      </div>
+
+      <div className="analytics-chart-grid">
+        <Card className="chart-card">
+          <div className="card-heading"><div><h2>Doanh thu và đơn hàng</h2><p>Thống kê theo {granularity === "day" ? "ngày" : granularity === "month" ? "tháng" : "năm"}.</p></div></div>
+          {data.trend.length ? (
+            <Suspense fallback={<SkeletonRows count={3} />}>
+              <AnalyticsChart
+                options={trendOptions}
+                series={[
+                  { name: "Doanh thu", type: "area", data: data.trend.map((item) => item.revenue) },
+                  { name: "Đơn hàng", type: "line", data: data.trend.map((item) => item.orders) },
+                ]}
+                height={340}
+              />
+            </Suspense>
+          ) : <EmptyState title="Chưa có dữ liệu" description="Không có đơn hàng trong khoảng thời gian đã chọn." />}
+        </Card>
+
+        <Card className="chart-card">
+          <div className="card-heading"><div><h2>Doanh thu theo {groupLabel}</h2><p>Top 10 nhóm có doanh thu cao nhất.</p></div></div>
+          {data.groupBreakdown.length ? (
+            <Suspense fallback={<SkeletonRows count={3} />}>
+              <AnalyticsChart
+                options={breakdownOptions}
+                series={[{ name: "Doanh thu", type: "bar", data: data.groupBreakdown.map((item) => item.revenue) }]}
+                height={340}
+              />
+            </Suspense>
+          ) : <EmptyState title="Chưa có dữ liệu" description={`Chưa có doanh thu theo ${groupLabel} trong kỳ này.`} />}
+        </Card>
+      </div>
+
+      <Card>
+        <div className="card-heading"><div><span className="section-icon"><ClipboardCheck size={18} /></span><h2>Món ăn bán chạy</h2><p>Xếp theo số lượng món trong đơn đã giao thành công.</p></div></div>
+        {data.topItems.length ? (
+          <div className="rank-list analytics-rank-list">
+            {data.topItems.map((item, index) => (
+              <div key={item.itemId}>
+                <span>{index + 1}</span>
+                <div><b>{item.name}</b><small>{formatNumber(item.quantity)} phần đã bán</small></div>
+                <strong>{formatMoney(item.revenue)}</strong>
+              </div>
+            ))}
+          </div>
+        ) : <EmptyState icon={Utensils} title="Chưa có món bán chạy" description="Dữ liệu xuất hiện khi có đơn được giao thành công." />}
+      </Card>
+    </>
+  );
 }
 
-function dateRangeDefaults() { const to = new Date(); const from = new Date(); from.setDate(to.getDate() - 29); return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) }; }
-
-function BreakdownCard({ title, icon: Icon, items }: { title: string; icon: typeof Store; items: Array<{ label: string; orders: number; gmv: number }> }) {
-  const max = Math.max(...items.map((item) => item.gmv), 1);
-  return <Card><div className="card-heading"><div><span className="section-icon"><Icon size={18} /></span><h2>{title}</h2></div></div><div className="simple-bars">{items.map((item) => <div key={item.label}><div><span>{item.label || "Chưa xác định"}</span><b>{formatMoney(item.gmv)}</b></div><i><span style={{ width: `${(item.gmv / max) * 100}%` }} /></i><small>{formatNumber(item.orders)} đơn</small></div>)}</div></Card>;
+function dateRangeDefaults() {
+  return { ...analyticsRange("day"), granularity: "day", groupBy: "restaurant" };
 }
 
 export function AdminAuditLogsPage() {

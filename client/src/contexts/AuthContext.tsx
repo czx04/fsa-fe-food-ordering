@@ -47,10 +47,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Xử lý khi refresh token thất bại (interceptor bắn event customer:session-expired)
+  // → đăng xuất ngay để tránh UI bị "kẹt" ở trạng thái tưởng chừng đã đăng nhập.
   useEffect(() => {
-    const initAuth = async () => {
+    const handleSessionExpired = () => {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      socketService.setAuthToken(null);
+      setUser(null);
+    };
+    window.addEventListener("customer:session-expired", handleSessionExpired);
+    return () =>
+      window.removeEventListener(
+        "customer:session-expired",
+        handleSessionExpired,
+      );
+  }, []);
+
+  useEffect(() => {
+    const fetchUser = async () => {
       const token = localStorage.getItem("accessToken");
-      socketService.setAuthToken(token);
       if (token) {
         try {
           const res = await api.get("/auth/me");
@@ -58,12 +74,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } catch (error) {
           console.error("Failed to restore session", error);
           localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
         }
       }
+    };
+
+    const initAuth = async () => {
+      const token = localStorage.getItem("accessToken");
+      socketService.setAuthToken(token);
+      await fetchUser();
       setIsLoading(false);
     };
 
     initAuth();
+
+    // Auto refresh user data when tab becomes active again (e.g. after verifying email in another tab)
+    const handleFocus = () => {
+      if (localStorage.getItem("accessToken")) {
+        fetchUser();
+      }
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, []);
 
   const login = (accessToken: string, refreshToken: string, userData: User) => {

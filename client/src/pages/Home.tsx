@@ -6,6 +6,7 @@ import {
   HOME_PROMOTION_IMAGE_URL,
 } from "../utils/constants";
 import { useAuth } from "../contexts/AuthContext";
+import { useToast } from "../contexts/ToastContext";
 import { LoginModal } from "../components/LoginModal";
 import { MenuItemCard, MenuItemCardData } from "../components/cards/MenuItemCard";
 import { RestaurantCard, RestaurantCardData } from "../components/cards/RestaurantCard";
@@ -45,6 +46,7 @@ interface CouponItem {
 export const Home = () => {
   const { isAuthenticated } = useAuth();
   const { addItemToCart } = useCart();
+  const toast = useToast();
   const [categories, setCategories] = useState<CuisineCategory[]>([]);
   const [restaurants, setRestaurants] = useState<RestaurantCardData[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItemCardData[]>([]);
@@ -65,10 +67,10 @@ export const Home = () => {
         menuItemId: item._id,
         quantity: 1,
       });
-      alert(`Đã thêm "${item.name}" vào giỏ hàng!`);
+      toast.success(`Đã thêm "${item.name}" vào giỏ hàng!`);
     } catch (err) {
       console.error(err);
-      alert("Không thể thêm vào giỏ hàng!");
+      toast.error("Không thể thêm vào giỏ hàng!");
     }
   };
 
