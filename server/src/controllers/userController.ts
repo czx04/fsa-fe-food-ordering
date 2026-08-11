@@ -40,3 +40,67 @@ export const updateMeHandler = async (req: AuthRequest, res: Response, next: Nex
     next(error)
   }
 }
+
+export const toggleFavoriteHandler = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { restaurantId } = req.params;
+    const userId = req.user!.userId;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(404).json({ message: 'Không tìm thấy tài khoản.' });
+      return;
+    }
+
+    const isFav = user.favoriteRestaurantIds?.some((id) => id.toString() === restaurantId);
+
+    if (isFav) {
+      user.favoriteRestaurantIds = user.favoriteRestaurantIds?.filter(
+        (id) => id.toString() !== restaurantId
+      );
+    } else {
+      if (!user.favoriteRestaurantIds) user.favoriteRestaurantIds = [];
+      user.favoriteRestaurantIds.push(restaurantId as any);
+    }
+
+    await user.save();
+    res.json({
+      message: isFav ? 'Đã bỏ yêu thích.' : 'Đã thêm vào yêu thích.',
+      favoriteRestaurantIds: user.favoriteRestaurantIds,
+      isFavorite: !isFav,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getFavoritesHandler = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.userId;
+    const user = await User.findById(userId).populate('favoriteRestaurantIds');
+    if (!user) {
+      res.status(404).json({ message: 'Không tìm thấy tài khoản.' });
+      return;
+    }
+    res.json({ data: user.favoriteRestaurantIds || [] });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteAddressHandler = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { addressId } = req.params;
+    const userId = req.user!.userId;
+    const user = await User.findById(userId);
+    if (!user) {
+      res.status(404).json({ message: 'Không tìm thấy tài khoản.' });
+      return;
+    }
+    user.addresses = user.addresses.filter((addr) => addr._id?.toString() !== addressId);
+    await user.save();
+    res.json({ message: 'Đã xóa địa chỉ.', addresses: user.addresses });
+  } catch (error) {
+    next(error);
+  }
+};

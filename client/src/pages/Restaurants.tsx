@@ -400,7 +400,7 @@ export const Restaurants = () => {
 
               {/* Grid List View */}
               {!loading && !error && !showMap && restaurants.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                   {restaurants.map((restaurant) => (
                     <RestaurantCard key={restaurant._id} restaurant={restaurant} />
                   ))}

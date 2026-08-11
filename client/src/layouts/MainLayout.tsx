@@ -2,6 +2,7 @@ import { Outlet, Link, NavLink } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
 import { ShoppingBag, LogOut } from "lucide-react";
+import { MobileBottomNav } from "../components/MobileBottomNav";
 
 export const MainLayout = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -78,12 +79,18 @@ export const MainLayout = () => {
                   )}
                 </Link>
                 <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
-                  <div className="w-8 h-8 rounded-full bg-orange-500 text-white font-bold text-xs flex items-center justify-center shadow-sm">
-                    {user?.fullName?.charAt(0) || "U"}
-                  </div>
-                  <span className="hidden sm:inline text-xs font-semibold text-slate-700 max-w-[120px] truncate">
-                    {user?.fullName}
-                  </span>
+                  <Link
+                    to="/profile"
+                    className="flex items-center gap-2 hover:opacity-80 transition group"
+                    title="Trang cá nhân"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-orange-500 text-white font-bold text-xs flex items-center justify-center shadow-sm group-hover:scale-105 transition transform">
+                      {user?.fullName?.charAt(0) || "U"}
+                    </div>
+                    <span className="hidden sm:inline text-xs font-semibold text-slate-700 max-w-[120px] truncate group-hover:text-orange-600">
+                      {user?.fullName}
+                    </span>
+                  </Link>
                   <button
                     type="button"
                     onClick={logout}
@@ -116,9 +123,12 @@ export const MainLayout = () => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1">
+      <main className="flex-1 pb-16 md:pb-0">
         <Outlet />
       </main>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav />
 
       {/* Footer */}
       <footer className="bg-white border-t border-slate-100 py-12 text-slate-500 text-sm">

@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt'
 import { User, IUser } from '../models/User.js'
+import { PasswordResetToken } from '../models/PasswordResetToken.js'
 import { generateTokens, verifyRefreshToken } from '../utils/jwt.js'
 import { env } from '../config/env.js'
 
@@ -189,19 +190,41 @@ export const verifyEmailToken = async (token: string) => {
   }
 }
 
+export const resendVerificationEmail = async (userId: string) => {
+  const user = await User.findById(userId).select('+emailVerificationToken +emailVerificationExpires')
+  if (!user) {
+    throw new Error('Người dùng không tồn tại.')
+  }
+
+  if (user.status !== 'pending_verification') {
+    throw new Error('Tài khoản đã được xác thực.')
+  }
+
+  const verificationToken = crypto.randomBytes(32).toString('hex')
+  const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000)
+
+  user.emailVerificationToken = verificationToken
+  user.emailVerificationExpires = verificationExpires
+  await user.save()
+
+  const emailResult = await sendVerificationEmail(user.email, verificationToken)
+
+  return {
+    message: 'Đã gửi lại email xác thực.',
+    previewUrl: emailResult?.previewUrl || null,
+    verificationLink: emailResult?.verificationLink || null,
+  }
+}
+
 export const requestPasswordReset = async (email: string) => {
   const normalizedEmail = email.toLowerCase().trim()
-  const user = await User.findOne({ email: normalizedEmail })
+  const user = await User.findOne({ email: normalizedEmail, deletedAt: null })
   if (!user) {
     throw new Error('Email không tồn tại trong hệ thống.')
   }
 
-  // Import PasswordResetToken
-  const { PasswordResetToken } = await import('../models/PasswordResetToken.js')
-
   const resetTokenRaw = Math.floor(100000 + Math.random() * 900000).toString() // 6 digit OTP token for easy testing
   const tokenHash = await bcrypt.hash(resetTokenRaw, 8)
-
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000) // 15 mins expiry
 
   await PasswordResetToken.create({
@@ -226,12 +249,10 @@ export const requestPasswordReset = async (email: string) => {
 
 export const resetPasswordWithToken = async (email: string, resetTokenRaw: string, newPasswordRaw: string) => {
   const normalizedEmail = email.toLowerCase().trim()
-  const user = await User.findOne({ email: normalizedEmail }).select('+passwordHash')
+  const user = await User.findOne({ email: normalizedEmail, deletedAt: null }).select('+passwordHash')
   if (!user) {
     throw new Error('Người dùng không tồn tại.')
   }
-
-  const { PasswordResetToken } = await import('../models/PasswordResetToken.js')
 
   const activeTokens = await PasswordResetToken.find({
     userId: user._id,
@@ -252,7 +273,7 @@ export const resetPasswordWithToken = async (email: string, resetTokenRaw: strin
     throw new Error('Mã xác nhận không hợp lệ hoặc đã hết hạn.')
   }
 
-  // Update password
+  // Update password and unlock account if it was locked
   user.passwordHash = await bcrypt.hash(newPasswordRaw, 10)
   user.failedLoginCount = 0
   user.status = 'active'

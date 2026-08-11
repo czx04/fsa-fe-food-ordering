@@ -79,6 +79,19 @@ export const verifyEmail = async (req: Request, res: Response) => {
   }
 }
 
+export const resendVerificationEmail = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ message: 'Không tìm thấy thông tin xác thực.' })
+      return
+    }
+    const result = await authService.resendVerificationEmail(req.user.userId)
+    res.json(result)
+  } catch (error: any) {
+    res.status(400).json({ message: error.message || 'Gửi lại email xác thực thất bại.' })
+  }
+}
+
 export const forgotPassword = async (req: Request, res: Response) => {
   try {
     const { email } = req.body

@@ -18,6 +18,7 @@ interface User {
   _id: string;
   email: string;
   fullName: string;
+  phone?: string;
   role: string;
   status?: string;
   avatarUrl?: string;
@@ -28,7 +29,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (token: string, refreshToken: string, userData: User) => void;
+  login: (accessToken: string, refreshToken: string, userData: User) => void;
   logout: () => void;
   updateUser: (newUserData: User) => void;
 }
@@ -37,9 +38,9 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
   isLoading: true,
-  login: () => {},
-  logout: () => {},
-  updateUser: () => {},
+  login: () => { },
+  logout: () => { },
+  updateUser: () => { },
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -64,9 +65,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    const initAuth = async () => {
+    const fetchUser = async () => {
       const token = localStorage.getItem("accessToken");
-      socketService.setAuthToken(token);
       if (token) {
         try {
           const res = await api.get("/auth/me");
@@ -77,25 +77,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           localStorage.removeItem("refreshToken");
         }
       }
+    };
+
+    const initAuth = async () => {
+      const token = localStorage.getItem("accessToken");
+      socketService.setAuthToken(token);
+      await fetchUser();
       setIsLoading(false);
     };
 
     initAuth();
+
+    // Auto refresh user data when tab becomes active again (e.g. after verifying email in another tab)
+    const handleFocus = () => {
+      if (localStorage.getItem("accessToken")) {
+        fetchUser();
+      }
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, []);
 
-  const login = (token: string, refreshToken: string, userData: User) => {
-    localStorage.setItem("accessToken", token);
+  const login = (accessToken: string, refreshToken: string, userData: User) => {
+    localStorage.setItem("accessToken", accessToken);
     localStorage.setItem("refreshToken", refreshToken);
-    socketService.setAuthToken(token);
+    socketService.setAuthToken(accessToken);
     setUser(userData);
   };
 
   const logout = () => {
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (refreshToken) {
+      // Background call to invalidate the refresh token on the server
+      api.post("/auth/logout", { refreshToken }).catch(console.error);
+    }
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
-    setUser(null);
     socketService.setAuthToken(null);
-    // Optional: Call backend /auth/logout to invalidate refresh token
+    setUser(null);
   };
 
   const updateUser = (newUserData: User) => {

@@ -4,21 +4,20 @@ let transporter: nodemailer.Transporter | null = null
 
 // Khởi tạo Transporter cho Nodemailer (Tự động dùng Ethereal Account nếu chưa có SMTP config trong env)
 export const getEmailTransporter = async () => {
-  if (transporter) return transporter
-
   // Kiểm tra nếu có cấu hình SMTP thực tế trong ENV
   if (process.env.SMTP_HOST && process.env.SMTP_USER) {
-    transporter = nodemailer.createTransport({
+    return nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT) || 587,
+      port: Number(process.env.SMTP_PORT) || 2525,
       secure: process.env.SMTP_SECURE === 'true',
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
     })
-    return transporter
   }
+
+  if (transporter) return transporter
 
   // Fallback: Tự động khởi tạo Ethereal Test Account cho môi trường Dev
   try {
@@ -138,28 +137,30 @@ export const sendOrderConfirmationEmail = async (order: any) => {
       to: toEmail,
       subject: `[MămMăm] Xác nhận đơn hàng #${order.orderNumber} 🛒`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 12px; background-color: #ffffff;">
-          <div style="text-align: center; padding-bottom: 15px; border-bottom: 2px solid #ff5a1f;">
-            <h1 style="color: #ff5a1f; margin: 0; font-size: 26px;">MămMăm Food Ordering</h1>
-            <p style="color: #666; margin-top: 5px; font-size: 14px;">Cảm ơn bạn đã đặt hàng tại MămMăm!</p>
+        <div style="font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 650px; margin: 0 auto; padding: 24px; border-radius: 16px; background-color: #ffffff; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #f0f0f0;">
+          <div style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid #ff5a1f;">
+            <h1 style="color: #ff5a1f; margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -0.5px;">MămMăm<span style="color: #ffb703;">.</span></h1>
+            <p style="color: #666666; margin-top: 6px; font-size: 14px; font-weight: 500;">Món ngon tận cửa · Giao hàng siêu tốc</p>
           </div>
 
-          <div style="padding: 20px 0;">
-            <h2 style="color: #333; font-size: 18px; margin-top: 0;">Thông tin đơn hàng #${order.orderNumber}</h2>
-            <p style="color: #555; margin: 5px 0;"><strong>Nhà hàng:</strong> ${order.restaurantSnapshot?.name || 'N/A'}</p>
-            <p style="color: #555; margin: 5px 0;"><strong>Người nhận:</strong> ${order.recipient?.fullName} - ${order.recipient?.phone}</p>
-            <p style="color: #555; margin: 5px 0;"><strong>Địa chỉ giao hàng:</strong> ${order.recipient?.addressText}</p>
-            <p style="color: #555; margin: 5px 0;"><strong>Phương thức thanh toán:</strong> ${(order.paymentMethod || '').toUpperCase()} (${paymentStatusBadge})</p>
+          <div style="padding: 24px 0 16px 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <h2 style="color: #17201a; font-size: 20px; font-weight: 800; margin: 0;">Đơn hàng #${order.orderNumber}</h2>
+              <div>${paymentStatusBadge}</div>
+            </div>
+            <p style="color: #526158; font-size: 14px; margin: 6px 0;"><strong>Nhà hàng:</strong> ${order.restaurantSnapshot?.name || 'N/A'}</p>
+            <p style="color: #526158; font-size: 14px; margin: 6px 0;"><strong>Người nhận:</strong> ${order.recipient?.fullName} (${order.recipient?.phone})</p>
+            <p style="color: #526158; font-size: 14px; margin: 6px 0;"><strong>Địa chỉ giao:</strong> ${order.recipient?.addressText}</p>
           </div>
 
-          <h3 style="color: #333; font-size: 16px; border-bottom: 1px solid #ddd; padding-bottom: 8px;">Chi tiết món ăn</h3>
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <h3 style="color: #17201a; font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #f0f0f0; padding-bottom: 8px; margin-top: 16px;">Chi tiết món ăn</h3>
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px;">
             <thead>
-              <tr style="background-color: #f8f9fa;">
-                <th style="padding: 10px; text-align: left; color: #555;">Món</th>
-                <th style="padding: 10px; text-align: center; color: #555;">SL</th>
-                <th style="padding: 10px; text-align: right; color: #555;">Đơn giá</th>
-                <th style="padding: 10px; text-align: right; color: #555;">Thành tiền</th>
+              <tr style="background-color: #f7faf7; border-radius: 8px;">
+                <th style="padding: 12px; text-align: left; color: #526158; font-weight: 700;">Món</th>
+                <th style="padding: 12px; text-align: center; color: #526158; font-weight: 700;">SL</th>
+                <th style="padding: 12px; text-align: right; color: #526158; font-weight: 700;">Đơn giá</th>
+                <th style="padding: 12px; text-align: right; color: #526158; font-weight: 700;">Thành tiền</th>
               </tr>
             </thead>
             <tbody>
@@ -167,35 +168,37 @@ export const sendOrderConfirmationEmail = async (order: any) => {
             </tbody>
           </table>
 
-          <div style="background-color: #fdfdfd; padding: 15px; border-radius: 8px; border: 1px solid #f0f0f0;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-              <span style="color: #666;">Tạm tính:</span>
-              <span style="color: #333; font-weight: 500;">${formatVND(order.pricing?.subtotal || 0)}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-              <span style="color: #666;">Phí giao hàng:</span>
-              <span style="color: #333; font-weight: 500;">${formatVND(order.pricing?.deliveryFee || 0)}</span>
-            </div>
-            ${
-              (order.pricing?.discountAmount || 0) > 0
-                ? `<div style="display: flex; justify-content: space-between; margin-bottom: 6px; color: #28a745;">
-                    <span>Mã giảm giá (${order.couponSnapshot?.code || ''}):</span>
-                    <span>- ${formatVND(order.pricing.discountAmount)}</span>
-                  </div>`
-                : ''
-            }
-            <div style="display: flex; justify-content: space-between; border-top: 1px solid #ddd; padding-top: 10px; margin-top: 10px; font-size: 18px; font-weight: bold; color: #ff5a1f;">
-              <span>TỔNG CỘNG:</span>
-              <span>${formatVND(order.pricing?.grandTotal || 0)}</span>
-            </div>
+          <div style="background-color: #f8faf8; padding: 18px; border-radius: 12px; border: 1px solid #e7ece8;">
+            <table style="width: 100%; font-size: 14px;">
+              <tr>
+                <td style="color: #68736c; padding: 4px 0;">Tạm tính:</td>
+                <td style="text-align: right; color: #17201a; font-weight: 600;">${formatVND(order.pricing?.subtotal || 0)}</td>
+              </tr>
+              <tr>
+                <td style="color: #68736c; padding: 4px 0;">Phí giao hàng:</td>
+                <td style="text-align: right; color: #17201a; font-weight: 600;">${formatVND(order.pricing?.deliveryFee || 0)}</td>
+              </tr>
+              ${
+                (order.pricing?.discountAmount || 0) > 0
+                  ? `<tr>
+                      <td style="color: #ff5a1f; padding: 4px 0; font-weight: 600;">Mã giảm giá (${order.couponSnapshot?.code || ''}):</td>
+                      <td style="text-align: right; color: #ff5a1f; font-weight: 700;">- ${formatVND(order.pricing.discountAmount)}</td>
+                    </tr>`
+                  : ''
+              }
+              <tr>
+                <td style="border-top: 2px solid #e7ece8; padding-top: 12px; font-size: 16px; font-weight: 800; color: #17201a;">TỔNG THANH TOÁN:</td>
+                <td style="border-top: 2px solid #e7ece8; padding-top: 12px; text-align: right; font-size: 20px; font-weight: 900; color: #ff5a1f;">${formatVND(order.pricing?.grandTotal || 0)}</td>
+              </tr>
+            </table>
           </div>
 
-          <div style="text-align: center; margin: 30px 0 15px 0;">
-            <a href="${orderLink}" style="background-color: #ff5a1f; color: #ffffff; padding: 12px 24px; font-weight: bold; text-decoration: none; border-radius: 8px; display: inline-block;">Theo dõi đơn hàng của bạn</a>
+          <div style="text-align: center; margin: 32px 0 20px 0;">
+            <a href="${orderLink}" style="background-color: #ff5a1f; color: #ffffff; padding: 14px 32px; font-size: 15px; font-weight: 800; text-decoration: none; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(255,90,31,0.35);">Theo dõi chi tiết đơn hàng</a>
           </div>
 
-          <p style="color: #999; font-size: 12px; text-align: center; border-top: 1px solid #eee; padding-top: 15px; margin-top: 25px;">
-            Nếu bạn có thắc mắc về đơn hàng, vui lòng liên hệ bộ phận hỗ trợ MămMăm.
+          <p style="color: #9ca59f; font-size: 12px; text-align: center; border-top: 1px solid #f0f0f0; padding-top: 16px; margin-top: 24px; margin-bottom: 0;">
+            Cần trợ giúp? Email <a href="mailto:hotro@mammam.vn" style="color: #ff5a1f; text-decoration: none; font-weight: 600;">hotro@mammam.vn</a> hoặc Hotline <strong>1900 8888</strong>.
           </p>
         </div>
       `,

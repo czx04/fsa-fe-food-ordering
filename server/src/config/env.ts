@@ -12,6 +12,8 @@ const envSchema = z.object({
   // ở production bắt buộc phải đặt từ biến môi trường (xem guard bên dưới).
   JWT_SECRET: z.string().min(1).default('dev-only-insecure-secret'),
   JWT_REFRESH_SECRET: z.string().min(1).default('dev-only-insecure-secret'),
+  JWT_EXPIRES_IN: z.string().default('15m'),
+  JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
 
   // VNPAY config
   VNPAY_MODE: z.enum(['mock', 'real']).default('real'),
@@ -74,6 +76,8 @@ export const env = {
   mongodbDbName: parsedEnv.data.MONGODB_DB_NAME,
   jwtSecret: parsedEnv.data.JWT_SECRET,
   jwtRefreshSecret: parsedEnv.data.JWT_REFRESH_SECRET,
+  jwtExpiresIn: parsedEnv.data.JWT_EXPIRES_IN,
+  jwtRefreshExpiresIn: parsedEnv.data.JWT_REFRESH_EXPIRES_IN,
   VNPAY_MODE: parsedEnv.data.VNPAY_MODE,
   CLIENT_URL: parsedEnv.data.CLIENT_URL,
   vnpTmnCode: parsedEnv.data.VNP_TMNCODE,

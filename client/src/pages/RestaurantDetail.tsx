@@ -703,6 +703,51 @@ export const RestaurantDetail = () => {
                     </div>
                   </a>
                 </div>
+                <div className="mt-6 border-t border-[#e7ece8] pt-5">
+                  <div className="mb-4 grid grid-cols-2 gap-4 max-[600px]:grid-cols-1">
+                    <div className="flex gap-3 rounded-xl bg-[#f7faf7] p-4">
+                      <Truck className="mt-0.5 h-5 w-5 shrink-0 text-[#ff5a1f]" />
+                      <div>
+                        <b className="block text-xs text-[#17201a]">
+                          Thời gian giao hàng
+                        </b>
+                        <span className="text-xs text-[#68736c]">
+                          Giao trong {restaurant.delivery.minMinutes}–{restaurant.delivery.maxMinutes} phút (Tối đa {restaurant.delivery.maxDistanceKm ?? 8} km)
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex gap-3 rounded-xl bg-[#f7faf7] p-4">
+                      <Clock3 className="mt-0.5 h-5 w-5 shrink-0 text-[#ff5a1f]" />
+                      <div>
+                        <b className="block text-xs text-[#17201a]">Mức giá trung bình</b>
+                        <span className="text-xs text-[#68736c]">
+                          {PRICE_LABELS[restaurant.priceRange]}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <b className="mb-3 block text-xs font-bold text-[#17201a]">
+                    Lịch mở cửa hàng tuần
+                  </b>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-2 rounded-xl bg-[#f7faf7] p-4 text-xs max-[600px]:grid-cols-1">
+                    {restaurant.openingHours.map((entry) => (
+                      <div
+                        key={entry.dayOfWeek}
+                        className="flex justify-between gap-3 text-[#68736c]"
+                      >
+                        <span>{DAY_NAMES[entry.dayOfWeek]}</span>
+                        <b className="font-semibold text-[#17201a]">
+                          {entry.isClosed || entry.slots.length === 0
+                            ? "Đóng cửa"
+                            : entry.slots
+                                .map((slot) => `${slot.open}–${slot.close}`)
+                                .join(", ")}
+                        </b>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -873,54 +918,13 @@ export const RestaurantDetail = () => {
             </section>
           </div>
 
-          <div>
+          <div className="hidden min-[900px]:block">
             <MiniCart
               restaurantId={restaurant._id}
               restaurantName={restaurant.name}
               deliveryFee={restaurant.delivery.fee}
               onUpdateQuantity={handleUpdateQuantity}
             />
-            <div className="border-t border-slate-100 bg-slate-50/50 p-5 rounded-b-2xl mt-4 border border-slate-100 shadow-sm">
-              <div className="mb-3 flex items-start gap-3 text-xs">
-                <Truck className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
-                <span>
-                  <b className="block text-slate-800">
-                    Giao trong {restaurant.delivery.minMinutes}–
-                    {restaurant.delivery.maxMinutes} phút
-                  </b>
-                  <span className="text-slate-500">
-                    {" "}
-                    Bán kính tối đa {restaurant.delivery.maxDistanceKm ?? 8} km
-                  </span>
-                </span>
-              </div>
-              <div className="flex items-start gap-3 text-xs">
-                <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
-                <span>
-                  <b className="block text-slate-800">Giờ hoạt động</b>
-                  <span className="text-slate-500">
-                    {PRICE_LABELS[restaurant.priceRange]}
-                  </span>
-                </span>
-              </div>
-              <div className="mt-4 grid gap-1.5 border-t border-slate-200/60 pt-4 text-[11px]">
-                {restaurant.openingHours.map((entry) => (
-                  <div
-                    key={entry.dayOfWeek}
-                    className="flex justify-between gap-3 text-slate-500"
-                  >
-                    <span>{DAY_NAMES[entry.dayOfWeek]}</span>
-                    <b className="text-slate-800">
-                      {entry.isClosed || entry.slots.length === 0
-                        ? "Đóng cửa"
-                        : entry.slots
-                            .map((slot) => `${slot.open}–${slot.close}`)
-                            .join(", ")}
-                    </b>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       </section>

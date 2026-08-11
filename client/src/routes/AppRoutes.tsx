@@ -17,6 +17,7 @@ import PaymentSuccessPage from "../pages/PaymentSuccessPage";
 import PaymentFailedPage from "../pages/PaymentFailedPage";
 import OrderHistoryPage from "../pages/OrderHistoryPage";
 import OrderDetailPage from "../pages/OrderDetailPage";
+import { ProfilePage } from "../pages/ProfilePage";
 import PendingVnpayOrderBanner from "../components/PendingVnpayOrderBanner";
 import { CartProvider } from "../contexts/CartContext";
 import { ToastProvider } from "../contexts/ToastContext";
@@ -64,6 +65,7 @@ function AppRoutes() {
                   />
                   <Route path="/orders" element={<OrderHistoryPage />} />
                   <Route path="/orders/:id" element={<OrderDetailPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
                 </Route>
 
                 {/* Fallback 404 */}

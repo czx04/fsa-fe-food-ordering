@@ -312,13 +312,14 @@ export const Home = () => {
           {loading ? (
             <p className="text-slate-400 text-sm">Đang tải món ăn...</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div className="flex overflow-x-auto gap-4 snap-x pb-4 no-scrollbar sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 sm:gap-6">
               {menuItems.map((item) => (
-                <MenuItemCard
-                  key={item._id}
-                  item={item}
-                  onAddToCart={handleAddToCart}
-                />
+                <div key={item._id} className="w-[260px] shrink-0 snap-start sm:w-auto">
+                  <MenuItemCard
+                    item={item}
+                    onAddToCart={handleAddToCart}
+                  />
+                </div>
               ))}
             </div>
           )}
@@ -391,9 +392,11 @@ export const Home = () => {
           {loading ? (
             <p className="text-slate-400 text-sm">Đang tải nhà hàng...</p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="flex overflow-x-auto gap-4 snap-x pb-4 no-scrollbar sm:grid sm:grid-cols-2 lg:grid-cols-3 sm:gap-6">
               {restaurants.map((r) => (
-                <RestaurantCard key={r._id} restaurant={r} />
+                <div key={r._id} className="w-[280px] shrink-0 snap-start sm:w-auto">
+                  <RestaurantCard restaurant={r} />
+                </div>
               ))}
             </div>
           )}
