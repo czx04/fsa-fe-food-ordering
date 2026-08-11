@@ -180,9 +180,9 @@ export const ProfilePage: React.FC = () => {
         </div>
 
         {/* Tabs Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-8 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-8 items-start w-full max-w-full">
           {/* Sidebar Nav */}
-          <nav className="flex flex-row md:flex-col gap-2 overflow-x-auto rounded-2xl bg-white p-2 border border-slate-100 shadow-sm">
+          <nav className="flex flex-row md:flex-col gap-2 overflow-x-auto max-w-full rounded-2xl bg-white p-2 border border-slate-100 shadow-sm hide-scrollbar">
             <button
               onClick={() => setSearchParams({ tab: "profile" })}
               className={`flex items-center gap-3 rounded-xl px-4 py-3 text-xs font-bold transition shrink-0 ${

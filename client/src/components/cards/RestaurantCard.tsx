@@ -1,6 +1,9 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Star, Clock, MapPin, Heart, ChevronRight } from 'lucide-react'
+import { useAuth } from '../../contexts/AuthContext'
+import { api } from '../../utils/api'
+import { useToast } from '../../contexts/ToastContext'
 
 export interface RestaurantCardData {
   _id: string
@@ -39,14 +42,31 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({
   isFavorite = false,
   onToggleFavorite,
 }) => {
-  const [fav, setFav] = useState(isFavorite)
+  const { user, isAuthenticated, updateUser } = useAuth()
+  const toast = useToast()
+  
+  const isFav = user?.favoriteRestaurantIds?.includes(restaurant._id) ?? isFavorite
 
-  const handleFavoriteClick = (e: React.MouseEvent) => {
+  const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    setFav((prev) => !prev)
-    if (onToggleFavorite) {
-      onToggleFavorite(restaurant._id)
+    
+    if (!isAuthenticated) {
+      toast.info('Vui lòng đăng nhập để lưu quán yêu thích')
+      return
+    }
+
+    try {
+      const res = await api.post(`/users/me/favorites/${restaurant._id}`)
+      if (user) {
+        updateUser({ ...user, favoriteRestaurantIds: res.data.favoriteRestaurantIds })
+      }
+      toast.success(res.data.message)
+      if (onToggleFavorite) {
+        onToggleFavorite(restaurant._id)
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Lỗi khi xử lý yêu thích')
     }
   }
 
@@ -90,9 +110,9 @@ export const RestaurantCard: React.FC<RestaurantCardProps> = ({
           type="button"
           onClick={handleFavoriteClick}
           className="absolute right-3 top-3 grid h-8 w-8 cursor-pointer place-items-center rounded-full border border-white/80 bg-white/90 text-slate-600 transition hover:scale-110 hover:text-rose-500 shadow-sm"
-          aria-label={fav ? 'Bỏ yêu thích' : 'Yêu thích'}
+          aria-label={isFav ? 'Bỏ yêu thích' : 'Yêu thích'}
         >
-          <Heart className={`h-4 w-4 ${fav ? 'fill-rose-500 text-rose-500' : ''}`} />
+          <Heart className={`h-4 w-4 ${isFav ? 'fill-rose-500 text-rose-500' : ''}`} />
         </button>
       </div>
 

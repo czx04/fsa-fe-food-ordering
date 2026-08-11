@@ -40,9 +40,11 @@ export const ToastContainer = ({
   removeToast: (id: string) => void;
 }) => {
   return (
-    <div className="fixed top-8 right-8 z-[100] space-y-3">
+    <div className="fixed top-4 right-4 sm:top-8 sm:right-8 z-[100] space-y-3 pointer-events-none max-w-[calc(100vw-2rem)]">
       {toasts.map((toast) => (
-        <Toast key={toast.id} toast={toast} onRemove={removeToast} />
+        <div key={toast.id} className="pointer-events-auto">
+          <Toast toast={toast} onRemove={removeToast} />
+        </div>
       ))}
     </div>
   );

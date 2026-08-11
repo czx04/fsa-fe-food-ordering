@@ -54,6 +54,8 @@ export const Home = () => {
   const [loading, setLoading] = useState(true);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [selectedItemName, setSelectedItemName] = useState("");
+  const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
   const handleAddToCart = async (item: MenuItemCardData) => {
     if (!isAuthenticated) {
@@ -112,7 +114,22 @@ export const Home = () => {
     return <Utensils className="w-6 h-6 text-orange-500" />;
   };
 
-  const activeCoupon = promotions.length > 0 ? promotions[0] : null;
+  const defaultPromo: CouponItem = {
+    _id: "default",
+    code: "FOODIE20",
+    discountType: "percentage",
+    discountValue: 20,
+    minOrderAmount: 0,
+  };
+  const displayPromos = promotions.length > 0 ? promotions : [defaultPromo];
+
+  useEffect(() => {
+    if (displayPromos.length <= 1 || isPaused) return;
+    const interval = setInterval(() => {
+      setCurrentPromoIndex((prev) => (prev + 1) % displayPromos.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [displayPromos.length, isPaused]);
 
   return (
     <main className="bg-slate-50/50 min-h-screen text-slate-800 pb-16">
@@ -326,44 +343,78 @@ export const Home = () => {
         </div>
       </section>
 
-      {/* Promo Banner from Coupon API */}
-      <section className="py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-orange-500 rounded-3xl p-8 sm:p-12 text-white shadow-lg relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="max-w-xl space-y-4 relative z-10">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/20 text-white text-xs font-bold uppercase rounded-full">
-                <Tag className="w-3.5 h-3.5" />
-                {activeCoupon ? "Mã ưu đãi độc quyền" : "Ưu đãi đặc biệt"}
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-black tracking-tight leading-tight">
-                {activeCoupon
-                  ? activeCoupon.discountType === "percentage"
-                    ? `Giảm tới ${activeCoupon.discountValue}% cho đơn hàng!`
-                    : `Giảm trực tiếp ${new Intl.NumberFormat("vi-VN").format(activeCoupon.discountValue)}đ!`
-                  : "Giảm 20% cho đơn hàng đầu tiên"}
-              </h2>
-              <p className="text-orange-100 text-sm leading-relaxed">
-                Nhập mã{" "}
-                <b className="bg-white text-orange-600 px-2.5 py-1 rounded-lg font-extrabold text-base tracking-wide shadow-sm">
-                  {activeCoupon ? activeCoupon.code : "FOODIE20"}
-                </b>{" "}
-                {activeCoupon?.minOrderAmount
-                  ? `cho đơn từ ${new Intl.NumberFormat("vi-VN").format(activeCoupon.minOrderAmount)}đ`
-                  : "và tận hưởng bữa ăn ngon chuẩn vị."}
-              </p>
-              <Link
-                to="/restaurants"
-                className="inline-flex items-center gap-2 mt-4 px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl shadow-md transition"
-              >
-                <span>Khám phá ngay</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+      {/* Promo Banner Carousel from Coupon API */}
+      <section className="py-6 sm:py-12">
+        <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+          <div
+            className="relative overflow-hidden rounded-none sm:rounded-3xl shadow-lg"
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+            onTouchStart={() => setIsPaused(true)}
+            onTouchEnd={() => setIsPaused(false)}
+          >
+            <div
+              className="flex transition-transform duration-500 ease-in-out"
+              style={{ transform: `translateX(-${currentPromoIndex * 100}%)` }}
+            >
+              {displayPromos.map((coupon, idx) => (
+                <div
+                  key={`${coupon._id}-${idx}`}
+                  className="w-full shrink-0 bg-orange-500 p-6 sm:p-8 md:p-12 text-white relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 min-h-[220px] sm:min-h-[260px]"
+                >
+                  <div className="w-full space-y-3 sm:space-y-4 relative z-10">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/20 text-white text-xs font-bold uppercase rounded-full w-max backdrop-blur-xs">
+                      <Tag className="w-3.5 h-3.5" />
+                      {coupon._id !== "default" ? "Mã ưu đãi độc quyền" : "Ưu đãi đặc biệt"}
+                    </span>
+                    <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black tracking-tight leading-tight line-clamp-2">
+                      {coupon.discountType === "percentage"
+                        ? `Giảm tới ${coupon.discountValue}% cho đơn hàng!`
+                        : `Giảm trực tiếp ${new Intl.NumberFormat("vi-VN").format(coupon.discountValue)}đ!`}
+                    </h2>
+                    <p className="text-orange-100 text-xs sm:text-sm leading-relaxed">
+                      Nhập mã{" "}
+                      <b className="bg-white text-orange-600 px-2.5 py-1 rounded-lg font-extrabold text-sm sm:text-base tracking-wide shadow-xs">
+                        {coupon.code}
+                      </b>{" "}
+                      {coupon.minOrderAmount
+                        ? `cho đơn từ ${new Intl.NumberFormat("vi-VN").format(coupon.minOrderAmount)}đ`
+                        : "và tận hưởng bữa ăn ngon chuẩn vị."}
+                    </p>
+                    <Link
+                      to="/restaurants"
+                      className="inline-flex items-center gap-2 mt-2 sm:mt-4 px-4 sm:px-6 py-2.5 sm:py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md transition w-max"
+                    >
+                      <span>Khám phá ngay</span>
+                      <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </Link>
+                  </div>
+                  <img
+                    src={HOME_PROMOTION_IMAGE_URL}
+                    alt="Khuyến mãi"
+                    className="hidden md:block w-48 lg:w-72 h-32 lg:h-48 object-cover rounded-2xl shadow-xl transform rotate-2 border-4 border-white/20 relative z-10 shrink-0"
+                  />
+                </div>
+              ))}
             </div>
-            <img
-              src={HOME_PROMOTION_IMAGE_URL}
-              alt="Khuyến mãi"
-              className="w-72 h-48 object-cover rounded-2xl shadow-xl transform md:rotate-2 border-4 border-white/20 relative z-10"
-            />
+
+            {/* Indicator Dots */}
+            {displayPromos.length > 1 && (
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+                {displayPromos.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentPromoIndex(idx)}
+                    aria-label={`Chuyển tới slide ${idx + 1}`}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      currentPromoIndex === idx
+                        ? "w-6 bg-white"
+                        : "w-2 bg-white/50 hover:bg-white/80"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </section>
