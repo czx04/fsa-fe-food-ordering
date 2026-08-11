@@ -45,13 +45,7 @@ const FORM_CONTROL_CLASS =
 const FILTER_LABEL_CLASS =
   "my-2 flex cursor-pointer items-center gap-2 text-xs font-medium text-slate-600 hover:text-slate-900";
 
-const getMapPosition = (restaurant: RestaurantCardData) => {
-  const address = typeof restaurant.address === 'string' ? restaurant.address : '';
-  const hash = address.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const left = Math.min(90, Math.max(10, (hash % 80) + 10));
-  const top = Math.min(85, Math.max(15, ((hash * 3) % 70) + 15));
-  return { left: `${left}%`, top: `${top}%` };
-};
+
 
 export const Restaurants = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -66,7 +60,7 @@ export const Restaurants = () => {
   const [draftSearch, setDraftSearch] = useState(searchParams.get("q") ?? "");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [showMap, setShowMap] = useState(false);
+
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const selectedCuisines = useMemo(
@@ -343,23 +337,7 @@ export const Restaurants = () => {
                     Kết quả phù hợp nhất với bạn
                   </div>
                 </div>
-                <Button
-                  variant={showMap ? "secondary" : "outline"}
-                  size="sm"
-                  onClick={() => setShowMap((value) => !value)}
-                >
-                  {showMap ? (
-                    <>
-                      <List className="w-4 h-4" />
-                      <span>Danh sách</span>
-                    </>
-                  ) : (
-                    <>
-                      <Map className="w-4 h-4" />
-                      <span>Bản đồ</span>
-                    </>
-                  )}
-                </Button>
+
               </div>
 
               {error && (
@@ -373,33 +351,10 @@ export const Restaurants = () => {
                 </div>
               )}
 
-              {/* Map View */}
-              {!loading && !error && showMap && restaurants.length > 0 && (
-                <div
-                  className="relative min-h-[500px] overflow-hidden rounded-2xl border border-slate-200 bg-orange-50/50 shadow-sm"
-                  aria-label="Bản đồ nhà hàng"
-                >
-                  {restaurants.map((restaurant) => (
-                    <button
-                      className="absolute z-10 grid max-w-[140px] -translate-x-1/2 -translate-y-1/2 cursor-pointer justify-items-center gap-1 border-0 bg-transparent"
-                      key={restaurant._id}
-                      style={getMapPosition(restaurant)}
-                      title={restaurant.name}
-                      type="button"
-                    >
-                      <span className="grid h-9 w-9 place-items-center rounded-full bg-orange-500 text-white shadow-md">
-                        <MapPin className="w-5 h-5" />
-                      </span>
-                      <b className="rounded-lg bg-white px-2 py-0.5 text-[10px] shadow-sm border border-slate-100 font-bold text-slate-800 truncate max-w-[120px]">
-                        {restaurant.name}
-                      </b>
-                    </button>
-                  ))}
-                </div>
-              )}
+
 
               {/* Grid List View */}
-              {!loading && !error && !showMap && restaurants.length > 0 && (
+              {!loading && !error && restaurants.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
                   {restaurants.map((restaurant) => (
                     <RestaurantCard key={restaurant._id} restaurant={restaurant} />

@@ -448,16 +448,21 @@ export const getAdminAnalytics = async (req: AuthRequest, res: Response) => {
     const groupPipeline: PipelineStage[] = groupBy === 'restaurant'
       ? [
           { $match: deliveredMatch },
+          { $addFields: { totalQuantity: { $sum: '$items.quantity' } } },
           { $group: {
             _id: '$restaurantId',
-            label: { $first: '$restaurantSnapshot.name' },
+            nameFromSnapshot: { $first: '$restaurantSnapshot.name' },
             orders: { $sum: 1 },
             revenue: { $sum: '$pricing.grandTotal' },
-            quantity: { $sum: { $sum: '$items.quantity' } },
+            quantity: { $sum: '$totalQuantity' },
+          } },
+          { $lookup: { from: 'restaurants', localField: '_id', foreignField: '_id', as: 'restaurantDoc' } },
+          { $addFields: {
+            label: { $ifNull: ['$nameFromSnapshot', { $arrayElemAt: ['$restaurantDoc.name', 0] }, 'Nhà hàng chưa xác định'] },
           } },
           { $sort: { revenue: -1 } },
           { $limit: 10 },
-          { $project: { _id: 0, label: { $ifNull: ['$label', 'Nhà hàng chưa xác định'] }, orders: 1, revenue: 1, quantity: 1 } },
+          { $project: { _id: 0, label: 1, orders: 1, revenue: 1, quantity: 1 } },
         ]
       : [
           { $match: deliveredMatch },
