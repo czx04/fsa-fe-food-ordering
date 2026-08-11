@@ -1,32 +1,47 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { useAuth } from "../contexts/AuthContext";
 import { api } from "../utils/api";
 import { DEFAULT_DISH_IMAGE_URL } from "../utils/constants";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
+
+const loginSchema = z.object({
+  email: z.email("Email không hợp lệ."),
+  password: z.string().min(6, "Mật khẩu phải có ít nhất 6 ký tự."),
+});
+
+type LoginValues = z.infer<typeof loginSchema>;
 
 export const Login = () => {
-  const [email, setEmail] = useState("customer@foodordering.com");
-  const [password, setPassword] = useState("password123");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
   const { login } = useAuth();
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setIsLoading(true);
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "customer@foodordering.com",
+      password: "password123",
+    },
+  });
 
+  const onSubmit = handleSubmit(async (values) => {
     try {
-      const res = await api.post("/auth/login", { email, password });
-      login(res.data.accessToken, res.data.user);
+      const res = await api.post("/auth/login", values);
+      login(res.data.accessToken, res.data.refreshToken, res.data.user);
     } catch (err: any) {
-      setError(err.response?.data?.message || "Đăng nhập thất bại");
-    } finally {
-      setIsLoading(false);
+      setError("root", {
+        message: err.response?.data?.message || "Đăng nhập thất bại",
+      });
     }
-  };
+  });
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 bg-slate-50/50 text-slate-800">
@@ -70,26 +85,29 @@ export const Login = () => {
             </p>
           </div>
 
-          {error && (
+          {errors.root?.message && (
             <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-sm font-medium flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
+              <span>{errors.root.message}</span>
             </div>
           )}
 
-          <form className="space-y-5" onSubmit={handleLogin}>
+          <form className="space-y-5" onSubmit={onSubmit}>
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-2">
                 Email hoặc số điện thoại
               </label>
               <input
                 type="text"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                {...register("email")}
                 placeholder="nhapemail@example.com"
-                required
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none transition text-slate-800 text-sm bg-slate-50/50 focus:bg-white"
               />
+              {errors.email?.message && (
+                <p className="mt-1 text-xs font-medium text-rose-600">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
 
             <div>
@@ -104,14 +122,31 @@ export const Login = () => {
                   Quên mật khẩu?
                 </Link>
               </div>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none transition text-slate-800 text-sm bg-slate-50/50 focus:bg-white"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  {...register("password")}
+                  placeholder="••••••••"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 outline-none transition text-slate-800 text-sm bg-slate-50/50 focus:bg-white pr-11"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
+                  aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+              {errors.password?.message && (
+                <p className="mt-1 text-xs font-medium text-rose-600">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
 
             <div className="flex items-center justify-between text-sm">
@@ -129,10 +164,10 @@ export const Login = () => {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isSubmitting}
               className="w-full py-3.5 px-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl shadow-sm transition text-sm disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Đang xử lý..." : "Đăng nhập"}
+              {isSubmitting ? "Đang xử lý..." : "Đăng nhập"}
             </button>
 
             <p className="text-center text-xs text-slate-500 mt-6 pt-4 border-t border-slate-100">

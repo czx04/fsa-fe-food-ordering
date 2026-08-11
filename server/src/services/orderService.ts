@@ -297,6 +297,58 @@ export const cancelOrder = async (
   return updatedOrder
 }
 
+/**
+ * Tự động hủy các đơn hàng VNPAY ở trạng thái "pending" + "unpaid" đã quá hạn
+ * thanh toán. Đây là safety-net cho trường hợp khách hàng rời khỏi cổng thanh
+ * toán VNPAY mà không hoàn tất (VNPAY không gửi callback khi khách "hủy/quay lại"),
+ * để đơn không bị kẹt ở trạng thái "Chờ xác nhận" mãi.
+ */
+export const autoCancelExpiredVnpayOrders = async (
+  timeoutMinutes: number,
+): Promise<number> => {
+  const cutoff = new Date(Date.now() - timeoutMinutes * 60 * 1000)
+
+  const expiredOrders = await Order.find({
+    paymentMethod: 'vnpay',
+    orderStatus: 'pending',
+    paymentStatus: 'unpaid',
+    placedAt: { $lt: cutoff },
+  })
+
+  const now = new Date()
+  let count = 0
+  for (const order of expiredOrders) {
+    order.orderStatus = 'cancelled'
+    order.cancelledAt = now
+    order.cancellation = {
+      cancelledBy: order.customerId,
+      reason: 'Hết thời gian thanh toán, đơn hàng tự động bị hủy.',
+      cancelledAt: now,
+    }
+    order.statusHistory.push({
+      from: 'pending',
+      to: 'cancelled',
+      changedBy: order.customerId,
+      changedByRole: 'system',
+      reason: 'Hết thời gian thanh toán, đơn hàng tự động bị hủy.',
+      note: 'Tự động hủy do khách hàng không hoàn tất thanh toán VNPAY.',
+      changedAt: now,
+    })
+    await order.save()
+    count++
+
+    try {
+      const updatedOrder =
+        (await orderRepository.findOrderById(order._id.toString())) as OrderDetail
+      emitOrderUpdate(updatedOrder)
+    } catch (err) {
+      console.error('❌ Lỗi emit socket khi tự động hủy đơn VNPAY:', err)
+    }
+  }
+
+  return count
+}
+
 const ownerNextOrderStatuses: Record<string, string[]> = {
   pending: ['confirmed', 'cancelled'],
   confirmed: ['preparing', 'cancelled'],

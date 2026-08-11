@@ -67,6 +67,7 @@ export interface IUser extends Document {
   lastLoginAt?: Date | null
   refreshTokens: string[]
   addresses: IUserAddress[]
+  favoriteRestaurantIds?: mongoose.Types.ObjectId[]
   createdAt: Date
   updatedAt: Date
   deletedAt?: Date | null
@@ -133,6 +134,7 @@ const UserSchema = new Schema<IUser>(
       select: false, // BẢO MẬT: Ẩn mặc định khi query
     },
     addresses: { type: [AddressSchema], default: [] },
+    favoriteRestaurantIds: [{ type: Schema.Types.ObjectId, ref: 'Restaurant' }],
     deletedAt: { type: Date, default: null },
   },
   {

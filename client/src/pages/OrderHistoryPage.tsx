@@ -5,40 +5,13 @@ import { OrderSummary, OrderHistoryPagination } from "../types/order";
 import { useToast } from "../contexts/ToastContext";
 import { useCart } from "../contexts/CartContext";
 import { ReviewModal } from "../components/ReviewModal";
+import { OrderCard } from "../components/OrderCard";
 import {
   Loader2,
-  RotateCw,
-  Star,
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(amount);
-};
-
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-};
-
-const statusStyles: { [key: string]: string | undefined } = {
-  delivered: "bg-green-100 text-green-800",
-  pending: "bg-yellow-100 text-yellow-800",
-  cancelled: "bg-red-100 text-red-800",
-  preparing: "bg-blue-100 text-blue-800",
-  delivering: "bg-indigo-100 text-indigo-800",
-  confirmed: "bg-purple-100 text-purple-800",
-  // Default for 'all' or unknown statuses
-  all: "bg-gray-100 text-gray-800",
-};
 
 const statusTranslations: { [key: string]: string } = {
   delivered: "Đã giao",
@@ -181,7 +154,7 @@ function OrderHistoryPage() {
           </div>
         )}
 
-        <div className="flex space-x-4 mb-6 overflow-x-auto pb-2">
+        <div className="flex space-x-2 sm:space-x-4 mb-6 overflow-x-auto pb-2 no-scrollbar">
           {[
             "all",
             "pending",
@@ -195,99 +168,23 @@ function OrderHistoryPage() {
               type="button"
               key={statusKey}
               onClick={() => handleTabChange(statusKey)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 whitespace-nowrap ${activeTab === statusKey ? "bg-orange-500 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300"}`}
+              className={`px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-semibold transition-colors duration-200 whitespace-nowrap ${activeTab === statusKey ? "bg-orange-500 text-white shadow-sm" : "bg-slate-200/70 text-slate-700 hover:bg-slate-300"}`}
             >
               {statusTranslations[statusKey] || "Tất cả"}
             </button>
           ))}
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <div className="space-y-6">
+        <div className="bg-white p-4 sm:p-6 rounded-3xl shadow-sm border border-slate-100">
+          <div className="space-y-4">
             {orders.map((order) => (
-              <div
+              <OrderCard
                 key={order._id}
-                className="border rounded-lg p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
-              >
-                <div className="flex-grow">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 mb-2">
-                    <h2 className="text-lg font-semibold text-gray-800 mb-1 sm:mb-0">
-                      Đơn hàng{" "}
-                      <Link
-                        to={`/orders/${order._id}`}
-                        className="text-orange-500 hover:underline"
-                      >
-                        #{order.orderNumber}
-                      </Link>
-                    </h2>
-                    <div
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${statusStyles[order.orderStatus] || statusStyles.all}`}
-                    >
-                      {statusTranslations[order.orderStatus] ||
-                        order.orderStatus}
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-500">
-                    Đặt ngày: {formatDate(order.placedAt)}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Từ nhà hàng: {order.restaurantSnapshot.name}
-                  </p>
-                  {order.items.length > 0 && (
-                    <p className="text-sm text-gray-600 mt-1">
-                      <span className="font-medium">Món:</span>{" "}
-                      {order.items[0].name}
-                      {order.items.length > 1 &&
-                        ` + ${order.items.length - 1} món khác`}
-                    </p>
-                  )}
-                </div>
-                <div className="text-left md:text-right w-full md:w-auto">
-                  <p className="font-bold text-lg text-gray-800">
-                    {formatCurrency(order.pricing.grandTotal)}
-                  </p>
-                  <Link
-                    to={`/orders/${order._id}`}
-                    className="text-orange-500 hover:underline text-sm font-medium mt-2 block"
-                  >
-                    Xem chi tiết
-                  </Link>
-                  <div className="mt-2 flex flex-col sm:flex-row sm:justify-end gap-2">
-                    {(order.orderStatus === "delivered" ||
-                      order.orderStatus === "cancelled") && (
-                      <button
-                        type="button"
-                        onClick={() => setOrderToReorder(order)}
-                        disabled={reorderingOrderId === order._id}
-                        className="px-4 py-2 bg-orange-500 text-white rounded-md text-sm font-medium hover:bg-orange-600 transition-colors duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
-                      >
-                        {reorderingOrderId === order._id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <RotateCw className="w-4 h-4 mr-2" />
-                        )}
-                        Đặt lại
-                      </button>
-                    )}
-                    {order.orderStatus === "delivered" && (
-                      <button
-                        type="button"
-                        onClick={() => setOrderToReview(order)}
-                        className={`px-4 py-2 text-white rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center ${
-                          order.review
-                            ? "bg-amber-500 hover:bg-amber-600"
-                            : "bg-blue-500 hover:bg-blue-600"
-                        }`}
-                      >
-                        <Star
-                          className={`w-4 h-4 mr-2 ${order.review ? "fill-white" : ""}`}
-                        />
-                        {order.review ? "Sửa đánh giá" : "Đánh giá"}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
+                order={order}
+                reorderingOrderId={reorderingOrderId}
+                onReorder={(o) => setOrderToReorder(o)}
+                onReview={(o) => setOrderToReview(o)}
+              />
             ))}
           </div>
 

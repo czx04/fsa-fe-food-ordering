@@ -18,17 +18,19 @@ interface User {
   _id: string;
   email: string;
   fullName: string;
+  phone?: string;
   role: string;
   status?: string;
   avatarUrl?: string;
   addresses?: UserAddress[];
+  favoriteRestaurantIds?: string[];
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (token: string, userData: User) => void;
+  login: (accessToken: string, refreshToken: string, userData: User) => void;
   logout: () => void;
   updateUser: (newUserData: User) => void;
 }
@@ -37,19 +39,35 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
   isLoading: true,
-  login: () => {},
-  logout: () => {},
-  updateUser: () => {},
+  login: () => { },
+  logout: () => { },
+  updateUser: () => { },
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Xử lý khi refresh token thất bại (interceptor bắn event customer:session-expired)
+  // → đăng xuất ngay để tránh UI bị "kẹt" ở trạng thái tưởng chừng đã đăng nhập.
   useEffect(() => {
-    const initAuth = async () => {
+    const handleSessionExpired = () => {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      socketService.setAuthToken(null);
+      setUser(null);
+    };
+    window.addEventListener("customer:session-expired", handleSessionExpired);
+    return () =>
+      window.removeEventListener(
+        "customer:session-expired",
+        handleSessionExpired,
+      );
+  }, []);
+
+  useEffect(() => {
+    const fetchUser = async () => {
       const token = localStorage.getItem("accessToken");
-      socketService.setAuthToken(token);
       if (token) {
         try {
           const res = await api.get("/auth/me");
@@ -57,25 +75,47 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } catch (error) {
           console.error("Failed to restore session", error);
           localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
         }
       }
+    };
+
+    const initAuth = async () => {
+      const token = localStorage.getItem("accessToken");
+      socketService.setAuthToken(token);
+      await fetchUser();
       setIsLoading(false);
     };
 
     initAuth();
+
+    // Auto refresh user data when tab becomes active again (e.g. after verifying email in another tab)
+    const handleFocus = () => {
+      if (localStorage.getItem("accessToken")) {
+        fetchUser();
+      }
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, []);
 
-  const login = (token: string, userData: User) => {
-    localStorage.setItem("accessToken", token);
-    socketService.setAuthToken(token);
+  const login = (accessToken: string, refreshToken: string, userData: User) => {
+    localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("refreshToken", refreshToken);
+    socketService.setAuthToken(accessToken);
     setUser(userData);
   };
 
   const logout = () => {
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (refreshToken) {
+      // Background call to invalidate the refresh token on the server
+      api.post("/auth/logout", { refreshToken }).catch(console.error);
+    }
     localStorage.removeItem("accessToken");
-    setUser(null);
+    localStorage.removeItem("refreshToken");
     socketService.setAuthToken(null);
-    // Optional: Call backend /auth/logout to invalidate refresh token
+    setUser(null);
   };
 
   const updateUser = (newUserData: User) => {

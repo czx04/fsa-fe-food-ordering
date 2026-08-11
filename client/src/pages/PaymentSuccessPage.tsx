@@ -2,6 +2,7 @@ import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { OrderDetail } from "../types/order";
 import { api } from "../utils/api";
+import { clearPendingVnpayOrder } from "../components/PendingVnpayOrderBanner";
 import {
   Loader2,
   CheckCircle2,
@@ -58,6 +59,8 @@ function PaymentSuccessPage() {
           orderData = orderResponse.data;
         }
         setOrder(orderData);
+        // Thanh toán thành công → dọn đơn VNPAY đang chờ thanh toán (nếu có).
+        clearPendingVnpayOrder();
       } catch (err: any) {
         console.error("Lỗi xác thực hoặc tải đơn hàng:", err);
         const message =

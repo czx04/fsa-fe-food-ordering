@@ -9,7 +9,7 @@ export const verifyVnpayReturnHandler = async (
 ) => {
   try {
     const vnpayResponse = req.query
-    const order = await paymentService.verifyVnpayReturn(vnpayResponse)
+    const order = await paymentService.verifyVnpayReturn(vnpayResponse, req.user?.userId)
     res.status(200).json(order)
   } catch (error) {
     next(error)

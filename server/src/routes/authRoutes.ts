@@ -21,5 +21,6 @@ authRouter.post('/forgot-password', validate(forgotPasswordSchema), authControll
 authRouter.post('/reset-password', validate(resetPasswordSchema), authController.resetPassword)
 authRouter.get('/verify-email', validate({ query: verifyEmailSchema }), authController.verifyEmail)
 authRouter.post('/verify-email', validate({ body: verifyEmailSchema }), authController.verifyEmail)
+authRouter.post('/resend-verification', verifyToken, authController.resendVerificationEmail)
 authRouter.get('/me', verifyToken, authController.getMe)
 
