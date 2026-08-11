@@ -4,11 +4,9 @@ import {
   Clock3,
   Heart,
   MapPin,
-  Minus,
   Phone,
   Plus,
   Search,
-  ShoppingBag,
   Star,
   Store,
   Truck,
@@ -19,6 +17,7 @@ import { Link, useParams } from "react-router-dom";
 
 import { LoginModal } from "../components/LoginModal";
 import { RestaurantChangeModal } from "../components/RestaurantChangeModal";
+import { MiniCart } from "../components/cart/MiniCart";
 import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
 import { useToast } from "../contexts/ToastContext";
@@ -28,7 +27,7 @@ import {
   DEFAULT_RESTAURANT_IMAGE_URL,
   resolveAssetUrl,
 } from "../utils/constants";
-import { AddToCartPayload, Cart, CartItem } from "../types/cart";
+import { AddToCartPayload } from "../types/cart";
 
 interface CuisineCategory {
   _id: string;
@@ -178,7 +177,7 @@ const scrollToSection = (id: string) => {
 export const RestaurantDetail = () => {
   const { restaurantSlug = "" } = useParams();
   const { isAuthenticated } = useAuth();
-  const { cart, addItemToCart, fetchCart } = useCart();
+  const { addItemToCart, fetchCart } = useCart();
   const [restaurant, setRestaurant] = useState<RestaurantDetailData | null>(
     null,
   );
@@ -875,42 +874,43 @@ export const RestaurantDetail = () => {
           </div>
 
           <div>
-            <RestaurantCartSidebar
-              restaurant={restaurant}
-              cart={cart}
-              handleUpdateQuantity={handleUpdateQuantity}
+            <MiniCart
+              restaurantId={restaurant._id}
+              restaurantName={restaurant.name}
+              deliveryFee={restaurant.delivery.fee}
+              onUpdateQuantity={handleUpdateQuantity}
             />
-            <div className="border-t border-[#e7ece8] bg-[#fbfdfb] p-5">
+            <div className="border-t border-slate-100 bg-slate-50/50 p-5 rounded-b-2xl mt-4 border border-slate-100 shadow-sm">
               <div className="mb-3 flex items-start gap-3 text-xs">
-                <Truck className="mt-0.5 h-4 w-4 shrink-0 text-[#2eae62]" />
+                <Truck className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
                 <span>
-                  <b className="block">
+                  <b className="block text-slate-800">
                     Giao trong {restaurant.delivery.minMinutes}–
                     {restaurant.delivery.maxMinutes} phút
                   </b>
-                  <span className="text-[#68736c]">
+                  <span className="text-slate-500">
                     {" "}
                     Bán kính tối đa {restaurant.delivery.maxDistanceKm ?? 8} km
                   </span>
                 </span>
               </div>
               <div className="flex items-start gap-3 text-xs">
-                <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-[#2eae62]" />
+                <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
                 <span>
-                  <b className="block">Giờ hoạt động</b>
-                  <span className="text-[#68736c]">
+                  <b className="block text-slate-800">Giờ hoạt động</b>
+                  <span className="text-slate-500">
                     {PRICE_LABELS[restaurant.priceRange]}
                   </span>
                 </span>
               </div>
-              <div className="mt-4 grid gap-1.5 border-t border-[#e7ece8] pt-4 text-[11px]">
+              <div className="mt-4 grid gap-1.5 border-t border-slate-200/60 pt-4 text-[11px]">
                 {restaurant.openingHours.map((entry) => (
                   <div
                     key={entry.dayOfWeek}
-                    className="flex justify-between gap-3 text-[#68736c]"
+                    className="flex justify-between gap-3 text-slate-500"
                   >
                     <span>{DAY_NAMES[entry.dayOfWeek]}</span>
-                    <b className="text-[#17201a]">
+                    <b className="text-slate-800">
                       {entry.isClosed || entry.slots.length === 0
                         ? "Đóng cửa"
                         : entry.slots
@@ -951,147 +951,5 @@ export const RestaurantDetail = () => {
         }}
       />
     </main>
-  );
-};
-
-const RestaurantCartSidebar = ({
-  restaurant,
-  cart,
-  handleUpdateQuantity,
-}: {
-  restaurant: RestaurantDetailData;
-  cart: Cart | null;
-  handleUpdateQuantity: (menuItemId: string, newQuantity: number) => void;
-}) => {
-  const currentRestaurantCart =
-    cart?.restaurantId._id === restaurant._id ? cart : null;
-  const cartItems = currentRestaurantCart?.items ?? [];
-  const cartQuantity = cartItems.reduce(
-    (total: number, entry: CartItem) => total + entry.quantity,
-    0,
-  );
-  const cartSubtotal = currentRestaurantCart?.subtotal ?? 0;
-  const deliveryTotal =
-    cartSubtotal + (cartItems.length > 0 ? restaurant.delivery.fee : 0);
-
-  return (
-    <aside className="sticky top-[138px] overflow-hidden rounded-2xl border border-[#e7ece8] bg-white shadow-[0_8px_24px_rgba(34,63,43,.08)] max-[900px]:static">
-      <div className="border-b border-[#e7ece8] p-5">
-        <div className="mb-1 flex items-center justify-between gap-3">
-          <h3 className="mb-0 flex items-center gap-2 text-lg font-extrabold">
-            <ShoppingBag className="h-5 w-5 text-[#ff5a1f]" /> Giỏ hàng của bạn
-          </h3>
-          {cartQuantity > 0 && (
-            <span className="rounded-full bg-[#fff0e9] px-2.5 py-1 text-[10px] font-extrabold text-[#ff5a1f]">
-              {cartQuantity} món
-            </span>
-          )}
-        </div>
-        <p className="mb-0 text-[11px] text-[#68736c]">{restaurant.name}</p>
-      </div>
-      <div className="p-5">
-        {cart &&
-          cart.items.length > 0 &&
-          cart.restaurantId._id !== restaurant._id && (
-            <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] leading-5 text-amber-800">
-              Giỏ hàng hiện có{" "}
-              {cart.items.reduce(
-                (sum: number, entry: CartItem) => sum + entry.quantity,
-                0,
-              )}{" "}
-              từ <b>{cart.restaurantId.name}</b>. Khi chọn món ở đây, hệ thống
-              sẽ hỏi trước khi đổi quán.
-            </div>
-          )}
-        {cartItems.length === 0 ? (
-          <div className="py-5 text-center">
-            <span className="mx-auto mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-[#fff0e9] text-2xl">
-              🥡
-            </span>
-            <b className="block text-sm">Giỏ hàng đang trống</b>
-            <p className="mb-0 mt-1 text-[11px] text-[#68736c]">
-              Chọn món ngon ở thực đơn để bắt đầu.
-            </p>
-          </div>
-        ) : (
-          <div className="mb-4 max-h-[280px] overflow-y-auto pr-1">
-            {cartItems.map((cartItem: CartItem) => (
-              <div
-                key={cartItem.menuItemId._id}
-                className="border-b border-dashed border-[#e7ece8] py-3 first:pt-0"
-              >
-                <div className="mb-2 flex items-start justify-between gap-3 text-xs">
-                  <span className="font-bold">{cartItem.menuItemId.name}</span>
-                  <b className="shrink-0">
-                    {formatMoney(cartItem.price * cartItem.quantity)}
-                  </b>
-                </div>
-                <div className="inline-flex items-center overflow-hidden rounded-lg border border-[#e7ece8]">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleUpdateQuantity(
-                        cartItem.menuItemId._id,
-                        cartItem.quantity - 1,
-                      )
-                    }
-                    className="grid h-7 w-7 place-items-center bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={cartItem.quantity <= 1}
-                  >
-                    <Minus className="h-3 w-3" />
-                  </button>
-                  <span className="grid h-7 min-w-7 place-items-center text-[11px] font-bold">
-                    {cartItem.quantity}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleUpdateQuantity(
-                        cartItem.menuItemId._id,
-                        cartItem.quantity + 1,
-                      )
-                    }
-                    className="grid h-7 w-7 place-items-center bg-white"
-                  >
-                    <Plus className="h-3 w-3" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="mb-4 rounded-xl bg-[#f7faf7] p-3 text-xs">
-          <div className="mb-2 flex justify-between text-[#68736c]">
-            <span>Tạm tính</span>
-            <b className="text-[#17201a]">{formatMoney(cartSubtotal)}</b>
-          </div>
-          <div className="mb-3 flex justify-between text-[#68736c]">
-            <span>Phí giao hàng</span>
-            <b className="text-[#17201a]">
-              {restaurant.delivery.fee === 0
-                ? "Miễn phí"
-                : formatMoney(restaurant.delivery.fee)}
-            </b>
-          </div>
-          <div className="flex justify-between border-t border-[#e7ece8] pt-3 text-sm">
-            <b>Tổng cộng</b>
-            <b className="text-[#ff5a1f]">{formatMoney(deliveryTotal)}</b>
-          </div>
-        </div>
-        <Link
-          to={cartItems.length > 0 ? "/cart" : "#menu"}
-          onClick={(event) => {
-            if (cartItems.length === 0) {
-              event.preventDefault();
-              scrollToSection("menu");
-            }
-          }}
-          className={`flex min-h-11 w-full items-center justify-center rounded-xl font-bold text-white transition ${cartItems.length > 0 ? "bg-[#ff5a1f] hover:-translate-y-0.5 hover:bg-[#e94e16]" : "bg-slate-300"}`}
-        >
-          {cartItems.length > 0 ? "Xem giỏ hàng" : "Chọn món ngay"}
-        </Link>
-      </div>
-    </aside>
   );
 };
