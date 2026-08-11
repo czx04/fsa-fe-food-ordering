@@ -13,6 +13,7 @@ import { createVnpayPaymentUrl } from './paymentService.js'
 import { sendOrderConfirmationEmail } from './emailService.js'
 import { getReviewsForCustomerOrders } from './reviewService.js'
 import { emitOrderUpdate } from './socketService.js'
+import { clearTrendingRecommendationCache } from './recommendationService.js'
 
 const DEFAULT_PAGE = 1
 const DEFAULT_LIMIT = 10
@@ -352,6 +353,7 @@ export const updateOrderStatusByOwner = async (
   }
 
   await order.save()
+  if (nextStatus === 'delivered') clearTrendingRecommendationCache()
 
   const updatedOrder = await orderRepository.findOrderById(orderId) as OrderDetail
   emitOrderUpdate(updatedOrder) // Emit socket event

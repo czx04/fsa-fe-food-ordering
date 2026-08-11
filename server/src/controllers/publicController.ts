@@ -1,5 +1,4 @@
 import { Request, Response } from 'express'
-import { MenuItem } from '../models/MenuItem.js'
 import { Coupon } from '../models/Coupon.js'
 import {
   listCuisineCategories,
@@ -18,6 +17,7 @@ import {
   PublicDetailQueryError,
   PublicResourceNotFoundError,
 } from '../services/publicRestaurantDetailService.js'
+import { getPublicTrendingMenuItems } from '../services/recommendationService.js'
 
 export const getCategories = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -46,57 +46,7 @@ export const getMenuItems = async (req: Request, res: Response): Promise<void> =
   try {
     const parsedLimit = Number(req.query.limit ?? 8)
     const limit = Number.isInteger(parsedLimit) && parsedLimit >= 1 && parsedLimit <= 20 ? parsedLimit : 8
-    const menuItems = await MenuItem.find({
-      isAvailable: true,
-      isVisible: { $ne: false },
-      deletedAt: null,
-    })
-      .populate({
-        path: 'restaurantId',
-        match: { approvalStatus: 'approved', operationStatus: { $ne: 'suspended' }, deletedAt: null },
-        select: 'name slug',
-      })
-      .sort({ soldCount: -1, createdAt: -1 })
-      .limit(limit * 2)
-      .lean()
-
-    const slugify = (value: string) =>
-      value
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/đ/g, 'd')
-        .replace(/Đ/g, 'D')
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '')
-    const data = menuItems
-      .filter((item) => item.restaurantId)
-      .slice(0, limit)
-      .map((item) => {
-        const restaurant = item.restaurantId as unknown as {
-          _id: { toString(): string }
-          name: string
-          slug: string
-        }
-        const basePrice = item.basePrice ?? item.price ?? 0
-        return {
-          _id: item._id.toString(),
-          name: item.name,
-          slug: item.slug ?? slugify(item.name),
-          description: item.shortDescription ?? item.description ?? '',
-          price: item.salePrice ?? basePrice,
-          imageUrl: item.imageUrls?.[0] ?? item.imageUrl ?? null,
-          isAvailable: item.isAvailable,
-          restaurantId: {
-            _id: restaurant._id.toString(),
-            name: restaurant.name,
-            slug: restaurant.slug,
-          },
-        }
-      })
-
-    res.json(data)
+    res.json(await getPublicTrendingMenuItems(limit))
   } catch (error) {
     res.status(500).json({ message: 'Lỗi server khi lấy danh sách món ăn' })
   }
@@ -185,4 +135,3 @@ export const getPromotions = async (_req: Request, res: Response): Promise<void>
     res.status(500).json({ message: 'Lỗi server khi lấy mã khuyến mãi' })
   }
 }
-

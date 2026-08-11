@@ -13,6 +13,7 @@ import userRouter from './routes/userRoutes.js'
 import { ownerRouter } from './routes/ownerRoutes.js'
 import { adminRouter } from './routes/adminRoutes.js'
 import paymentRouter from './routes/paymentRoutes.js'
+import { recommendationRouter } from './routes/recommendationRoutes.js'
 
 export const app = express()
 
@@ -37,6 +38,7 @@ app.use('/api/users', userRouter)
 app.use('/api/owner', ownerRouter)
 app.use('/api/admin', adminRouter)
 app.use('/api/payments', paymentRouter)
+app.use('/api/recommendations', recommendationRouter)
 
 app.get('/api/health', (_request, response) => {
   response.status(200).json({

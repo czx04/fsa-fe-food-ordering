@@ -7,9 +7,14 @@ import {
 } from "../utils/constants";
 import { useAuth } from "../contexts/AuthContext";
 import { LoginModal } from "../components/LoginModal";
+import { RestaurantChangeModal } from "../components/RestaurantChangeModal";
 import { MenuItemCard, MenuItemCardData } from "../components/cards/MenuItemCard";
+import { RecommendationMenuItemCard } from "../components/recommendations/RecommendationMenuItemCard";
 import { RestaurantCard, RestaurantCardData } from "../components/cards/RestaurantCard";
 import { useCart } from "../contexts/CartContext";
+import { useToast } from "../contexts/ToastContext";
+import { recommendationService } from "../services/recommendationService";
+import type { RecommendationResponse } from "../types/recommendation";
 import {
   Zap,
   Star,
@@ -43,17 +48,47 @@ interface CouponItem {
 }
 
 export const Home = () => {
-  const { isAuthenticated } = useAuth();
-  const { addItemToCart } = useCart();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { addItemToCart, cart } = useCart();
+  const toast = useToast();
   const [categories, setCategories] = useState<CuisineCategory[]>([]);
   const [restaurants, setRestaurants] = useState<RestaurantCardData[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItemCardData[]>([]);
   const [promotions, setPromotions] = useState<CouponItem[]>([]);
+  const [recommendations, setRecommendations] =
+    useState<RecommendationResponse | null>(null);
+  const [recommendationLoading, setRecommendationLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [selectedItemName, setSelectedItemName] = useState("");
+  const [pendingItem, setPendingItem] = useState<MenuItemCardData | null>(null);
+  const [conflictError, setConflictError] = useState("");
 
-  const handleAddToCart = async (item: MenuItemCardData) => {
+  const trackAddToCart = (item: MenuItemCardData) => {
+    if (!recommendations?.data.some((candidate) => candidate._id === item._id)) return;
+    const position = recommendations.data.findIndex(
+      (candidate) => candidate._id === item._id,
+    );
+    void recommendationService
+      .trackEvent({
+        requestId: recommendations.meta.requestId,
+        algorithmVersion: recommendations.meta.algorithmVersion,
+        surface: "home",
+        eventType: "add_to_cart",
+        menuItemId: item._id,
+        position: position + 1,
+      })
+      .catch(() => undefined);
+  };
+
+  const handleAddToCart = async (
+    item: MenuItemCardData,
+    replace = false,
+  ) => {
+    if (item.isAvailable === false) {
+      toast.warning("Món này hiện không còn phục vụ.");
+      return;
+    }
     if (!isAuthenticated) {
       setSelectedItemName(item.name);
       setIsLoginModalOpen(true);
@@ -64,11 +99,17 @@ export const Home = () => {
         restaurantId: item.restaurantId?._id || "",
         menuItemId: item._id,
         quantity: 1,
+        replace,
       });
-      alert(`Đã thêm "${item.name}" vào giỏ hàng!`);
-    } catch (err) {
-      console.error(err);
-      alert("Không thể thêm vào giỏ hàng!");
+      trackAddToCart(item);
+      toast.success(`Đã thêm “${item.name}” vào giỏ hàng.`);
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        setPendingItem(item);
+        setConflictError(error.response?.data?.message || "");
+        return;
+      }
+      toast.error(error.response?.data?.message || "Không thể thêm vào giỏ hàng.");
     }
   };
 
@@ -98,6 +139,31 @@ export const Home = () => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      setRecommendations(null);
+      setRecommendationLoading(false);
+      return;
+    }
+    let active = true;
+    setRecommendationLoading(true);
+    recommendationService
+      .getMenuItems(4)
+      .then((response) => {
+        if (active) setRecommendations(response.data.length > 0 ? response : null);
+      })
+      .catch(() => {
+        if (active) setRecommendations(null);
+      })
+      .finally(() => {
+        if (active) setRecommendationLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [authLoading, isAuthenticated]);
+
   const getCategoryIcon = (name: string) => {
     if (name.includes("Phở") || name.includes("Bún"))
       return <Soup className="w-6 h-6 text-orange-500" />;
@@ -111,6 +177,9 @@ export const Home = () => {
   };
 
   const activeCoupon = promotions.length > 0 ? promotions[0] : null;
+  const displayedMenuItems = recommendations?.data.length
+    ? recommendations.data
+    : menuItems;
 
   return (
     <main className="bg-slate-50/50 min-h-screen text-slate-800 pb-16">
@@ -288,15 +357,19 @@ export const Home = () => {
           <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-orange-600">
-                Mọi người đang mê
+                {recommendations?.meta.personalized
+                  ? "Được chọn theo khẩu vị của bạn"
+                  : "Mọi người đang mê"}
               </span>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-                Món ngon quanh bạn
+                {recommendations?.meta.personalized
+                  ? "Dành riêng cho bạn"
+                  : "Món ngon quanh bạn"}
               </h2>
             </div>
             <div className="flex gap-2">
               <span className="px-4 py-1.5 bg-orange-500 text-white rounded-full text-xs font-bold shadow-sm">
-                Phổ biến
+                {recommendations?.meta.personalized ? "Cho bạn" : "Phổ biến"}
               </span>
               <span className="px-4 py-1.5 bg-slate-100 text-slate-600 rounded-full text-xs font-bold hover:bg-slate-200 transition cursor-pointer">
                 Gần tôi
@@ -307,17 +380,31 @@ export const Home = () => {
             </div>
           </div>
 
-          {loading ? (
-            <p className="text-slate-400 text-sm">Đang tải món ăn...</p>
+          {loading || (recommendationLoading && menuItems.length === 0) ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {Array.from({ length: 4 }, (_, index) => (
+                <div key={index} className="h-80 animate-pulse rounded-2xl bg-slate-100" />
+              ))}
+            </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {menuItems.map((item) => (
-                <MenuItemCard
-                  key={item._id}
-                  item={item}
-                  onAddToCart={handleAddToCart}
-                />
-              ))}
+              {displayedMenuItems.map((item, index) =>
+                recommendations ? (
+                  <RecommendationMenuItemCard
+                    key={item._id}
+                    item={item as typeof recommendations.data[number]}
+                    meta={recommendations.meta}
+                    position={index + 1}
+                    onAddToCart={handleAddToCart}
+                  />
+                ) : (
+                  <MenuItemCard
+                    key={item._id}
+                    item={item}
+                    onAddToCart={handleAddToCart}
+                  />
+                ),
+              )}
             </div>
           )}
         </div>
@@ -403,6 +490,23 @@ export const Home = () => {
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
         itemName={selectedItemName}
+      />
+      <RestaurantChangeModal
+        isOpen={Boolean(pendingItem)}
+        currentRestaurantName={
+          cart?.restaurantId.name || /"(.*?)"/.exec(conflictError)?.[1] || "quán khác"
+        }
+        nextRestaurantName={pendingItem?.restaurantId?.name || "quán mới"}
+        onCancel={() => {
+          setPendingItem(null);
+          setConflictError("");
+        }}
+        onConfirm={() => {
+          const item = pendingItem;
+          setPendingItem(null);
+          setConflictError("");
+          if (item) void handleAddToCart(item, true);
+        }}
       />
     </main>
   );

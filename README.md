@@ -20,7 +20,7 @@ npm run dev
 - Backend: http://localhost:3000
 - Health check: http://localhost:3000/api/health
 
-Tài liệu dashboard và tài khoản development nằm tại [`client-dashboard/README.md`](client-dashboard/README.md). API contract nằm tại [`server/docs/dashboard-api.md`](server/docs/dashboard-api.md).
+Tài liệu dashboard và tài khoản development nằm tại [`client-dashboard/README.md`](client-dashboard/README.md). API contract nằm tại [`server/docs/dashboard-api.md`](server/docs/dashboard-api.md) và [`server/docs/recommendation-api.md`](server/docs/recommendation-api.md).
 
 ## Kiểm tra trước khi bàn giao
 
