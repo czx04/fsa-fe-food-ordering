@@ -3,13 +3,14 @@ import { Server, Socket } from 'socket.io'
 import { verifyAccessToken } from './utils/jwt.js'
 import { User } from './models/User.js'
 import { Order } from './models/Order.js'
+import { env } from './config/env.js'
 
 let io: Server
 
 export const initSocketServer = (server: HttpServer) => {
   io = new Server(server, {
     cors: {
-      origin: process.env.CLIENT_URL || 'http://localhost:5173',
+      origin: env.clientOrigins,
       methods: ['GET', 'POST'],
     },
   })
