@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import * as authController from '../controllers/authController.js'
-import { verifyToken } from '../middlewares/authMiddleware.js'
+import { verifyToken, optionalVerifyToken } from '../middlewares/authMiddleware.js'
 import { validate } from '../middlewares/validateMiddleware.js'
 import {
   loginSchema,
@@ -21,6 +21,6 @@ authRouter.post('/forgot-password', validate(forgotPasswordSchema), authControll
 authRouter.post('/reset-password', validate(resetPasswordSchema), authController.resetPassword)
 authRouter.get('/verify-email', validate({ query: verifyEmailSchema }), authController.verifyEmail)
 authRouter.post('/verify-email', validate({ body: verifyEmailSchema }), authController.verifyEmail)
-authRouter.post('/resend-verification', verifyToken, authController.resendVerificationEmail)
+authRouter.post('/resend-verification', optionalVerifyToken, authController.resendVerificationEmail)
 authRouter.get('/me', verifyToken, authController.getMe)
 

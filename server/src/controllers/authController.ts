@@ -81,11 +81,13 @@ export const verifyEmail = async (req: Request, res: Response) => {
 
 export const resendVerificationEmail = async (req: AuthRequest, res: Response) => {
   try {
-    if (!req.user) {
-      res.status(401).json({ message: 'Không tìm thấy thông tin xác thực.' })
+    const userId = req.user?.userId
+    const email = req.body?.email
+    if (!userId && !email) {
+      res.status(400).json({ message: 'Vui lòng cung cấp thông tin tài khoản hoặc email.' })
       return
     }
-    const result = await authService.resendVerificationEmail(req.user.userId)
+    const result = await authService.resendVerificationEmail({ userId, email })
     res.json(result)
   } catch (error: any) {
     res.status(400).json({ message: error.message || 'Gửi lại email xác thực thất bại.' })

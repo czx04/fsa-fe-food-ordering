@@ -122,7 +122,7 @@ export const ProfilePage: React.FC = () => {
 
   const handleResendVerification = async () => {
     try {
-      const res = await api.post("/auth/resend-verification");
+      const res = await api.post("/auth/resend-verification", { email: user?.email });
       toast.success(res.data.message || "Đã gửi lại email xác thực.");
     } catch (err: any) {
       toast.error(err.response?.data?.message || "Không thể gửi email. Vui lòng thử lại.");

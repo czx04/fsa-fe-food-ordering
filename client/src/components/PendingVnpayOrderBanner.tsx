@@ -29,7 +29,7 @@ export const clearPendingVnpayOrder = () => {
  * lại" hoặc "Hủy đơn ngay" — đơn chuyển sang "Đã hủy".
  */
 function PendingVnpayOrderBanner() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const location = useLocation();
   const toast = useToast();
   const [pending, setPending] = useState<PendingVnpayOrder | null>(null);
@@ -42,7 +42,7 @@ function PendingVnpayOrderBanner() {
       return;
     }
 
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user) return;
 
     let raw: string | null = null;
     try {
@@ -52,14 +52,19 @@ function PendingVnpayOrderBanner() {
     }
     if (!raw) return;
 
-    let parsed: PendingVnpayOrder;
+    let parsed: PendingVnpayOrder & { userId?: string };
     try {
-      parsed = JSON.parse(raw) as PendingVnpayOrder;
+      parsed = JSON.parse(raw);
     } catch {
       clearPendingVnpayOrder();
       return;
     }
     if (!parsed?.orderId) {
+      clearPendingVnpayOrder();
+      return;
+    }
+
+    if (parsed.userId && parsed.userId !== user._id) {
       clearPendingVnpayOrder();
       return;
     }
@@ -79,15 +84,17 @@ function PendingVnpayOrderBanner() {
         }
         setPending(parsed);
       })
-      .catch(() => {
-        // Lỗi mạng / trạng thái không xác định: giữ nguyên storage, không hiện
-        // banner gây phiền để user tự quyết định ở trang chi tiết đơn.
+      .catch((err: any) => {
+        // Nếu lỗi 403 (không phải đơn của user này) hoặc 404 (đơn không tồn tại) -> xóa localStorage
+        if (err.response?.status === 403 || err.response?.status === 404) {
+          clearPendingVnpayOrder();
+        }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated, location.pathname]);
+  }, [isAuthenticated, user, location.pathname]);
 
   if (!isAuthenticated || !pending || dismissed) return null;
 
@@ -109,7 +116,7 @@ function PendingVnpayOrderBanner() {
     } catch (err: any) {
       toast.error(
         err.response?.data?.message ||
-          "Không thể hủy đơn hàng. Vui lòng thử lại.",
+        "Không thể hủy đơn hàng. Vui lòng thử lại.",
       );
     } finally {
       setIsCancelling(false);
