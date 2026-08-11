@@ -37,7 +37,7 @@ Validation error:
 - `GET|POST /owner/restaurants`
 - `GET|PATCH /owner/restaurants/:restaurantId`
 - `PATCH /owner/restaurants/:restaurantId/operation-status`
-- `GET /owner/restaurants/:restaurantId/dashboard`
+- `GET /owner/restaurants/:restaurantId/dashboard?from=YYYY-MM-DD&to=YYYY-MM-DD&granularity=day|month|year`
 - `GET /owner/restaurants/:restaurantId/orders`
 - `GET /owner/restaurants/:restaurantId/orders/:orderId`
 - `PATCH /owner/restaurants/:restaurantId/orders/:orderId/status`
@@ -47,6 +47,8 @@ Validation error:
 - `PUT|DELETE /owner/restaurants/:restaurantId/reviews/:reviewId/reply`
 
 Mọi resource con đều được ràng buộc bằng `restaurantId + ownerId`. Truy cập chéo owner trả `404` để không làm lộ resource.
+
+Dashboard owner trả KPI doanh thu/đơn hàng/món bán chạy, chuỗi doanh thu theo ngày/tháng/năm và breakdown doanh thu theo danh mục thực đơn của đúng nhà hàng đang chọn.
 
 State machine đơn hàng:
 
@@ -68,7 +70,16 @@ Transition dùng compare-and-set theo trạng thái hiện tại; mutation stale
 - CRUD `/admin/cuisines`
 - CRUD/status `/admin/coupons`
 - `GET /admin/reviews` và moderation visibility
-- `GET /admin/analytics`
+- `GET /admin/analytics?from=YYYY-MM-DD&to=YYYY-MM-DD&granularity=day|month|year&groupBy=restaurant|category`
 - `GET /admin/audit-logs`
+
+`/admin/analytics` trả về:
+
+- `metrics`: tổng doanh thu đơn hoàn tất, tổng đơn hàng và món bán chạy nhất.
+- `trend`: chuỗi doanh thu/đơn hàng được gom theo ngày, tháng hoặc năm.
+- `groupBreakdown`: doanh thu được nhóm theo nhà hàng hoặc danh mục món ăn.
+- `topItems`: tối đa 5 món bán chạy, xếp theo số lượng.
+
+Doanh thu, breakdown và món bán chạy chỉ tính đơn `delivered`; tổng đơn hàng và chuỗi số lượng đơn tính mọi trạng thái trong kỳ đã chọn.
 
 Approve/reject/suspend restaurant, lock user, coupon mutation và review moderation đều ghi `AuditLog`.

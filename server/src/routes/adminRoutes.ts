@@ -53,6 +53,13 @@ const couponSchema = z.object({
 }).refine((value) => value.discountType !== 'percentage' || value.discountValue <= 100, { path: ['discountValue'], message: 'Phần trăm giảm không được vượt 100.' })
   .refine((value) => value.startsAt < value.endsAt, { path: ['endsAt'], message: 'Thời gian kết thúc phải sau bắt đầu.' })
 
+const analyticsQuerySchema = z.object({
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày bắt đầu không hợp lệ.').optional(),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày kết thúc không hợp lệ.').optional(),
+  granularity: z.enum(['day', 'month', 'year']).default('day'),
+  groupBy: z.enum(['restaurant', 'category']).default('restaurant'),
+})
+
 adminRouter.get('/dashboard', getAdminDashboard)
 
 adminRouter.get('/restaurants', getPendingRestaurants)
@@ -94,5 +101,5 @@ adminRouter.patch('/reviews/:reviewId/visibility', validate({ body: z.object({
   reason: z.string().trim().min(3).max(1000),
 }) }), moderateAdminReview)
 
-adminRouter.get('/analytics', getAdminAnalytics)
+adminRouter.get('/analytics', validate({ query: analyticsQuerySchema }), getAdminAnalytics)
 adminRouter.get('/audit-logs', getAdminAuditLogs)

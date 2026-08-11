@@ -84,6 +84,12 @@ const menuItemSchema = z.object({
   optionGroups: z.array(optionGroupSchema).max(12),
 }).refine((value) => value.salePrice === null || value.salePrice <= value.basePrice, { path: ['salePrice'], message: 'Giá khuyến mãi không được lớn hơn giá gốc.' })
 
+const dashboardQuerySchema = z.object({
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày bắt đầu không hợp lệ.').optional(),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày kết thúc không hợp lệ.').optional(),
+  granularity: z.enum(['day', 'month', 'year']).default('day'),
+})
+
 // Backward-compatible singular endpoints.
 ownerRouter.get('/restaurant', getMyRestaurant)
 ownerRouter.post('/restaurant', requireVerifiedEmail, validate({ body: restaurantSchema }), onboardRestaurant)
@@ -93,7 +99,7 @@ ownerRouter.post('/restaurants', requireVerifiedEmail, validate({ body: restaura
 ownerRouter.get('/restaurants/:restaurantId', getMyRestaurant)
 ownerRouter.patch('/restaurants/:restaurantId', requireVerifiedEmail, validate({ body: restaurantSchema }), updateRestaurant)
 ownerRouter.patch('/restaurants/:restaurantId/operation-status', validate({ body: z.object({ operationStatus: z.enum(['open', 'temporarily_closed']) }) }), updateOperationStatus)
-ownerRouter.get('/restaurants/:restaurantId/dashboard', getOwnerDashboard)
+ownerRouter.get('/restaurants/:restaurantId/dashboard', validate({ query: dashboardQuerySchema }), getOwnerDashboard)
 
 ownerRouter.get('/restaurants/:restaurantId/orders', getOwnerOrders)
 ownerRouter.get('/restaurants/:restaurantId/orders/:orderId', getOwnerOrderDetail)

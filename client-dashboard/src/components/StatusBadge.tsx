@@ -20,10 +20,10 @@ import type {
 
 const tones: Record<string, string> = {
   active: "success", approved: "success", open: "success", delivered: "success", paid: "success", visible: "success",
-  pending: "warning", pending_verification: "warning", confirmed: "info", preparing: "info", delivering: "purple", flagged: "warning",
+  pending: "warning", pending_verification: "warning", flagged: "warning",
   rejected: "danger", locked: "danger", suspended: "danger", cancelled: "danger", failed: "danger",
-  temporarily_closed: "neutral", unpaid: "neutral", refunded: "neutral", hidden: "neutral", customer: "neutral",
-  restaurant_owner: "info", admin: "purple",
+  confirmed: "neutral", preparing: "neutral", delivering: "neutral", temporarily_closed: "neutral",
+  unpaid: "neutral", refunded: "neutral", hidden: "neutral", customer: "neutral", restaurant_owner: "neutral", admin: "neutral",
 };
 
 export function Badge({ value, children }: { value: string; children: ReactNode }) {

@@ -1,5 +1,5 @@
 import { Response } from 'express'
-import { Types } from 'mongoose'
+import { Types, type PipelineStage } from 'mongoose'
 import { AuthRequest } from '../middlewares/authMiddleware.js'
 import { AuditLog } from '../models/AuditLog.js'
 import { Coupon, CouponUsage } from '../models/Coupon.js'
@@ -12,6 +12,8 @@ import { recalculateRestaurantRatingSummary } from '../services/reviewService.js
 import { User } from '../models/User.js'
 import { requestPasswordReset } from '../services/authService.js'
 import {
+  dashboardDateFormat,
+  dashboardGranularityFrom,
   dateRangeFrom,
   escapeRegex,
   metric,
@@ -433,29 +435,125 @@ export const moderateAdminReview = async (req: AuthRequest, res: Response) => {
   }
 }
 
+type AnalyticsGroup = 'restaurant' | 'category'
+
 export const getAdminAnalytics = async (req: AuthRequest, res: Response) => {
   try {
     const range = dateRangeFrom(req.query)
-    const match = { orderStatus: 'delivered', placedAt: { $gte: range.from, $lte: range.to } }
-    const [cityBreakdown, paymentBreakdown, cancellationReasons, categoryBreakdown] = await Promise.all([
+    const granularity = dashboardGranularityFrom(req.query)
+    const groupBy: AnalyticsGroup = req.query.groupBy === 'category' ? 'category' : 'restaurant'
+    const rangeMatch = { placedAt: { $gte: range.from, $lte: range.to } }
+    const deliveredMatch = { ...rangeMatch, orderStatus: 'delivered' }
+
+    const groupPipeline: PipelineStage[] = groupBy === 'restaurant'
+      ? [
+          { $match: deliveredMatch },
+          { $group: {
+            _id: '$restaurantId',
+            label: { $first: '$restaurantSnapshot.name' },
+            orders: { $sum: 1 },
+            revenue: { $sum: '$pricing.grandTotal' },
+            quantity: { $sum: { $sum: '$items.quantity' } },
+          } },
+          { $sort: { revenue: -1 } },
+          { $limit: 10 },
+          { $project: { _id: 0, label: { $ifNull: ['$label', 'Nhà hàng chưa xác định'] }, orders: 1, revenue: 1, quantity: 1 } },
+        ]
+      : [
+          { $match: deliveredMatch },
+          { $unwind: '$items' },
+          { $lookup: { from: 'menuItems', localField: 'items.menuItemId', foreignField: '_id', as: 'menuItem' } },
+          { $set: { menuCategoryId: { $arrayElemAt: ['$menuItem.menuCategoryId', 0] } } },
+          { $lookup: { from: 'menuCategories', localField: 'menuCategoryId', foreignField: '_id', as: 'menuCategory' } },
+          { $set: { groupLabel: { $ifNull: [{ $arrayElemAt: ['$menuCategory.name', 0] }, 'Chưa phân loại'] } } },
+          { $group: {
+            _id: { label: '$groupLabel', orderId: '$_id' },
+            revenue: { $sum: '$items.lineTotal' },
+            quantity: { $sum: '$items.quantity' },
+          } },
+          { $group: {
+            _id: '$_id.label',
+            orders: { $sum: 1 },
+            revenue: { $sum: '$revenue' },
+            quantity: { $sum: '$quantity' },
+          } },
+          { $sort: { revenue: -1 } },
+          { $limit: 10 },
+          { $project: { _id: 0, label: '$_id', orders: 1, revenue: 1, quantity: 1 } },
+        ]
+
+    const [summaryRows, trend, topItems, groupBreakdown, cityBreakdown, paymentBreakdown, cancellationReasons, categoryBreakdown] = await Promise.all([
+      Order.aggregate<{ totalRevenue: number; totalOrders: number; deliveredOrders: number }>([
+        { $match: rangeMatch },
+        { $group: {
+          _id: null,
+          totalRevenue: { $sum: { $cond: [{ $eq: ['$orderStatus', 'delivered'] }, '$pricing.grandTotal', 0] } },
+          totalOrders: { $sum: 1 },
+          deliveredOrders: { $sum: { $cond: [{ $eq: ['$orderStatus', 'delivered'] }, 1, 0] } },
+        } },
+      ]),
+      Order.aggregate<{ _id: string; revenue: number; orders: number }>([
+        { $match: rangeMatch },
+        { $group: {
+          _id: { $dateToString: { format: dashboardDateFormat(granularity), date: '$placedAt', timezone: 'Asia/Ho_Chi_Minh' } },
+          revenue: { $sum: { $cond: [{ $eq: ['$orderStatus', 'delivered'] }, '$pricing.grandTotal', 0] } },
+          orders: { $sum: 1 },
+        } },
+        { $sort: { _id: 1 } },
+      ]),
+      Order.aggregate<{ _id: Types.ObjectId; name: string; quantity: number; revenue: number }>([
+        { $match: deliveredMatch },
+        { $unwind: '$items' },
+        { $group: {
+          _id: '$items.menuItemId',
+          name: { $first: '$items.name' },
+          quantity: { $sum: '$items.quantity' },
+          revenue: { $sum: '$items.lineTotal' },
+        } },
+        { $sort: { quantity: -1, revenue: -1 } },
+        { $limit: 5 },
+      ]),
+      Order.aggregate<{ label: string; orders: number; revenue: number; quantity: number }>(groupPipeline),
       Order.aggregate<{ label: string; orders: number; gmv: number }>([
-        { $match: match }, { $group: { _id: '$recipient.city', orders: { $sum: 1 }, gmv: { $sum: '$pricing.grandTotal' } } }, { $sort: { gmv: -1 } }, { $project: { _id: 0, label: '$_id', orders: 1, gmv: 1 } },
+        { $match: deliveredMatch }, { $group: { _id: '$recipient.city', orders: { $sum: 1 }, gmv: { $sum: '$pricing.grandTotal' } } }, { $sort: { gmv: -1 } }, { $project: { _id: 0, label: '$_id', orders: 1, gmv: 1 } },
       ]),
       Order.aggregate<{ label: string; count: number; amount: number }>([
-        { $match: match }, { $group: { _id: '$paymentMethod', count: { $sum: 1 }, amount: { $sum: '$pricing.grandTotal' } } }, { $sort: { amount: -1 } }, { $project: { _id: 0, label: '$_id', count: 1, amount: 1 } },
+        { $match: deliveredMatch }, { $group: { _id: '$paymentMethod', count: { $sum: 1 }, amount: { $sum: '$pricing.grandTotal' } } }, { $sort: { amount: -1 } }, { $project: { _id: 0, label: '$_id', count: 1, amount: 1 } },
       ]),
       Order.aggregate<{ label: string; count: number }>([
         { $match: { orderStatus: 'cancelled', placedAt: { $gte: range.from, $lte: range.to } } }, { $group: { _id: { $ifNull: ['$cancellation.reason', 'Không có lý do'] }, count: { $sum: 1 } } }, { $sort: { count: -1 } }, { $project: { _id: 0, label: '$_id', count: 1 } },
       ]),
       Order.aggregate<{ label: string; orders: number; gmv: number }>([
-        { $match: match },
+        { $match: deliveredMatch },
         { $lookup: { from: 'restaurants', localField: 'restaurantId', foreignField: '_id', as: 'restaurant' } }, { $unwind: '$restaurant' }, { $unwind: { path: '$restaurant.cuisineCategoryIds', preserveNullAndEmptyArrays: true } },
         { $lookup: { from: 'cuisinecategories', localField: 'restaurant.cuisineCategoryIds', foreignField: '_id', as: 'cuisine' } },
         { $group: { _id: { $ifNull: [{ $arrayElemAt: ['$cuisine.name', 0] }, 'Chưa phân loại'] }, orders: { $sum: 1 }, gmv: { $sum: '$pricing.grandTotal' } } },
         { $sort: { gmv: -1 } }, { $project: { _id: 0, label: '$_id', orders: 1, gmv: 1 } },
       ]),
     ])
-    res.json({ range: { from: range.from.toISOString(), to: range.to.toISOString() }, cityBreakdown, categoryBreakdown, paymentBreakdown, cancellationReasons })
+    const summary = summaryRows[0] ?? { totalRevenue: 0, totalOrders: 0, deliveredOrders: 0 }
+    const normalizedTopItems = topItems.map((item) => ({
+      itemId: item._id.toString(),
+      name: item.name,
+      quantity: item.quantity,
+      revenue: item.revenue,
+    }))
+    res.json({
+      range: { from: range.from.toISOString(), to: range.to.toISOString() },
+      granularity,
+      groupBy,
+      metrics: {
+        ...summary,
+        topItem: normalizedTopItems[0] ?? null,
+      },
+      trend: trend.map((item) => ({ period: item._id, revenue: item.revenue, orders: item.orders })),
+      groupBreakdown,
+      topItems: normalizedTopItems,
+      cityBreakdown,
+      categoryBreakdown,
+      paymentBreakdown,
+      cancellationReasons,
+    })
   } catch (error: any) {
     res.status(400).json({ message: error.message || 'Không thể tải phân tích.' })
   }
