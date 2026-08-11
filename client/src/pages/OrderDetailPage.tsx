@@ -65,51 +65,66 @@ function OrderDetailPage() {
       return;
     }
 
+    let cancelled = false;
+
     const fetchOrder = async () => {
       try {
         const orderData = await orderService.getOrderDetail(id);
+        if (cancelled) return;
         setOrder(orderData);
       } catch (err) {
+        if (cancelled) return;
         console.error("Lỗi tải dữ liệu trang đơn hàng:", err);
         setError("Không thể tải chi tiết đơn hàng. Vui lòng thử lại.");
       }
     };
 
-    const setupSocket = () => {
-      try {
-        const socket = socketService.connect();
+    let socket: ReturnType<typeof socketService.connect> | null = null;
 
-        socket.on("connect", () => {
-          console.log("Socket connected, joining order room...");
-          socket.emit("join:order", id);
-          fetchOrder(); // Fetch lại dữ liệu mới nhất khi kết nối lại
-        });
+    const handleConnect = () => {
+      console.log("Socket connected, joining order room...");
+      socket?.emit("join:order", id);
+      fetchOrder(); // Fetch lại dữ liệu mới nhất khi kết nối lại
+    };
 
-        socket.on("order:updated", (updatedOrder: OrderDetail) => {
-          if (updatedOrder._id === id) {
-            toast.info(
-              `Đơn hàng #${updatedOrder.orderNumber} đã được cập nhật trạng thái.`,
-            );
-            setOrder(updatedOrder);
-          }
-        });
-
-        socket.on("connect_error", (err) => {
-          console.error("Socket connection error:", err);
-          toast.error("Lỗi kết nối real-time. Vui lòng kiểm tra lại mạng.");
-        });
-      } catch (error) {
-        console.error("Socket connection failed:", error);
-        toast.error("Không thể kết nối real-time. Vui lòng tải lại trang.");
+    const handleOrderUpdate = (updatedOrder: OrderDetail) => {
+      if (updatedOrder._id === id) {
+        toast.info(
+          `Đơn hàng #${updatedOrder.orderNumber} đã được cập nhật trạng thái.`,
+        );
+        setOrder(updatedOrder);
       }
     };
 
+    const handleConnectError = (err: unknown) => {
+      console.error("Socket connection error:", err);
+      toast.error("Lỗi kết nối real-time. Vui lòng kiểm tra lại mạng.");
+    };
+
+    try {
+      socket = socketService.connect();
+      socket.on("connect", handleConnect);
+      socket.on("order:updated", handleOrderUpdate);
+      socket.on("connect_error", handleConnectError);
+    } catch (error) {
+      console.error("Socket connection failed:", error);
+      toast.error("Không thể kết nối real-time. Vui lòng tải lại trang.");
+    }
+
     setLoading(true);
-    fetchOrder().finally(() => setLoading(false));
-    setupSocket();
+    fetchOrder().finally(() => {
+      if (!cancelled) setLoading(false);
+    });
 
     return () => {
-      socketService.disconnect();
+      cancelled = true;
+      // Chỉ gỡ listeners, KHÔNG disconnect socket — giúp tránh memory leak
+      // khi navigate qua lại giữa các trang (socket được dùng lại bởi socketService).
+      if (socket) {
+        socket.off("connect", handleConnect);
+        socket.off("order:updated", handleOrderUpdate);
+        socket.off("connect_error", handleConnectError);
+      }
     };
   }, [id, toast]);
 
@@ -207,10 +222,10 @@ function OrderDetailPage() {
               {order.orderStatus === "cancelled" ? (
                 <div className="rounded-lg border border-red-200 bg-red-50 p-4">
                   <div className="flex items-center gap-2 mb-1">
-                    <XCircle className="w-5 h-5 text-red-600" />
                     <h3 className="text-lg font-bold text-red-700">
                       Đơn hàng đã bị hủy
                     </h3>
+                    <XCircle className="w-5 h-5 text-red-600" />
                   </div>
                   {order.cancellation?.reason && (
                     <p className="text-sm text-red-700">
