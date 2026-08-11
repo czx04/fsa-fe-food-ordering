@@ -18,6 +18,7 @@ import { recommendationRouter } from './routes/recommendationRoutes.js'
 export const app = express()
 
 app.disable('x-powered-by')
+if (env.nodeEnv === 'production') app.set('trust proxy', 1)
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || env.clientOrigins.includes(origin)) callback(null, true)
