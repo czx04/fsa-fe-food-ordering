@@ -154,6 +154,79 @@ const AddressModal = ({
   );
 };
 
+const AddressSelectionModal = ({
+  isOpen,
+  onClose,
+  onSelect,
+  onAddNew,
+  addresses,
+  selectedAddressId,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelect: (address: UserAddress) => void;
+  onAddNew: () => void;
+  addresses: UserAddress[];
+  selectedAddressId: string | null;
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-2xl shadow-xl max-w-lg w-full mx-4 max-h-[90vh] flex flex-col">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold">Chọn địa chỉ giao hàng</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-2 rounded-full hover:bg-gray-100"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="space-y-3 overflow-y-auto flex-grow pr-2">
+          {addresses.map((address) => (
+            <label
+              key={address._id}
+              className={`flex items-start p-4 border rounded-lg cursor-pointer transition-colors ${
+                selectedAddressId === address._id
+                  ? "border-orange-500 bg-orange-50/50"
+                  : "border-gray-200 hover:bg-gray-50"
+              }`}
+            >
+              <input
+                type="radio"
+                name="address"
+                className="h-5 w-5 text-orange-600 focus:ring-orange-500 mt-1"
+                checked={selectedAddressId === address._id}
+                onChange={() => onSelect(address)}
+              />
+              <div className="ml-4">
+                <p className="font-semibold text-gray-800">
+                  {address.recipientName}
+                </p>
+                <p className="text-sm text-gray-600">{address.phone}</p>
+                <p className="text-sm text-gray-600">
+                  {`${address.line1}, ${address.ward}, ${address.district}, ${address.city}`}
+                </p>
+              </div>
+            </label>
+          ))}
+        </div>
+        <div className="mt-6 pt-4 border-t">
+          <button
+            type="button"
+            onClick={onAddNew}
+            className="w-full text-orange-500 font-semibold p-3 border-2 border-dashed rounded-lg hover:bg-orange-50/50 flex items-center justify-center"
+          >
+            <PlusCircle className="w-5 h-5 mr-2" /> Thêm địa chỉ mới
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -207,6 +280,8 @@ function CheckoutPage() {
   const [pricing, setPricing] = useState<CheckoutPricing | null>(null);
   const [isCalculating, setIsCalculating] = useState(true);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [isAddressSelectionModalOpen, setIsAddressSelectionModalOpen] =
+    useState(false);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const navigate = useNavigate();
   const toast = useToast();
@@ -355,7 +430,7 @@ function CheckoutPage() {
                 </h2>
                 <button
                   type="button"
-                  onClick={() => setIsAddressModalOpen(true)}
+                  onClick={() => setIsAddressSelectionModalOpen(true)}
                   className="text-orange-500 hover:underline text-sm font-medium flex items-center"
                 >
                   Thay đổi <Edit className="w-3 h-3 ml-1" />
@@ -394,7 +469,9 @@ function CheckoutPage() {
                 <label
                   htmlFor="payment-cod"
                   className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${
-                    paymentMethod === "COD" ? "border-orange-500 bg-orange-50/30" : "border-gray-200"
+                    paymentMethod === "COD"
+                      ? "border-orange-500 bg-orange-50/30"
+                      : "border-gray-200"
                   }`}
                   onClick={() => setPaymentMethod("COD")}
                 >
@@ -418,7 +495,9 @@ function CheckoutPage() {
                 <label
                   htmlFor="payment-vnpay"
                   className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${
-                    paymentMethod === "VNPAY" ? "border-blue-500 bg-blue-50/30" : "border-gray-200"
+                    paymentMethod === "VNPAY"
+                      ? "border-blue-500 bg-blue-50/30"
+                      : "border-gray-200"
                   }`}
                   onClick={() => setPaymentMethod("VNPAY")}
                 >
@@ -547,6 +626,20 @@ function CheckoutPage() {
         isOpen={isAddressModalOpen}
         onClose={() => setIsAddressModalOpen(false)}
         onSave={handleSaveNewAddress}
+      />
+      <AddressSelectionModal
+        isOpen={isAddressSelectionModalOpen}
+        onClose={() => setIsAddressSelectionModalOpen(false)}
+        addresses={user?.addresses || []}
+        selectedAddressId={selectedAddress?._id || null}
+        onSelect={(address) => {
+          setSelectedAddress(address);
+          setIsAddressSelectionModalOpen(false);
+        }}
+        onAddNew={() => {
+          setIsAddressSelectionModalOpen(false);
+          setIsAddressModalOpen(true);
+        }}
       />
     </main>
   );

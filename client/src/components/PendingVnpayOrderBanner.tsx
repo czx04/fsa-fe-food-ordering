@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, CreditCard, Loader2, X } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useToast } from "../contexts/ToastContext";
 import { orderService } from "../services/orderService";
@@ -29,12 +30,18 @@ export const clearPendingVnpayOrder = () => {
  */
 function PendingVnpayOrderBanner() {
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
   const toast = useToast();
   const [pending, setPending] = useState<PendingVnpayOrder | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
+    // Không hiển thị banner trên trang thành công, vì trang đó sẽ tự dọn dẹp.
+    if (location.pathname.startsWith("/payment/success")) {
+      return;
+    }
+
     if (!isAuthenticated) return;
 
     let raw: string | null = null;
@@ -80,7 +87,7 @@ function PendingVnpayOrderBanner() {
     return () => {
       cancelled = true;
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, location.pathname]);
 
   if (!isAuthenticated || !pending || dismissed) return null;
 
