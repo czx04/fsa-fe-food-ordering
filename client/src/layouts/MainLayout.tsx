@@ -1,7 +1,7 @@
 import { Outlet, Link, NavLink } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
-import { ShoppingBag, LogOut } from "lucide-react";
+import { ShoppingBag, LogOut, AlertCircle } from "lucide-react";
 import { MobileBottomNav } from "../components/MobileBottomNav";
 
 export const MainLayout = () => {
@@ -84,8 +84,15 @@ export const MainLayout = () => {
                     className="flex items-center gap-2 hover:opacity-80 transition group"
                     title="Trang cá nhân"
                   >
-                    <div className="w-8 h-8 rounded-full bg-orange-500 text-white font-bold text-xs flex items-center justify-center shadow-sm group-hover:scale-105 transition transform">
-                      {user?.fullName?.charAt(0) || "U"}
+                    <div className="relative">
+                      <div className="w-8 h-8 rounded-full bg-orange-500 text-white font-bold text-xs flex items-center justify-center shadow-sm group-hover:scale-105 transition transform">
+                        {user?.fullName?.charAt(0) || "U"}
+                      </div>
+                      {user?.status === "pending_verification" && (
+                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-white shadow-sm border border-white" title="Tài khoản chưa xác thực">
+                          <AlertCircle className="w-3 h-3 stroke-[2.5]" />
+                        </span>
+                      )}
                     </div>
                     <span className="hidden sm:inline text-xs font-semibold text-slate-700 max-w-[120px] truncate group-hover:text-orange-600">
                       {user?.fullName}

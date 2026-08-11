@@ -176,7 +176,7 @@ const scrollToSection = (id: string) => {
 
 export const RestaurantDetail = () => {
   const { restaurantSlug = "" } = useParams();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user, updateUser } = useAuth();
   const { addItemToCart, fetchCart } = useCart();
   const [restaurant, setRestaurant] = useState<RestaurantDetailData | null>(
     null,
@@ -248,11 +248,36 @@ export const RestaurantDetail = () => {
         if (active) setLoading(false);
       }
     };
-    void loadRestaurant();
+    loadRestaurant();
     return () => {
       active = false;
     };
   }, [restaurantSlug]);
+
+  useEffect(() => {
+    if (user && restaurant) {
+      setFavorite(user.favoriteRestaurantIds?.includes(restaurant._id) ?? false);
+    }
+  }, [user, restaurant]);
+
+  const handleToggleFavorite = async () => {
+    if (!isAuthenticated) {
+      setLoginItem("Vui lòng đăng nhập để lưu quán yêu thích");
+      return;
+    }
+    if (!restaurant) return;
+
+    try {
+      const res = await api.post(`/users/me/favorites/${restaurant._id}`);
+      setFavorite(res.data.isFavorite);
+      if (user) {
+        updateUser({ ...user, favoriteRestaurantIds: res.data.favoriteRestaurantIds });
+      }
+      toast.success(res.data.message);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Lỗi khi xử lý yêu thích");
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -484,7 +509,7 @@ export const RestaurantDetail = () => {
             </div>
             <button
               type="button"
-              onClick={() => setFavorite((value) => !value)}
+              onClick={handleToggleFavorite}
               className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border px-5 font-bold transition hover:-translate-y-0.5 ${
                 favorite
                   ? "border-rose-200 bg-rose-50 text-rose-600"

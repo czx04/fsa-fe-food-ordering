@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, ShoppingBag, Heart, User, Utensils, X, Minus, Plus, Trash2, ArrowRight } from "lucide-react";
+import { Home, ShoppingBag, User, Utensils, X, Minus, Plus, Trash2, ArrowRight, ClipboardList, AlertCircle } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useCart } from "../contexts/CartContext";
 import { useToast } from "../contexts/ToastContext";
@@ -9,12 +9,12 @@ import { CartItem } from "../types/cart";
 
 const formatMoney = (val: number) =>
   `${new Intl.NumberFormat("vi-VN").format(val)}đ`;
-
+// Mobile Bottom Navigation Component
 export const MobileBottomNav: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const toast = useToast();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { cart, updateItemQuantity, clearCart } = useCart();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -27,21 +27,20 @@ export const MobileBottomNav: React.FC = () => {
   const handleNavClick = (
     path: string,
     requiresAuth: boolean,
-    isCartTab?: boolean,
-    title?: string
+    isCartTab?: boolean
   ) => {
-    if (isCartTab) {
-      setIsCartOpen(true);
+    if (requiresAuth && !isAuthenticated) {
+      if (location.pathname === "/login") {
+        toast.info("Vui lòng đăng nhập");
+      } else {
+        setLoginModalTitle("Vui lòng đăng nhập");
+        setIsLoginModalOpen(true);
+      }
       return;
     }
 
-    if (requiresAuth && !isAuthenticated) {
-      if (location.pathname === "/login") {
-        toast.info(title || "Vui lòng đăng nhập để tiếp tục");
-      } else {
-        setLoginModalTitle(title || "Bạn cần đăng nhập để tiếp tục");
-        setIsLoginModalOpen(true);
-      }
+    if (isCartTab) {
+      setIsCartOpen(true);
       return;
     }
 
@@ -65,23 +64,21 @@ export const MobileBottomNav: React.FC = () => {
       label: "Giỏ hàng",
       icon: ShoppingBag,
       path: "/cart",
-      requiresAuth: false,
+      requiresAuth: true,
       isCart: true,
       badge: totalQuantity > 0 ? totalQuantity : null,
     },
     {
-      label: "Yêu thích",
-      icon: Heart,
-      path: "/profile?tab=favorites",
+      label: "Đơn hàng",
+      icon: ClipboardList,
+      path: "/orders",
       requiresAuth: true,
-      title: "Xem danh sách nhà hàng yêu thích",
     },
     {
       label: "Tài khoản",
       icon: User,
       path: "/profile",
       requiresAuth: true,
-      title: "Quản lý thông tin tài khoản",
     },
   ];
 
@@ -102,7 +99,7 @@ export const MobileBottomNav: React.FC = () => {
               key={item.label}
               type="button"
               onClick={() =>
-                handleNavClick(item.path, item.requiresAuth, item.isCart, item.title)
+                handleNavClick(item.path, item.requiresAuth, item.isCart)
               }
               className={`relative flex flex-col items-center justify-center gap-1 text-[10px] font-bold transition active:scale-95 ${isActive ? "text-[#ff5a1f]" : "text-slate-500 hover:text-slate-700"
                 }`}
@@ -110,11 +107,16 @@ export const MobileBottomNav: React.FC = () => {
               <div className="relative">
                 <Icon
                   className={`h-5 w-5 ${isActive ? "stroke-[2.5] text-[#ff5a1f]" : "stroke-[1.75]"
-                    }`}
+                    } ${item.isCart && item.badge ? "animate-bounce" : ""}`}
                 />
                 {item.badge && (
                   <span className="absolute -right-2 -top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-[#ff5a1f] px-1 text-[9px] font-black text-white shadow-xs">
                     {item.badge}
+                  </span>
+                )}
+                {item.path === "/profile" && user?.status === "pending_verification" && (
+                  <span className="absolute -right-2 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-white shadow-xs border border-white">
+                    <AlertCircle className="w-3 h-3 stroke-[2.5]" />
                   </span>
                 )}
               </div>

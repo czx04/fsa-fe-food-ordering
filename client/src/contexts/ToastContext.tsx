@@ -32,13 +32,27 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
     setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
   }, []);
 
+  const MAX_TOASTS = 5;
+
   const addToast = useCallback(
     (message: string, type: ToastType) => {
-      const id = `${Date.now()}-${Math.random()}`;
-      setToasts((prevToasts) => [...prevToasts, { id, message, type }]);
-      setTimeout(() => {
-        removeToast(id);
-      }, 5000); // Tự động ẩn sau 5 giây
+      setToasts((prevToasts) => {
+        // Prevent duplicate toasts with the exact same message and type
+        if (prevToasts.some((t) => t.message === message && t.type === type)) {
+          return prevToasts;
+        }
+
+        const id = `${Date.now()}-${Math.random()}`;
+
+        // Auto-remove toast after 4 seconds
+        setTimeout(() => {
+          removeToast(id);
+        }, 4000);
+
+        // Keep at most MAX_TOASTS
+        const updated = [...prevToasts, { id, message, type }];
+        return updated.slice(-MAX_TOASTS);
+      });
     },
     [removeToast],
   );

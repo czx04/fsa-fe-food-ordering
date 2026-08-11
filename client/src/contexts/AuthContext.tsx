@@ -23,6 +23,7 @@ interface User {
   status?: string;
   avatarUrl?: string;
   addresses?: UserAddress[];
+  favoriteRestaurantIds?: string[];
 }
 
 interface AuthContextType {
