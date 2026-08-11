@@ -20,6 +20,8 @@ const envSchema = z.object({
   VNP_HASHSECRET: z.string().default('dev-only-insecure-secret'),
   VNP_URL: z.string().default('https://sandbox.vnpayment.vn/paymentv2/vpcpay.html'),
   VNP_RETURN_URL: z.string().default('http://localhost:5173/payment/success'),
+  // Sau bao nhiêu phút thì tự động hủy đơn VNPAY chưa hoàn tất thanh toán
+  VNPAY_PAYMENT_TIMEOUT_MINUTES: z.coerce.number().int().min(1).default(30),
 })
 
 const parsedEnv = envSchema.safeParse(process.env)
@@ -78,4 +80,5 @@ export const env = {
   vnpHashSecret: parsedEnv.data.VNP_HASHSECRET,
   vnpUrl: parsedEnv.data.VNP_URL,
   vnpReturnUrl: parsedEnv.data.VNP_RETURN_URL,
+  vnpayPaymentTimeoutMinutes: parsedEnv.data.VNPAY_PAYMENT_TIMEOUT_MINUTES,
 } as const

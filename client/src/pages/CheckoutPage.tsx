@@ -282,16 +282,28 @@ function CheckoutPage() {
       );
       const { order, paymentUrl } = response.data;
 
-      await fetchCart();
-
+      // Thanh toán VNPAY: lưu đơn đang chờ thanh toán rồi chuyển NGAY sang cổng
+      // thanh toán. KHÔNG gọi fetchCart() trước redirect vì sẽ khiến trang rơi
+      // vào empty state trước khi đi VNPAY (cart đã được clear phía server).
       if (paymentUrl) {
-        window.location.href = paymentUrl;
-      } else {
-        // For COD, navigate to success page
-        navigate(
-          `/payment/success?orderId=${order._id}&orderNumber=${order.orderNumber}`,
+        localStorage.setItem(
+          "pendingVnpayOrder",
+          JSON.stringify({
+            orderId: order._id,
+            orderNumber: order.orderNumber,
+            paymentUrl,
+            placedAt: Date.now(),
+          }),
         );
+        window.location.href = paymentUrl;
+        return;
       }
+
+      // Thanh toán COD: clear cart trước khi sang trang thành công (SPA)
+      await fetchCart();
+      navigate(
+        `/payment/success?orderId=${order._id}&orderNumber=${order.orderNumber}`,
+      );
     } catch (err: any) {
       console.error("Lỗi đặt hàng:", err);
       toast.error(

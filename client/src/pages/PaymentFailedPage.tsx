@@ -1,6 +1,6 @@
 import { Link, useSearchParams, useNavigate } from "react-router-dom";
 import { XCircle, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { orderService } from "../services/orderService";
 import { useToast } from "../contexts/ToastContext";
 import { useCart } from "../contexts/CartContext";
@@ -17,7 +17,7 @@ function PaymentFailedPage() {
     "Đã có lỗi xảy ra trong quá trình thanh toán.";
   const orderId = searchParams.get("orderId");
 
-  const handleRetry = async () => {
+  const handleRetry = useCallback(async () => {
     if (!orderId) {
       // Fallback cho các link cũ hoặc lỗi thiếu orderId
       navigate("/checkout");
@@ -42,7 +42,8 @@ function PaymentFailedPage() {
     } finally {
       setIsRetrying(false);
     }
-  };
+  }, [orderId, navigate, fetchCart, toast]);
+
   return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center">
       <div className="bg-white p-8 md:p-12 rounded-lg shadow-xl text-center max-w-md w-full">

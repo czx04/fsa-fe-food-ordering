@@ -93,6 +93,11 @@ function OrderDetailPage() {
             setOrder(updatedOrder);
           }
         });
+
+        socket.on("connect_error", (err) => {
+          console.error("Socket connection error:", err);
+          toast.error("Lỗi kết nối real-time. Vui lòng kiểm tra lại mạng.");
+        });
       } catch (error) {
         console.error("Socket connection failed:", error);
         toast.error("Không thể kết nối real-time. Vui lòng tải lại trang.");
@@ -106,9 +111,7 @@ function OrderDetailPage() {
     return () => {
       socketService.disconnect();
     };
-    // `toast` is intentionally omitted from the dependency array to prevent an infinite loop
-    // caused by an unstable function reference from the ToastContext.
-  }, [id]);
+  }, [id, toast]);
 
   const handleCancelOrder = async () => {
     if (!id || !cancelReason) return;
@@ -183,7 +186,7 @@ function OrderDetailPage() {
             to="/orders"
             className="text-orange-500 hover:underline text-sm font-medium mb-2 inline-flex items-center gap-1"
           >
-            <ArrowLeft className="w-4 h-4" /> Quay lại
+            <ArrowLeft className="w-4 h-4" /> Quay lại trang lịch sử đơn hàng
           </Link>
           <h1 className="text-4xl font-bold text-gray-800">
             Đơn hàng #{order.orderNumber}
@@ -201,39 +204,61 @@ function OrderDetailPage() {
               <h2 className="text-xl font-bold text-gray-800 mb-6">
                 Trạng thái đơn hàng
               </h2>
-              <ol className="flex items-center w-full text-center text-sm font-medium text-gray-500 sm:text-base">
-                {orderStatusSteps.map((statusKey, index) => (
-                  <li
-                    key={statusKey}
-                    className={`flex md:w-full items-center ${
-                      index <= currentStepIndex
-                        ? "text-orange-600 after:border-orange-200"
-                        : "after:border-gray-200"
-                    } ${
-                      index < orderStatusSteps.length - 1
-                        ? "after:content-[''] after:w-full after:h-1 after:border-b after:border-4 after:inline-block"
-                        : ""
-                    }`}
-                  >
-                    <div
-                      className={`flex items-center justify-center w-10 h-10 rounded-full ring-0 shrink-0 ${
+              {order.orderStatus === "cancelled" ? (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <XCircle className="w-5 h-5 text-red-600" />
+                    <h3 className="text-lg font-bold text-red-700">
+                      Đơn hàng đã bị hủy
+                    </h3>
+                  </div>
+                  {order.cancellation?.reason && (
+                    <p className="text-sm text-red-700">
+                      <span className="font-semibold">Lý do:</span>{" "}
+                      {order.cancellation.reason}
+                    </p>
+                  )}
+                  {order.cancelledAt && (
+                    <p className="text-sm text-red-600 mt-1">
+                      Hủy lúc: {formatDateTime(order.cancelledAt)}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <ol className="flex items-center w-full text-center text-sm font-medium text-gray-500 sm:text-base">
+                  {orderStatusSteps.map((statusKey, index) => (
+                    <li
+                      key={statusKey}
+                      className={`flex md:w-full items-center ${
                         index <= currentStepIndex
-                          ? "bg-orange-600 text-white"
-                          : "bg-gray-100 text-gray-500"
+                          ? "text-orange-600 after:border-orange-200"
+                          : "after:border-gray-200"
+                      } ${
+                        index < orderStatusSteps.length - 1
+                          ? "after:content-[''] after:w-full after:h-1 after:border-b after:border-4 after:inline-block"
+                          : ""
                       }`}
                     >
-                      {index < currentStepIndex ? (
-                        <CheckCircle2 className="w-5 h-5" />
-                      ) : (
-                        index + 1
-                      )}
-                    </div>
-                    <h3 className="ml-3 font-semibold text-gray-900">
-                      {statusTranslations[statusKey]}
-                    </h3>
-                  </li>
-                ))}
-              </ol>
+                      <div
+                        className={`flex items-center justify-center w-10 h-10 rounded-full ring-0 shrink-0 ${
+                          index <= currentStepIndex
+                            ? "bg-orange-600 text-white"
+                            : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        {index < currentStepIndex ? (
+                          <CheckCircle2 className="w-5 h-5" />
+                        ) : (
+                          index + 1
+                        )}
+                      </div>
+                      <h3 className="ml-3 font-semibold text-gray-900">
+                        {statusTranslations[statusKey]}
+                      </h3>
+                    </li>
+                  ))}
+                </ol>
+              )}
             </div>
 
             {/* Delivery Info */}

@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useCart } from "../contexts/CartContext";
 import {
   ArrowLeft,
@@ -88,27 +88,27 @@ function CartPage() {
 
   const restaurant = useMemo(() => displayCart?.restaurantId, [displayCart]);
 
-  const handleUpdateQuantity = async (
-    menuItemId: string,
-    newQuantity: number,
-  ) => {
-    if (newQuantity <= 0) {
-      const item = displayCart?.items.find(
-        (i) => i.menuItemId._id === menuItemId,
-      );
-      if (item) setItemToDelete(item);
-      return;
-    }
+  const handleUpdateQuantity = useCallback(
+    async (menuItemId: string, newQuantity: number) => {
+      if (newQuantity <= 0) {
+        const item = displayCart?.items.find(
+          (i) => i.menuItemId._id === menuItemId,
+        );
+        if (item) setItemToDelete(item);
+        return;
+      }
 
-    try {
-      await updateItemQuantity(menuItemId, newQuantity);
-    } catch (error) {
-      console.error("Failed to update quantity:", error);
-      toast.error("Lỗi cập nhật số lượng. Vui lòng thử lại.");
-    }
-  };
+      try {
+        await updateItemQuantity(menuItemId, newQuantity);
+      } catch (error) {
+        console.error("Failed to update quantity:", error);
+        toast.error("Lỗi cập nhật số lượng. Vui lòng thử lại.");
+      }
+    },
+    [displayCart, updateItemQuantity, toast],
+  );
 
-  const handleConfirmRemoveItem = async () => {
+  const handleConfirmRemoveItem = useCallback(async () => {
     if (!itemToDelete) return;
     setIsProcessing(true);
     try {
@@ -121,9 +121,9 @@ function CartPage() {
       setIsProcessing(false);
       setItemToDelete(null);
     }
-  };
+  }, [itemToDelete, removeItemFromCart, toast]);
 
-  const handleConfirmClearCart = async () => {
+  const handleConfirmClearCart = useCallback(async () => {
     setIsProcessing(true);
     try {
       await clearCart();
@@ -135,9 +135,9 @@ function CartPage() {
       setIsProcessing(false);
       setIsClearingCart(false);
     }
-  };
+  }, [clearCart, toast]);
 
-  const handleApplyCoupon = async () => {
+  const handleApplyCoupon = useCallback(async () => {
     if (!couponCodeInput.trim()) {
       setCouponError("Vui lòng nhập mã giảm giá.");
       return;
@@ -153,7 +153,7 @@ function CartPage() {
     } finally {
       setIsApplyingCoupon(false);
     }
-  };
+  }, [couponCodeInput, fetchCart]);
 
   const renderCouponButtonContent = () =>
     isApplyingCoupon ? (
