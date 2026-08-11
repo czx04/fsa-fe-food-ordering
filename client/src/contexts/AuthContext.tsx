@@ -46,6 +46,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Xử lý khi refresh token thất bại (interceptor bắn event customer:session-expired)
+  // → đăng xuất ngay để tránh UI bị "kẹt" ở trạng thái tưởng chừng đã đăng nhập.
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      socketService.setAuthToken(null);
+      setUser(null);
+    };
+    window.addEventListener("customer:session-expired", handleSessionExpired);
+    return () =>
+      window.removeEventListener(
+        "customer:session-expired",
+        handleSessionExpired,
+      );
+  }, []);
+
   useEffect(() => {
     const initAuth = async () => {
       const token = localStorage.getItem("accessToken");
