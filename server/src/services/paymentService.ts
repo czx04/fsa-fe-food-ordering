@@ -1,5 +1,6 @@
 import crypto from 'crypto'
 import createError from 'http-errors'
+import { Types } from 'mongoose'
 import { env } from '../config/env.js'
 import { Order } from '../models/Order.js'
 import * as orderRepository from '../repositories/orderRepository.js'
@@ -95,22 +96,27 @@ export const verifyVnpaySignature = (vnpayParams: Record<string, any>): boolean 
 
 /**
  * Xác thực URL trả về từ giao dịch VNPAY (Return URL handler)
+ * @param vnpayParams - Tham số query VNPAY gửi về
+ * @param userId - ID người dùng đang xác thực (từ verifyToken); không bắt buộc khi chạy IPN.
  */
-export const verifyVnpayReturn = async (vnpayParams: any): Promise<OrderDetail> => {
+export const verifyVnpayReturn = async (
+  vnpayParams: any,
+  userId?: string,
+): Promise<OrderDetail> => {
   const orderId = vnpayParams.vnp_TxnRef
   const responseCode = vnpayParams.vnp_ResponseCode
-  const isMock = vnpayParams.mock === 'true'
+  const vnpAmount = Number(vnpayParams.vnp_Amount)
 
-  if (!orderId) {
+  if (!orderId || !Types.ObjectId.isValid(orderId)) {
     throw createError(400, 'Thông tin giao dịch không hợp lệ.')
   }
 
-  if (!isMock) {
-    const isValidSignature = verifyVnpaySignature(vnpayParams)
-    if (!isValidSignature) {
-      console.error('❌ VNPAY Signature verification failed for order:', orderId)
-      throw createError(400, 'Chữ ký điện tử không hợp lệ.')
-    }
+  // LUÔN xác minh chữ ký điện tử. Không bao giờ bỏ qua xác minh vì cờ do client gửi lên
+  // (mock/real phải được quyết định bởi env phía server, không phải tham số client).
+  const isValidSignature = verifyVnpaySignature(vnpayParams)
+  if (!isValidSignature) {
+    console.error('❌ VNPAY Signature verification failed for order:', orderId)
+    throw createError(400, 'Chữ ký điện tử không hợp lệ.')
   }
 
   if (responseCode !== '00') {
@@ -120,6 +126,20 @@ export const verifyVnpayReturn = async (vnpayParams: any): Promise<OrderDetail> 
   const order = await Order.findById(orderId)
   if (!order) {
     throw createError(404, 'Không tìm thấy đơn hàng tương ứng với giao dịch.')
+  }
+
+  // Kiểm tra quyền sở hữu: chỉ khách hàng sở hữu đơn hàng mới được xác nhận thanh toán.
+  if (userId && order.customerId.toString() !== userId) {
+    throw createError(403, 'Bạn không có quyền xác nhận thanh toán cho đơn hàng này.')
+  }
+
+  // Kiểm tra số tiền khớp với đơn hàng.
+  const expectedAmount = Math.round(order.pricing.grandTotal * 100)
+  if (vnpAmount !== expectedAmount) {
+    console.error(
+      `❌ VNPAY amount mismatch for order ${orderId}: got ${vnpAmount}, expected ${expectedAmount}`,
+    )
+    throw createError(400, 'Số tiền giao dịch không khớp với đơn hàng.')
   }
 
   if (order.paymentStatus !== 'paid') {

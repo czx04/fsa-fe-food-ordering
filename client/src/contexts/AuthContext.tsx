@@ -28,7 +28,7 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (token: string, userData: User) => void;
+  login: (token: string, refreshToken: string, userData: User) => void;
   logout: () => void;
   updateUser: (newUserData: User) => void;
 }
@@ -46,6 +46,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Xử lý khi refresh token thất bại (interceptor bắn event customer:session-expired)
+  // → đăng xuất ngay để tránh UI bị "kẹt" ở trạng thái tưởng chừng đã đăng nhập.
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      socketService.setAuthToken(null);
+      setUser(null);
+    };
+    window.addEventListener("customer:session-expired", handleSessionExpired);
+    return () =>
+      window.removeEventListener(
+        "customer:session-expired",
+        handleSessionExpired,
+      );
+  }, []);
+
   useEffect(() => {
     const initAuth = async () => {
       const token = localStorage.getItem("accessToken");
@@ -57,6 +74,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } catch (error) {
           console.error("Failed to restore session", error);
           localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
         }
       }
       setIsLoading(false);
@@ -65,14 +83,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     initAuth();
   }, []);
 
-  const login = (token: string, userData: User) => {
+  const login = (token: string, refreshToken: string, userData: User) => {
     localStorage.setItem("accessToken", token);
+    localStorage.setItem("refreshToken", refreshToken);
     socketService.setAuthToken(token);
     setUser(userData);
   };
 
   const logout = () => {
     localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
     setUser(null);
     socketService.setAuthToken(null);
     // Optional: Call backend /auth/logout to invalidate refresh token

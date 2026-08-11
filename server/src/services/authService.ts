@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt'
 import { User, IUser } from '../models/User.js'
 import { generateTokens, verifyRefreshToken } from '../utils/jwt.js'
+import { env } from '../config/env.js'
 
 export const loginUser = async (email: string, passwordRaw: string) => {
   const user = await User.findOne({ email: email.toLowerCase().trim(), deletedAt: null }).select('+passwordHash +refreshTokens')
@@ -209,11 +210,18 @@ export const requestPasswordReset = async (email: string) => {
     expiresAt,
   })
 
-  // Return reset token for UI display/testing since Nodemailer is pending
-  return {
+  // Trả token về client CHỈ trong môi trường development để tiện kiểm thử.
+  // Trong production, OTP phải được gửi qua email (nodemailer) và KHÔNG BAO GIỜ
+  // trả về trong response — tránh lộ mã xác thực qua API.
+  const result: { message: string; resetToken?: string } = {
     message: 'Mã xác thực đổi mật khẩu đã được khởi tạo thành công.',
-    resetToken: resetTokenRaw, // For dev testing
   }
+
+  if (env.nodeEnv !== 'production') {
+    result.resetToken = resetTokenRaw
+  }
+
+  return result
 }
 
 export const resetPasswordWithToken = async (email: string, resetTokenRaw: string, newPasswordRaw: string) => {
