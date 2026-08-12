@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { api } from '../utils/api'
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import { useAuth } from '../contexts/AuthContext'
 
 export const VerifyEmail = () => {
   const [searchParams] = useSearchParams()
@@ -10,6 +11,7 @@ export const VerifyEmail = () => {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const hasFetched = useRef(false)
+  const { refreshUser, isAuthenticated } = useAuth()
 
   useEffect(() => {
     if (!token) {
@@ -23,9 +25,13 @@ export const VerifyEmail = () => {
 
     api
       .get(`/auth/verify-email?token=${token}`)
-      .then((res) => {
+      .then(async (res) => {
         setMessage(res.data.message || 'Xác thực email thành công!')
         setError('')
+        if (isAuthenticated) {
+          // Refresh user context immediately so UI updates to 'active' status
+          await refreshUser()
+        }
       })
       .catch((err) => {
         setError(err.response?.data?.message || 'Link xác thực không hợp lệ hoặc đã hết hạn.')
@@ -33,7 +39,7 @@ export const VerifyEmail = () => {
       .finally(() => {
         setLoading(false)
       })
-  }, [token])
+  }, [token, isAuthenticated, refreshUser])
 
   return (
     <div className="section">
@@ -49,8 +55,8 @@ export const VerifyEmail = () => {
 
           {!loading && message && (
             <div>
-              <CheckCircle2 className="w-16 h-16 text-orange-500 mx-auto mb-4" />
-              <h2 className="text-orange-600 mb-2">Xác thực thành công!</h2>
+              <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
+              <h2 className="text-emerald-600 mb-2">Xác thực thành công!</h2>
               <p className="muted mb-6">{message}</p>
               <Link to="/login" className="btn" style={{ textDecoration: 'none' }}>
                 Đăng nhập ngay

@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer'
+import { env } from '../config/env.js'
 
 let transporter: nodemailer.Transporter | null = null
 
@@ -46,7 +47,7 @@ export const sendVerificationEmail = async (toEmail: string, token: string) => {
     return null
   }
 
-  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173'
+  const clientUrl = env.CLIENT_URL || env.clientOrigin || 'http://localhost:5173'
   const verificationLink = `${clientUrl}/verify-email?token=${token}`
 
   const mailOptions = {
@@ -108,7 +109,7 @@ export const sendOrderConfirmationEmail = async (order: any) => {
       return null
     }
 
-    const clientUrl = process.env.CLIENT_ORIGIN || process.env.CLIENT_URL || 'http://localhost:5173'
+    const clientUrl = env.CLIENT_URL || env.clientOrigin || 'http://localhost:5173'
     const orderLink = `${clientUrl}/orders/${order._id}`
 
     const formatVND = (amount: number) =>

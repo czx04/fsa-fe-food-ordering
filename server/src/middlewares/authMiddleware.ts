@@ -42,6 +42,27 @@ export const verifyToken = async (req: AuthRequest, res: Response, next: NextFun
   }
 }
 
+export const optionalVerifyToken = async (req: AuthRequest, _res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1]
+    if (token) {
+      const decoded = verifyAccessToken(token)
+      if (decoded) {
+        try {
+          const user = await User.findOne({ _id: decoded.userId, deletedAt: null }).select('role status').lean()
+          if (user && user.status !== 'locked') {
+            req.user = { userId: String(user._id), role: user.role }
+          }
+        } catch {
+          // Ignore error in optional middleware
+        }
+      }
+    }
+  }
+  next()
+}
+
 export const requireRole = (roles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {

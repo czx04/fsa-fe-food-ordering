@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { api } from "../utils/api";
 import {
   DEFAULT_DISH_IMAGE_URL,
@@ -65,6 +65,17 @@ export const Home = () => {
   const [conflictError, setConflictError] = useState("");
   const [currentPromoIndex, setCurrentPromoIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
+
+  const handleSearch = (e?: React.KeyboardEvent | React.MouseEvent) => {
+    if (e && 'key' in e && e.key !== 'Enter') return;
+    if (searchQuery.trim()) {
+      navigate(`/restaurants?q=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      navigate('/restaurants');
+    }
+  };
 
   const trackAddToCart = (item: MenuItemCardData) => {
     if (!recommendations?.data.some((candidate) => candidate._id === item._id)) return;
@@ -236,15 +247,18 @@ export const Home = () => {
                   <input
                     placeholder="Tìm món ăn, nhà hàng..."
                     className="w-full text-sm bg-transparent border-none focus:outline-none text-slate-700"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={handleSearch}
                   />
                 </div>
-                <Link
-                  to="/restaurants"
+                <button
+                  onClick={handleSearch}
                   className="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold text-sm rounded-xl text-center shadow-sm transition flex items-center justify-center gap-2"
                 >
                   <Search className="w-4 h-4" />
                   <span>Tìm món</span>
-                </Link>
+                </button>
               </div>
 
               {/* Badges */}

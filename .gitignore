@@ -13,3 +13,4 @@ deploy/deploy.env
 deploy/server.env
 
 reference/
+*.zip

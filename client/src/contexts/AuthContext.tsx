@@ -33,6 +33,7 @@ interface AuthContextType {
   login: (accessToken: string, refreshToken: string, userData: User) => void;
   logout: () => void;
   updateUser: (newUserData: User) => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -42,6 +43,7 @@ const AuthContext = createContext<AuthContextType>({
   login: () => { },
   logout: () => { },
   updateUser: () => { },
+  refreshUser: async () => { },
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -65,25 +67,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       );
   }, []);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const token = localStorage.getItem("accessToken");
-      if (token) {
-        try {
-          const res = await api.get("/auth/me");
-          setUser(res.data.user);
-        } catch (error) {
-          console.error("Failed to restore session", error);
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("refreshToken");
-        }
+  const refreshUser = async () => {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      try {
+        const res = await api.get("/auth/me");
+        setUser(res.data.user);
+      } catch (error) {
+        console.error("Failed to restore session", error);
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
       }
-    };
+    }
+  };
 
+  useEffect(() => {
     const initAuth = async () => {
       const token = localStorage.getItem("accessToken");
       socketService.setAuthToken(token);
-      await fetchUser();
+      await refreshUser();
       setIsLoading(false);
     };
 
@@ -92,7 +94,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Auto refresh user data when tab becomes active again (e.g. after verifying email in another tab)
     const handleFocus = () => {
       if (localStorage.getItem("accessToken")) {
-        fetchUser();
+        refreshUser();
       }
     };
     window.addEventListener("focus", handleFocus);
@@ -131,6 +133,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         login,
         logout,
         updateUser,
+        refreshUser,
       }}
     >
       {children}

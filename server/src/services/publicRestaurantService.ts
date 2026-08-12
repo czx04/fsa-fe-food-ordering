@@ -1,5 +1,6 @@
 import { CuisineCategory } from '../models/CuisineCategory.js'
 import { Restaurant, type IOpeningHours } from '../models/Restaurant.js'
+import { MenuItem } from '../models/MenuItem.js'
 
 const PRICE_ORDER = { budget: 0, mid: 1, premium: 2 } as const
 const SORT_VALUES = [
@@ -159,6 +160,35 @@ export const parseRestaurantQuery = (rawQuery: Record<string, unknown>): Restaur
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
+const VIETNAMESE_MAP: Record<string, string> = {
+  a: 'aAàÀảẢãÃáÁạẠăĂằẰẳẲẵẴắẮặẶâÂầẦẩẨẫẪấẤậẬ',
+  d: 'dDđĐ',
+  e: 'eEèÈẻẺẽẼéÉẹẸêÊềỀểỂễỄếẾệỆ',
+  i: 'iIìÌỉỈĩĨíÍịỊ',
+  o: 'oOòÒỏỎõÕóÓọỌôÔồỒổỔỗỖốỐộỘơƠờỜởỞỡỠớỚợỢ',
+  u: 'uUùÙủỦũŨúÚụỤưƯừỪửỬữỮứỨựỰ',
+  y: 'yYỳỲỷỶỹỸýÝỵỴ'
+}
+
+const createVietnameseRegexPattern = (keyword: string) => {
+  let pattern = ''
+  for (const char of keyword) {
+    const lowerChar = char.toLowerCase()
+    let found = false
+    for (const [key, value] of Object.entries(VIETNAMESE_MAP)) {
+      if (value.includes(lowerChar) || key === lowerChar) {
+        pattern += `[${value}]`
+        found = true
+        break
+      }
+    }
+    if (!found) {
+      pattern += escapeRegExp(char)
+    }
+  }
+  return pattern
+}
+
 const getVietnamTime = (date = new Date()) => {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'Asia/Ho_Chi_Minh',
@@ -249,13 +279,17 @@ export const listPublicRestaurants = async (query: RestaurantQuery) => {
   }
 
   if (query.q) {
-    const pattern = new RegExp(escapeRegExp(query.q), 'i')
+    const pattern = new RegExp(createVietnameseRegexPattern(query.q), 'i')
+    const menuItems = await MenuItem.find({ name: pattern, deletedAt: null }).select('restaurantId').lean()
+    const restaurantIdsWithDish = menuItems.map((item) => item.restaurantId)
+
     mongoFilter.$or = [
       { name: pattern },
       { 'address.line1': pattern },
       { 'address.ward': pattern },
       { 'address.district': pattern },
       { 'address.city': pattern },
+      { _id: { $in: restaurantIdsWithDish } },
     ]
   }
 

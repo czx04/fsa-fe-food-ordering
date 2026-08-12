@@ -194,8 +194,14 @@ export const verifyEmailToken = async (token: string) => {
   }
 }
 
-export const resendVerificationEmail = async (userId: string) => {
-  const user = await User.findById(userId).select('+emailVerificationToken +emailVerificationExpires')
+export const resendVerificationEmail = async (params: { userId?: string; email?: string }) => {
+  let user = null
+  if (params.userId) {
+    user = await User.findById(params.userId).select('+emailVerificationToken +emailVerificationExpires')
+  } else if (params.email) {
+    user = await User.findOne({ email: params.email.toLowerCase().trim(), deletedAt: null }).select('+emailVerificationToken +emailVerificationExpires')
+  }
+
   if (!user) {
     throw new Error('Người dùng không tồn tại.')
   }

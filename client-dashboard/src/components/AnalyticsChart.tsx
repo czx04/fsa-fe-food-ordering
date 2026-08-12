@@ -7,6 +7,6 @@ export interface AnalyticsSeries {
   data: number[];
 }
 
-export default function AnalyticsChart({ options, series, height = 315 }: { options: ApexOptions; series: AnalyticsSeries[]; height?: number }) {
-  return <Chart options={options} series={series} height={height} />;
+export default function AnalyticsChart({ options, series, height = 315, type }: { options: ApexOptions; series: AnalyticsSeries[]; height?: number; type?: "area" | "line" | "bar" }) {
+  return <Chart options={options} series={series} height={height} type={type} />;
 }

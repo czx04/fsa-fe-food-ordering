@@ -249,7 +249,7 @@ export function OwnerOverviewPage() {
         </Card>
         <Card className="chart-card">
           <div className="card-heading"><div><h2>Doanh thu theo danh mục món</h2><p>Top 10 danh mục của nhà hàng.</p></div></div>
-          {data.categoryBreakdown.length ? <Suspense fallback={<SkeletonRows count={3} />}><AnalyticsChart options={categoryChartOptions} series={[{ name: "Doanh thu", type: "bar", data: data.categoryBreakdown.map((item) => item.revenue) }]} height={340} /></Suspense> : <EmptyState title="Chưa có dữ liệu" description="Chưa có doanh thu theo danh mục trong kỳ này." />}
+          {data.categoryBreakdown.length ? <Suspense fallback={<SkeletonRows count={3} />}><AnalyticsChart type="bar" options={categoryChartOptions} series={[{ name: "Doanh thu", type: "bar", data: data.categoryBreakdown.map((item) => item.revenue) }]} height={340} /></Suspense> : <EmptyState title="Chưa có dữ liệu" description="Chưa có doanh thu theo danh mục trong kỳ này." />}
         </Card>
       </div>
       <Card className="owner-top-items-card">
