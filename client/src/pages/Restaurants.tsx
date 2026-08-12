@@ -7,9 +7,6 @@ import { Button } from "../components/ui/Button";
 import {
   Search,
   Filter,
-  MapPin,
-  Map,
-  List,
   Utensils,
   Star,
 } from "lucide-react";
