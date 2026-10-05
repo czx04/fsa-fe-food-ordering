@@ -1,28 +1,147 @@
 # MămMăm Food Ordering
 
-Monorepo gồm customer web, dashboard Owner/Admin và API server.
+Monorepo cho hệ thống đặt món ăn trực tuyến, gồm giao diện khách hàng, dashboard vận hành và API backend.
 
-## Yêu cầu
+## Tổng quan hệ thống
 
-- Node.js 20.19 trở lên (hoặc 22.12 trở lên)
-- npm 10 trở lên
-- MongoDB đang chạy local hoặc một MongoDB connection string
+| Thành phần | Thư mục | Vai trò | URL local |
+| --- | --- | --- | --- |
+| Customer web | `client/` | Khách hàng tìm nhà hàng, chọn món, đặt hàng, thanh toán và theo dõi đơn | http://localhost:5173 |
+| Owner/Admin dashboard | `client-dashboard/` | Chủ nhà hàng quản lý nhà hàng, thực đơn, đơn hàng; Admin quản trị và theo dõi hệ thống | http://localhost:5174 |
+| API server | `server/` | Xác thực, nghiệp vụ đơn hàng, thanh toán, đánh giá, gợi ý và realtime Socket.IO | http://localhost:3000 |
+| Database | MongoDB | Lưu trữ người dùng, nhà hàng, thực đơn, giỏ hàng, đơn hàng và dữ liệu nghiệp vụ | `mongodb://127.0.0.1:27017` |
 
-## Chạy local
+Trong môi trường local, hai ứng dụng frontend gọi API qua Vite proxy tại `/api`. Khi triển khai production, Caddy định tuyến frontend và các request `/api`, `/socket.io` tới đúng service trong Docker Compose.
+
+## Công nghệ chính
+
+- React, TypeScript và Vite cho hai ứng dụng frontend.
+- Express, TypeScript và Mongoose cho API server.
+- MongoDB cho dữ liệu nghiệp vụ.
+- TanStack Query, React Hook Form và Zod cho data fetching và validation.
+- Socket.IO cho các cập nhật realtime.
+- Docker, Docker Compose và Caddy cho triển khai VPS.
+
+## Cấu trúc repository
+
+```text
+.
+├── client/                 # Customer web
+├── client-dashboard/       # Dashboard Owner/Admin
+├── server/                 # Express API và Socket.IO
+├── docker/                 # Dockerfile cho từng service
+├── deploy/                 # Caddy và file cấu hình deploy mẫu
+├── compose.yaml            # Chạy các image production cùng Caddy
+├── package.json            # Workspace và script dùng chung
+└── .github/workflows/      # CI, build và publish image lên Docker Hub
+```
+
+Tài liệu chi tiết theo module:
+
+- [`client-dashboard/README.md`](client-dashboard/README.md): dashboard, RBAC và các lệnh kiểm tra riêng.
+- [`server/docs/dashboard-api.md`](server/docs/dashboard-api.md): contract API cho dashboard.
+- [`server/docs/recommendation-api.md`](server/docs/recommendation-api.md): API và dữ liệu cho tính năng gợi ý.
+
+## Yêu cầu môi trường
+
+- Node.js `20.19+` hoặc `22.12+`.
+- npm `10+`.
+- MongoDB đang chạy local hoặc một MongoDB connection string có thể truy cập.
+
+Kiểm tra phiên bản:
+
+```bash
+node --version
+npm --version
+```
+
+## Cài đặt và cấu hình local
+
+### 1. Cài dependency
+
+Từ thư mục gốc repository:
 
 ```bash
 npm install
+```
+
+Repository dùng npm workspaces nên chỉ cần cài dependency một lần ở thư mục gốc.
+
+### 2. Tạo file môi trường
+
+Sao chép các file mẫu tương ứng:
+
+```bash
+cp server/.env.example server/.env
+cp client/.env.example client/.env
+cp client-dashboard/.env.example client-dashboard/.env
+```
+
+Trên Windows PowerShell, có thể dùng:
+
+```powershell
+Copy-Item server/.env.example server/.env
+Copy-Item client/.env.example client/.env
+Copy-Item client-dashboard/.env.example client-dashboard/.env
+```
+
+Ít nhất cần kiểm tra các giá trị sau trong `server/.env`:
+
+- `MONGODB_URI` và `MONGODB_DB_NAME`.
+- `JWT_SECRET` và `JWT_REFRESH_SECRET`.
+- `CLIENT_ORIGIN`/`CLIENT_ORIGINS` nếu frontend chạy khác origin mặc định.
+- Cấu hình VNPAY và SMTP nếu muốn kiểm thử thanh toán hoặc email thật.
+
+Mặc định server chạy tại port `3000`, customer web tại `5173` và dashboard tại `5174`. Không commit các file `.env` chứa secret.
+
+## Chạy ứng dụng
+
+### Chạy toàn bộ hệ thống
+
+```bash
 npm run dev
 ```
 
+Lệnh này khởi động đồng thời customer web, dashboard và API server. Mở các địa chỉ sau để kiểm tra:
+
 - Customer web: http://localhost:5173
 - Owner/Admin dashboard: http://localhost:5174
-- Backend: http://localhost:3000
-- Health check: http://localhost:3000/api/health
+- API health check: http://localhost:3000/api/health
 
-Tài liệu dashboard và tài khoản development nằm tại [`client-dashboard/README.md`](client-dashboard/README.md). API contract nằm tại [`server/docs/dashboard-api.md`](server/docs/dashboard-api.md) và [`server/docs/recommendation-api.md`](server/docs/recommendation-api.md).
+### Chạy từng service
 
-## Kiểm tra trước khi bàn giao
+```bash
+npm run dev:customer
+npm run dev:dashboard
+npm run dev:server
+```
+
+Có thể chạy các lệnh trên ở những terminal riêng khi cần theo dõi log của từng service.
+
+### Vite proxy và API URL
+
+Hai frontend mặc định dùng:
+
+```text
+VITE_API_BASE_URL=/api
+```
+
+Giá trị này cho phép frontend gọi API cùng origin trong local thông qua Vite proxy. Khi deploy frontend ở origin riêng, đặt `VITE_API_BASE_URL` thành URL đầy đủ theo hướng dẫn trong file `.env.example` tương ứng.
+
+## Các lệnh thường dùng
+
+| Mục đích | Lệnh |
+| --- | --- |
+| Build tất cả workspace | `npm run build` |
+| Typecheck tất cả workspace có hỗ trợ | `npm run typecheck` |
+| Build customer web | `npm run build --workspace client` |
+| Build dashboard | `npm run build --workspace client-dashboard` |
+| Typecheck API server | `npm run typecheck --workspace server` |
+| Lint dashboard | `npm run lint --workspace client-dashboard` |
+| Test dashboard | `npm run test --workspace client-dashboard` |
+| Chạy API production sau khi build | `npm run start` |
+
+Trước khi tạo pull request, nên chạy tối thiểu:
 
 ```bash
 npm run typecheck
@@ -31,9 +150,9 @@ npm run lint --workspace client-dashboard
 npm run test --workspace client-dashboard
 ```
 
-## Deploy VPS bằng Docker Hub
+## Triển khai Docker/VPS
 
-Pipeline trong [`.github/workflows/ci-dockerhub.yml`](.github/workflows/ci-dockerhub.yml) chạy kiểm tra trên pull request. Khi push/merge vào `main`, pipeline build và đẩy ba image vào cùng một Docker Hub repository:
+Workflow [`.github/workflows/ci-dockerhub.yml`](.github/workflows/ci-dockerhub.yml) sẽ build và publish ba image khi thay đổi được push lên nhánh đã cấu hình:
 
 ```text
 <username>/fsa-food-ordering:client-<commit-sha>
@@ -41,42 +160,38 @@ Pipeline trong [`.github/workflows/ci-dockerhub.yml`](.github/workflows/ci-docke
 <username>/fsa-food-ordering:server-<commit-sha>
 ```
 
-Mỗi image cũng có tag `<component>-latest`.
+Để triển khai trên VPS:
 
-### 1. Cấu hình GitHub và Docker Hub
+1. Tạo Docker Hub repository và cấu hình `DOCKERHUB_USERNAME`, `DOCKERHUB_REPOSITORY` (tuỳ chọn) và secret `DOCKERHUB_TOKEN` trong GitHub.
+2. Sao chép file mẫu:
 
-Tạo một repository tên `fsa-food-ordering` trên Docker Hub. Trong GitHub repository, thêm:
+   ```bash
+   cp deploy/deploy.env.example deploy/deploy.env
+   cp deploy/server.env.example deploy/server.env
+   ```
 
-- Variable `DOCKERHUB_USERNAME`: username Docker Hub.
-- Variable `DOCKERHUB_REPOSITORY`: không bắt buộc, mặc định `fsa-food-ordering`.
-- Secret `DOCKERHUB_TOKEN`: access token Docker Hub có quyền Read & Write.
+3. Điền domain, Docker Hub username, `RELEASE_TAG` và `MONGODB_URI`; không commit các file cấu hình thật.
+4. Trên VPS, chạy:
 
-Workflow mặc định build image `linux/amd64`.
+   ```bash
+   docker compose --env-file deploy/deploy.env pull
+   docker compose --env-file deploy/deploy.env up -d
+   docker compose --env-file deploy/deploy.env ps
+   ```
 
-### 2. Chuẩn bị VPS
+`compose.yaml` chạy ba image ứng dụng và Caddy. Caddy tự cấp HTTPS khi DNS trỏ đúng về VPS và cổng `80`, `443` được mở. Để rollback, đổi `RELEASE_TAG` sang commit SHA đã publish rồi chạy lại `pull` và `up -d`.
 
-Trỏ hai DNS record về VPS:
+## Tài liệu tham khảo nhanh
 
-- Customer: ví dụ `food.example.com`.
-- Dashboard: ví dụ `admin.food.example.com`.
+- Cấu hình server: [`server/.env.example`](server/.env.example)
+- Cấu hình customer web: [`client/.env.example`](client/.env.example)
+- Cấu hình dashboard: [`client-dashboard/.env.example`](client-dashboard/.env.example)
+- Cấu hình deploy: [`deploy/deploy.env.example`](deploy/deploy.env.example), [`deploy/server.env.example`](deploy/server.env.example)
+- Docker Compose: [`compose.yaml`](compose.yaml)
 
-Trên VPS, đặt repository hoặc tối thiểu các file `compose.yaml` và thư mục `deploy/` trong cùng một thư mục. Sau đó tạo cấu hình thật từ các file mẫu:
+## Quy ước đóng góp
 
-```bash
-cp deploy/deploy.env.example deploy/deploy.env
-cp deploy/server.env.example deploy/server.env
-```
-
-Điền domain, Docker Hub username và external `MONGODB_URI`. Không commit hai file này. Nếu Docker Hub repository là private, chạy `docker login` trên VPS bằng read-only token.
-
-### 3. Pull và chạy
-
-```bash
-docker compose --env-file deploy/deploy.env pull
-docker compose --env-file deploy/deploy.env up -d
-docker compose --env-file deploy/deploy.env ps
-```
-
-Caddy tự cấp HTTPS khi DNS đã trỏ đúng và cổng `80`, `443` được mở. API và Socket.IO được proxy trên cùng domain với frontend.
-
-Để deploy chính xác một phiên bản hoặc rollback, đổi `RELEASE_TAG=latest` trong `deploy/deploy.env` thành commit SHA đã được workflow publish, sau đó chạy lại `pull` và `up -d`.
+1. Tạo branch cho thay đổi và giữ phạm vi commit rõ ràng.
+2. Cập nhật tài liệu liên quan khi thay đổi script, biến môi trường hoặc API contract.
+3. Chạy các lệnh kiểm tra ở trên trước khi mở pull request.
+4. Không commit secret, file `.env` thật hoặc dữ liệu production.
