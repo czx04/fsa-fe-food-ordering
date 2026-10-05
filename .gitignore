@@ -14,3 +14,6 @@ deploy/server.env
 
 reference/
 *.zip
+
+.agents/
+skills-lock.json
