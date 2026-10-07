@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "45a7a909-d9e9-4236-a2cf-62dc6f9515f1",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "E:\\VinAI\\fsa-fe-food-ordering\\.archify\\architecture-team-allocation-20261007-1028\\candidate.json",
+  "output": "E:\\VinAI\\fsa-fe-food-ordering\\.archify\\architecture-team-allocation-20261007-1028\\team-allocation.html",
+  "specification": {
+    "sha256": "5ed9389c38924b5053dbc1419bb5ca0d15a24f4f80779c4188858e239c86450e",
+    "bytes": 4977
+  },
+  "artifact": {
+    "sha256": "86970f59d657b09c4f1e68a74705c48b31d1252d047c36c7de878f06486ade47",
+    "bytes": 768183
+  }
+}
