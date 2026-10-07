@@ -1,0 +1,19 @@
+flowchart LR
+    C["Client Web<br/>React + Axios"] -->|HTTPS POST /api/orders/checkout| G["Express Route"]
+    G --> M["Middleware<br/>verifyToken<br/>requireVerifiedEmail<br/>validation"]
+    M --> CTRL["Order Controller"]
+    CTRL --> SVC["Order Service<br/>createOrderFromCart"]
+    SVC --> CARTS["Cart Service<br/>pricing + coupon"]
+    SVC --> REP["Repositories"]
+    REP --> MODELS["Mongoose Models<br/>Cart, Order, User,<br/>Restaurant, MenuItem, Coupon"]
+    MODELS --> DB[("MongoDB")]
+    SVC --> PAY["Payment Service"]
+    SVC --> MSG["Email / Socket.IO"]
+    PAY --> C
+    MSG --> C
+    subgraph TargetTransaction["Ranh giới transaction mục tiêu"]
+        SVC
+        REP
+        MODELS
+        DB
+    end

@@ -1,0 +1,25 @@
+erDiagram
+    USER ||--o{ CART : owns
+    USER ||--o{ ORDER : places
+    USER ||--o{ COUPON_USAGE : uses
+    RESTAURANT ||--o{ CART : context
+    RESTAURANT ||--o{ ORDER : fulfills
+    MENU_ITEM ||--o{ CART_ITEM : referenced
+    MENU_ITEM ||--o{ ORDER_ITEM : snapshotted
+    COUPON ||--o{ CART : applied
+    COUPON ||--o{ ORDER : applied
+    COUPON ||--o{ COUPON_USAGE : tracked
+    ORDER ||--o{ COUPON_USAGE : records
+    CART ||--o{ CART_ITEM : embeds
+    ORDER ||--o{ ORDER_ITEM : embeds
+    ORDER ||--o{ STATUS_HISTORY : embeds
+    USER { ObjectId _id PK; string email UK; string role; string status }
+    RESTAURANT { ObjectId _id PK; ObjectId ownerId; string name; string operationStatus; number deliveryFee }
+    MENU_ITEM { ObjectId _id PK; ObjectId restaurantId; string name; number basePrice; number salePrice; boolean isAvailable }
+    CART { ObjectId _id PK; ObjectId userId; ObjectId restaurantId; ObjectId couponId; number subtotal; number discountAmount; number grandTotal }
+    CART_ITEM { ObjectId menuItemId; number quantity; number price }
+    ORDER { ObjectId _id PK; string orderNumber UK; string checkoutKey; ObjectId customerId; ObjectId restaurantId; number pricingGrandTotal; string orderStatus }
+    ORDER_ITEM { ObjectId menuItemId; string name; number quantity; number finalUnitPrice; number lineTotal; string note }
+    STATUS_HISTORY { string from; string to; ObjectId changedBy; string changedByRole; Date changedAt }
+    COUPON { ObjectId _id PK; string code UK; string discountType; number discountValue; number minOrderAmount; number maxDiscountAmount; string status }
+    COUPON_USAGE { ObjectId _id PK; ObjectId couponId; ObjectId customerId; ObjectId orderId; string status }

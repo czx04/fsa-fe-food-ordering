@@ -1,0 +1,12 @@
+flowchart LR
+    U["Khách hàng<br/>User / Customer"] -->|"Chọn món, CRUD cart<br/>áp coupon, checkout"| P["Nền tảng đặt đồ ăn trực tuyến"]
+    P -->|"Giá, phí giao hàng<br/>xác nhận và trạng thái đơn"| U
+    M["Cửa hàng<br/>Merchant"] -->|"Menu, availability<br/>tiếp nhận và chuyển trạng thái"| P
+    P -->|"Đơn mới, order snapshot<br/>dashboard và realtime update"| M
+    D["Nhân viên giao hàng<br/>Driver"] -->|"Delivery event<br/>trạng thái giao nhận"| P
+    P -->|"Order snapshot, địa chỉ<br/>delivery fee, nhiệm vụ giao"| D
+    P --> C["Cart & Order Services<br/>REST API + state machine"]
+    C --> DB[("MongoDB<br/>Cart / Coupon / Order")]
+    C <--> S["Socket.IO<br/>order:updated"]
+    U -.->|"join order room<br/>reconnect + REST resync"| S
+    M -.->|"merchant room<br/>cần hoàn thiện join contract"| S

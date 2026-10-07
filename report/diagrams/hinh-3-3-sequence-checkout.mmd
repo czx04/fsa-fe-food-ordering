@@ -1,0 +1,26 @@
+sequenceDiagram
+    autonumber
+    actor Customer
+    participant Client
+    participant Route as Express Route
+    participant Service as OrderService
+    participant DB as MongoDB Transaction
+    participant Cart
+    participant Menu
+    participant Coupon
+    participant Order
+    participant Payment
+    Customer->>Client: Xác nhận checkout
+    Client->>Route: POST /api/orders/checkout
+    Route->>Route: verifyToken + requireVerifiedEmail
+    Route->>Service: createOrderFromCart(userId, payload)
+    Service->>DB: startSession / withTransaction (mục tiêu)
+    DB->>Cart: Đọc cart
+    DB->>Menu: Kiểm tra item, availability, stock (stock chưa có)
+    DB->>Coupon: Revalidate coupon và usage (CouponUsage chưa ghi)
+    Service->>Service: Tính subtotal, discount, deliveryFee, grandTotal
+    Service->>Order: Tạo snapshot order
+    DB->>Cart: Xóa hoặc đánh dấu cart đã chuyển đổi
+    DB-->>Service: Commit (hiện trạng chưa có transaction)
+    Service->>Payment: Tạo payment URL nếu VNPAY
+    Service-->>Client: 201 Created

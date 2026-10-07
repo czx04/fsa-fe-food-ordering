@@ -1,0 +1,23 @@
+flowchart TB
+    SYS["Nền tảng đặt đồ ăn trực tuyến"]
+    SYS --> AUTH["Auth & Quản lý tài khoản"]
+    SYS --> MERCHANT["Quản lý món ăn / Nhà hàng"]
+    SYS --> CART_ORDER["Quản lý Giỏ hàng & Xử lý Đơn hàng"]
+    SYS --> DRIVER["Điều phối giao hàng"]
+    SYS --> REVIEW["Đánh giá & Phản hồi"]
+    CART_ORDER --> C_CART["CRUD giỏ hàng"]
+    CART_ORDER --> C_COUPON["Coupon và tính tổng"]
+    CART_ORDER --> C_CHECKOUT["Checkout và phí giao hàng"]
+    CART_ORDER --> C_ORDER["Order snapshot"]
+    CART_ORDER --> C_STATUS["Cancel, reorder, status"]
+    CART_ORDER --> C_REALTIME["Realtime order update"]
+    MERCHANT -->|"MenuItem, Restaurant, delivery fee"| CART_ORDER
+    AUTH -->|"JWT, userId, role"| CART_ORDER
+    CART_ORDER -->|"Order snapshot, status"| DRIVER
+    CART_ORDER -->|"orderId, delivered status"| REVIEW
+    classDef root fill:#172554,stroke:#60a5fa,color:#fff,stroke-width:2px
+    classDef module fill:#e0f2fe,stroke:#0284c7,color:#0f172a
+    classDef student fill:#dcfce7,stroke:#16a34a,color:#14532d,stroke-width:3px
+    class SYS root
+    class AUTH,MERCHANT,DRIVER,REVIEW module
+    class CART_ORDER student

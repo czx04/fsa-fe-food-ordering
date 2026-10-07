@@ -1,0 +1,13 @@
+flowchart LR
+    A["Product Backlog<br/>User story / task"] --> B["Sprint Planning<br/>Agile / Scrum"]
+    B --> C["Feature Branch<br/>Implement + local test"]
+    C --> D["Pull Request<br/>GitHub"]
+    D --> E["Code Review<br/>API contract + security + UX"]
+    E --> F{"CI quality gate"}
+    F -->|"Pass"| G["Merge<br/>Integration branch / main"]
+    F -->|"Fail"| C
+    G --> H["GitHub Actions<br/>Build + lint + test"]
+    H --> I["Docker Buildx<br/>client / dashboard / server"]
+    I --> J["Deploy / Release<br/>Caddy + Docker Compose"]
+    K["Slack<br/>Daily coordination / blocker"] -.-> B
+    K -.-> D

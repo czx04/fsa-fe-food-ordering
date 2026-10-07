@@ -1,0 +1,16 @@
+flowchart LR
+    A["Developer workstation<br/>Git checkout"] --> B["npm ci<br/>typecheck / build"]
+    B --> C["GitHub Actions<br/>Ubuntu + Node 22"]
+    C --> D["Quality gate<br/>build, lint, test"]
+    D --> E["Docker Buildx<br/>client / dashboard / server"]
+    E --> F["Docker Hub<br/>commit SHA tag"]
+    F --> G["VPS Linux<br/>docker compose pull"]
+    G --> H["Compose network"]
+    H --> I["client / Nginx"]
+    H --> J["dashboard / Nginx"]
+    H --> K["server / Express + Socket.IO"]
+    H --> L["Caddy :80/:443"]
+    L --> I
+    L --> J
+    L --> K
+    K --> M[("MongoDB<br/>managed or external")]

@@ -1,0 +1,14 @@
+flowchart LR
+    Customer["Customer"] --> UC01(["UC-01<br/>Quản lý giỏ hàng"])
+    Customer --> UC02(["UC-02<br/>Kiểm tra và tính chi phí"])
+    Customer --> UC03(["UC-03<br/>Khởi tạo Order"])
+    Customer --> UC04(["UC-04<br/>Theo dõi realtime"])
+    Merchant["Merchant"] --> UC04
+    UC01 -.->|"include"| A["Thêm / sửa / xóa món"]
+    UC01 -.->|"extend"| B["Topping / ghi chú món"]
+    UC02 -.->|"include"| C["Tạm tính / phí giao hàng / kiểm tra món"]
+    UC02 -.->|"extend"| D["Áp dụng voucher"]
+    UC03 -.->|"include"| E["JWT + verified email + Order snapshot"]
+    UC03 -.->|"extend"| F["Khởi tạo thanh toán"]
+    UC04 -.->|"include"| G["order:updated + reconnect + REST resync"]
+    UC04 -.->|"extend"| H["Customer hủy đơn"]

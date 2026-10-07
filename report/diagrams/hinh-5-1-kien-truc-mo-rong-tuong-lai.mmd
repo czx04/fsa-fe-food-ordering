@@ -1,0 +1,19 @@
+flowchart LR
+    C["Customer Web"] --> G["API Gateway / Load Balancer"]
+    M["Merchant Dashboard"] --> G
+    D["Driver App"] --> G
+    G --> API["Order & Cart API<br/>Modular Monolith"]
+    API --> R[("Redis<br/>Menu / Cart Cache")]
+    API --> DB[("MongoDB<br/>Source of Truth")]
+    API --> B["Message Broker<br/>RabbitMQ / Kafka"]
+    B --> INV["Inventory Service<br/>Reservation + transaction"]
+    B --> PAY["Payment / Notification Worker"]
+    B --> DIS["Driver Dispatch Service"]
+    B --> REC["Recommendation / Analytics"]
+    API --> SA["Socket.IO Gateway"]
+    SA <--> RA["Redis Adapter<br/>Shared rooms / events"]
+    RA --> C
+    RA --> M
+    DIS --> D
+    API -.-> MS["Future bounded contexts"]
+    MS -.-> B
