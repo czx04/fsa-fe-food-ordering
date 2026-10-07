@@ -1,11 +1,10 @@
 flowchart TB
     SYS["Nền tảng đặt đồ ăn trực tuyến"]
-
-    AUTH["Auth và quản lý tài khoản"]
-    MERCHANT["Quản lý món ăn và nhà hàng"]
-    CART_ORDER["Quản lý giỏ hàng và xử lý đơn hàng"]
-    DRIVER["Điều phối giao hàng"]
-    REVIEW["Đánh giá và phản hồi"]
+    AUTH["Auth và tài khoản"]
+    MERCHANT["Nhà hàng và thực đơn"]
+    CART_ORDER["Giỏ hàng và đơn hàng"]
+    DRIVER["Điều phối giao hàng<br/>interface hiện tại"]
+    REVIEW["Đánh giá"]
 
     SYS --> AUTH
     SYS --> MERCHANT
@@ -13,31 +12,22 @@ flowchart TB
     SYS --> DRIVER
     SYS --> REVIEW
 
-    C_CART["CRUD giỏ hàng"]
-    C_COUPON["Coupon và tính tổng"]
-    C_CHECKOUT["Checkout và phí giao hàng"]
-    C_ORDER["Order snapshot"]
-    C_STATUS["Cancel, reorder và status"]
-    C_REALTIME["Realtime order update"]
+    CART_ORDER --> C_CART["Cart CRUD<br/>một restaurant"]
+    CART_ORDER --> C_PRICE["Coupon + pricing"]
+    CART_ORDER --> C_CHECKOUT["Checkout<br/>Order snapshot"]
+    CART_ORDER --> C_STATUS["Cancel / reorder<br/>merchant status"]
+    CART_ORDER --> C_RT["Socket.IO<br/>order:updated"]
 
-    CART_ORDER --> C_CART
-    CART_ORDER --> C_COUPON
-    CART_ORDER --> C_CHECKOUT
-    CART_ORDER --> C_ORDER
-    CART_ORDER --> C_STATUS
-    CART_ORDER --> C_REALTIME
-
-    MERCHANT -->|"MenuItem, Restaurant, delivery fee"| CART_ORDER
     AUTH -->|"JWT, userId, role"| CART_ORDER
-    CART_ORDER -->|"Order snapshot, status"| DRIVER
-    CART_ORDER -->|"orderId, delivered status"| REVIEW
+    MERCHANT -->|"MenuItem, Restaurant,<br/>delivery.fee"| CART_ORDER
+    CART_ORDER -.->|"Order snapshot,<br/>delivery status"| DRIVER
+    CART_ORDER -->|"orderId, delivered"| REVIEW
 
     classDef root fill:#172554,stroke:#60a5fa,color:#ffffff,stroke-width:2px
     classDef module fill:#e0f2fe,stroke:#0284c7,color:#0f172a,stroke-width:1.5px
     classDef scope fill:#dcfce7,stroke:#16a34a,color:#14532d,stroke-width:2px
     classDef function fill:#f8fafc,stroke:#94a3b8,color:#1e293b,stroke-width:1px
-
     class SYS root
     class AUTH,MERCHANT,DRIVER,REVIEW module
     class CART_ORDER scope
-    class C_CART,C_COUPON,C_CHECKOUT,C_ORDER,C_STATUS,C_REALTIME function
+    class C_CART,C_PRICE,C_CHECKOUT,C_STATUS,C_RT function

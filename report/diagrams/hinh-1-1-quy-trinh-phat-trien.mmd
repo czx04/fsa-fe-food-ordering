@@ -4,10 +4,10 @@ flowchart LR
     C --> D["Pull Request<br/>GitHub"]
     D --> E["Code Review<br/>API contract + security + UX"]
     E --> F{"CI quality gate"}
-    F -->|"Pass"| G["Merge<br/>Integration branch / main"]
     F -->|"Fail"| C
-    G --> H["GitHub Actions<br/>Build + lint + test"]
-    H --> I["Docker Buildx<br/>client / dashboard / server"]
-    I --> J["Deploy / Release<br/>Caddy + Docker Compose"]
+    F -->|"Pass"| G["Merge<br/>Integration branch / main"]
+    G --> H["Build release<br/>Docker Buildx"]
+    H --> I["Deploy<br/>Docker Compose + Caddy"]
     K["Slack<br/>Daily coordination / blocker"] -.-> B
     K -.-> D
+    K -.-> I

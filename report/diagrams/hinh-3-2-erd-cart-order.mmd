@@ -1,102 +1,89 @@
 erDiagram
     USER ||--o{ CART : owns
     USER ||--o{ ORDER : places
-    USER ||--o{ COUPON_USAGE : uses
     RESTAURANT ||--o{ CART : context
     RESTAURANT ||--o{ ORDER : fulfills
     MENU_ITEM ||--o{ CART_ITEM : references
     MENU_ITEM ||--o{ ORDER_ITEM : snapshots
     COUPON ||--o{ CART : applies
     COUPON ||--o{ ORDER : applies
-    COUPON ||--o{ COUPON_USAGE : tracks
-    ORDER ||--o{ COUPON_USAGE : records
     CART ||--o{ CART_ITEM : embeds
     ORDER ||--o{ ORDER_ITEM : embeds
     ORDER ||--o{ STATUS_HISTORY : embeds
 
     USER {
-        string _id PK
+        ObjectId _id PK
         string email UK
         string role
         string status
     }
 
     RESTAURANT {
-        string _id PK
-        string ownerId FK
+        ObjectId _id PK
+        ObjectId ownerId FK
         string name
         string operationStatus
-        float deliveryFee
+        number deliveryFee
     }
 
     MENU_ITEM {
-        string _id PK
-        string restaurantId FK
+        ObjectId _id PK
+        ObjectId restaurantId FK
         string name
-        float basePrice
-        float salePrice
+        number basePrice
+        number salePrice
         boolean isAvailable
     }
 
     CART {
-        string _id PK
-        string userId FK
-        string restaurantId FK
-        string couponId FK
-        float subtotal
-        float discountAmount
-        float grandTotal
+        ObjectId _id PK
+        ObjectId userId FK
+        ObjectId restaurantId FK
+        ObjectId couponId FK
+        number subtotal
+        number discountAmount
+        number grandTotal
     }
 
     CART_ITEM {
-        string menuItemId FK
-        int quantity
-        float price
+        ObjectId menuItemId FK
+        number quantity
+        number price
     }
 
     ORDER {
-        string _id PK
+        ObjectId _id PK
         string orderNumber UK
         string checkoutKey
-        string customerId FK
-        string restaurantId FK
-        float pricingGrandTotal
+        ObjectId customerId FK
+        ObjectId restaurantId FK
+        number pricingGrandTotal
+        string paymentStatus
         string orderStatus
     }
 
     ORDER_ITEM {
-        string menuItemId FK
+        ObjectId menuItemId FK
         string name
-        int quantity
-        float finalUnitPrice
-        float lineTotal
-        string note
+        number quantity
+        number finalUnitPrice
+        number lineTotal
     }
 
     STATUS_HISTORY {
         string from
         string to
-        string changedBy FK
+        ObjectId changedBy FK
         string changedByRole
-        string reason
-        string note
-        string changedAt
+        Date changedAt
     }
 
     COUPON {
-        string _id PK
+        ObjectId _id PK
         string code UK
         string discountType
-        float discountValue
-        float minOrderAmount
-        float maxDiscountAmount
-        string status
-    }
-
-    COUPON_USAGE {
-        string _id PK
-        string couponId FK
-        string customerId FK
-        string orderId FK
+        number discountValue
+        number minOrderAmount
+        number maxDiscountAmount
         string status
     }

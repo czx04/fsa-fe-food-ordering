@@ -1,26 +1,34 @@
 sequenceDiagram
     autonumber
-    actor Customer
-    participant Client
+    actor Customer as Khách hàng
+    participant Client as Client Web
     participant Route as Express Route
+    participant Auth as Auth middleware
     participant Service as OrderService
-    participant DB as MongoDB Transaction
-    participant Cart
-    participant Menu
-    participant Coupon
-    participant Order
-    participant Payment
+    participant Cart as Cart repository
+    participant Models as User / Restaurant / MenuItem / Coupon
+    participant Order as Order model
+    participant Payment as PaymentService
+
     Customer->>Client: Xác nhận checkout
     Client->>Route: POST /api/orders/checkout
-    Route->>Route: verifyToken + requireVerifiedEmail
+    Route->>Auth: verifyToken + requireVerifiedEmail
+    Auth-->>Route: userId hợp lệ
     Route->>Service: createOrderFromCart(userId, payload)
-    Service->>DB: startSession / withTransaction (mục tiêu)
-    DB->>Cart: Đọc cart
-    DB->>Menu: Kiểm tra item, availability, stock (stock chưa có)
-    DB->>Coupon: Revalidate coupon và usage (CouponUsage chưa ghi)
-    Service->>Service: Tính subtotal, discount, deliveryFee, grandTotal
-    Service->>Order: Tạo snapshot order
-    DB->>Cart: Xóa hoặc đánh dấu cart đã chuyển đổi
-    DB-->>Service: Commit (hiện trạng chưa có transaction)
-    Service->>Payment: Tạo payment URL nếu VNPAY
-    Service-->>Client: 201 Created
+    Service->>Cart: Đọc Cart theo userId
+    Cart-->>Service: items, couponId, pricing hiện tại
+    Service->>Models: Đọc User, Restaurant, MenuItem, Coupon
+    Models-->>Service: dữ liệu dựng snapshot
+    Service->>Service: Tính deliveryFee và grandTotal
+    Service->>Order: new Order(snapshot)
+    Order-->>Service: save() thành công
+    Service->>Cart: clearCart(userId)
+    alt VNPAY
+        Service->>Payment: createVnpayPaymentUrl(order)
+        Payment-->>Service: paymentUrl
+    else COD
+        Service-->>Service: Gửi email xác nhận bất đồng bộ
+    end
+    Service-->>Route: order + paymentUrl?
+    Route-->>Client: 201 Created
+    Note over Service,Cart: Hiện trạng chưa có transaction đa document,<br/>idempotency key hoặc inventory decrement nguyên tử.

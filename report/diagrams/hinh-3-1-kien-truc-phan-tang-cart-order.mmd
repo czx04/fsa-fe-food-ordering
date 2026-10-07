@@ -1,19 +1,27 @@
 flowchart LR
-    C["Client Web<br/>React + Axios"] -->|HTTPS POST /api/orders/checkout| G["Express Route"]
-    G --> M["Middleware<br/>verifyToken<br/>requireVerifiedEmail<br/>validation"]
-    M --> CTRL["Order Controller"]
-    CTRL --> SVC["Order Service<br/>createOrderFromCart"]
-    SVC --> CARTS["Cart Service<br/>pricing + coupon"]
-    SVC --> REP["Repositories"]
-    REP --> MODELS["Mongoose Models<br/>Cart, Order, User,<br/>Restaurant, MenuItem, Coupon"]
-    MODELS --> DB[("MongoDB")]
-    SVC --> PAY["Payment Service"]
-    SVC --> MSG["Email / Socket.IO"]
+    C["Client Web<br/>React + Axios"] -->|"POST /api/orders/checkout"| R["Express Route<br/>orderRoutes.ts"]
+    R --> M["Middleware<br/>verifyToken<br/>requireVerifiedEmail"]
+    M --> V["Validation + Controller<br/>orderController.ts"]
+    V --> S["Order Service<br/>createOrderFromCart"]
+    S --> CS["Cart Service<br/>pricing + coupon"]
+    S --> REP["Repositories"]
+    REP --> MOD["Mongoose Models<br/>Cart / Order / User /<br/>Restaurant / MenuItem / Coupon"]
+    MOD --> DB[("MongoDB")]
+    S --> PAY["Payment Service<br/>VNPAY URL"]
+    S --> SIDE["Email + Socket.IO"]
     PAY --> C
-    MSG --> C
-    subgraph TargetTransaction["Ranh giới transaction mục tiêu"]
-        SVC
+    SIDE --> C
+    DB --> S
+
+    subgraph Current["Hiện trạng"]
+        R
+        M
+        V
+        S
+        CS
         REP
-        MODELS
+        MOD
         DB
     end
+
+    TARGET["Đề xuất tiếp theo<br/>MongoDB transaction<br/>idempotency + inventory"] -.-> S

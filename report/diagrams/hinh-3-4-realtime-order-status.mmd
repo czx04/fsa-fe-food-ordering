@@ -1,20 +1,25 @@
 flowchart LR
-    U["Customer"] -->|"join:order(orderId)"| G["Socket.IO Gateway"]
-    M["Merchant"] -->|"join:restaurant<br/>cần bổ sung"| G
-    G --> AUTH["JWT handshake + authorization"]
-    AUTH --> RO["order:{orderId}"]
-    AUTH --> RM["restaurant:{restaurantId}"]
-    O["Order Service"] -->|"save Order first"| DB[("MongoDB")]
+    U["Customer Web"] -->|"auth.token"| G["Socket.IO Server"]
+    M["Merchant Dashboard"] -.->|"join:restaurant<br/>chưa có listener"| G
+    G --> AUTH["JWT handshake<br/>verifyAccessToken + User lookup"]
+    AUTH --> RO["order:{orderId}<br/>join:order đã có"]
+
+    O["Order status service"] -->|"save Order trước"| DB[("MongoDB")]
     DB --> O
     O --> E["emitOrderUpdate"]
     E -->|"order:updated"| RO
-    E -->|"order:updated"| RM
-    U -.->|"disconnect / reconnect"| R["rejoin + REST resync"]
+    E -.->|"restaurant:{restaurantId}<br/>emit có, join chưa có"| RM["Merchant room"]
+    RO --> U
+
+    U -.->|"disconnect / reconnect"| R["Rejoin room + REST resync"]
     R -->|"GET /api/orders/:id"| API["HTTP API"]
     API --> DB
-    P["pending"] --> A["confirmed"]
-    A --> PR["preparing"]
-    PR --> D["delivering"]
-    D --> C["delivered"]
-    P --> X["cancelled"]
-    A --> X
+
+    subgraph StateMachine["Order state machine"]
+        P["pending"] --> A["confirmed"]
+        A --> PR["preparing"]
+        PR --> D["delivering"]
+        D --> C["delivered"]
+        P --> X["cancelled"]
+        A --> X
+    end

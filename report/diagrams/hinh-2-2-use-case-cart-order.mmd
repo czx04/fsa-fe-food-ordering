@@ -1,14 +1,32 @@
 flowchart LR
-    Customer["Customer"] --> UC01(["UC-01<br/>Quản lý giỏ hàng"])
-    Customer --> UC02(["UC-02<br/>Kiểm tra và tính chi phí"])
-    Customer --> UC03(["UC-03<br/>Khởi tạo Order"])
-    Customer --> UC04(["UC-04<br/>Theo dõi realtime"])
-    Merchant["Merchant"] --> UC04
+    Customer["Customer<br/>Khách hàng"]
+    Merchant["Merchant<br/>Chủ nhà hàng"]
+
+    UC01(["UC-01<br/>Quản lý giỏ hàng"])
+    UC02(["UC-02<br/>Kiểm tra hợp lệ<br/>và tính chi phí"])
+    UC03(["UC-03<br/>Checkout và tạo Order"])
+    UC04(["UC-04<br/>Theo dõi trạng thái"])
+
+    Customer --> UC01
+    Customer --> UC02
+    Customer --> UC03
+    Customer --> UC04
+    Merchant --> UC04
+
     UC01 -.->|"include"| A["Thêm / sửa / xóa món"]
-    UC01 -.->|"extend"| B["Topping / ghi chú món"]
-    UC02 -.->|"include"| C["Tạm tính / phí giao hàng / kiểm tra món"]
-    UC02 -.->|"extend"| D["Áp dụng voucher"]
-    UC03 -.->|"include"| E["JWT + verified email + Order snapshot"]
-    UC03 -.->|"extend"| F["Khởi tạo thanh toán"]
-    UC04 -.->|"include"| G["order:updated + reconnect + REST resync"]
-    UC04 -.->|"extend"| H["Customer hủy đơn"]
+    UC01 -.->|"include"| B["Kiểm tra một restaurant"]
+    UC02 -.->|"include"| C["Subtotal + delivery fee"]
+    UC02 -.->|"extend"| D["Áp dụng coupon"]
+    UC03 -.->|"include"| E["JWT + verified email"]
+    UC03 -.->|"include"| F["Order snapshot"]
+    UC03 -.->|"extend"| G["COD / VNPAY"]
+    UC04 -.->|"include"| H["order:updated"]
+    UC04 -.->|"include"| I["Reconnect + REST resync"]
+    UC04 -.->|"extend"| J["Customer hủy pending"]
+
+    classDef actor fill:#e0f2fe,stroke:#0284c7,color:#0f172a
+    classDef core fill:#dcfce7,stroke:#16a34a,color:#14532d,stroke-width:2px
+    classDef sub fill:#f8fafc,stroke:#94a3b8,color:#1e293b
+    class Customer,Merchant actor
+    class UC01,UC02,UC03,UC04 core
+    class A,B,C,D,E,F,G,H,I,J sub
