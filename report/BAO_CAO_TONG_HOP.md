@@ -195,53 +195,52 @@ Các yêu cầu phi chức năng được tổng hợp trong Bảng 2.2.
 
 ## 2.3. Kế hoạch phân công công việc và phạm vi đảm nhiệm cá nhân
 
-Nhóm phân rã hệ thống thành các module Auth, Merchant, Cart & Order, Driver và Review. Mỗi module có người phụ trách chính, đồng thời các thành viên phối hợp thông qua API contract, schema và Pull Request. Kế hoạch phân công và ma trận trách nhiệm RACI được trình bày trong Bảng 2.3.
+Kế hoạch phát triển được nhóm lập theo các nhóm chức năng độc lập và triển khai trong khoảng thời gian từ ngày 05/08/2026 đến ngày 11/08/2026. Mỗi đầu việc có người phụ trách chính, thời gian thực hiện, trạng thái và yêu cầu bàn giao cụ thể. Cách lập kế hoạch này giúp nhóm theo dõi tiến độ theo Sprint, xác định rõ trách nhiệm cá nhân và kiểm soát các phụ thuộc giữa các phân hệ.
 
-Phạm vi chức năng và các điểm giao tiếp giữa những module được phân rã trong Hình 2.2.
+Tổng thể kế hoạch gồm chín nhóm chức năng: Khởi tạo và Thiết kế; Authentication; Quản lý nhà hàng và Thực đơn; Giỏ hàng và Đặt món; Dashboard thống kê; Thanh toán và Email; Tích hợp và Kiểm thử; Hoàn thiện và Triển khai; Chức năng nâng cao. Tiến độ và phân công chi tiết được tổng hợp trong Bảng 2.3.
 
-```mermaid
-flowchart TB
-    SYS["Nền tảng đặt đồ ăn trực tuyến"]
-    AUTH["Auth và tài khoản"]
-    MERCHANT["Nhà hàng và thực đơn"]
-    CART_ORDER["Giỏ hàng và đơn hàng"]
-    DRIVER["Điều phối giao hàng<br/>interface hiện tại"]
-    REVIEW["Đánh giá"]
-    SYS --> AUTH
-    SYS --> MERCHANT
-    SYS --> CART_ORDER
-    SYS --> DRIVER
-    SYS --> REVIEW
-    CART_ORDER --> C_CART["Cart CRUD<br/>một restaurant"]
-    CART_ORDER --> C_PRICE["Coupon + pricing"]
-    CART_ORDER --> C_CHECKOUT["Checkout<br/>Order snapshot"]
-    CART_ORDER --> C_STATUS["Cancel / reorder<br/>merchant status"]
-    CART_ORDER --> C_RT["Socket.IO<br/>order:updated"]
-    AUTH -->|"JWT, userId, role"| CART_ORDER
-    MERCHANT -->|"MenuItem, Restaurant,<br/>delivery.fee"| CART_ORDER
-    CART_ORDER -.->|"Order snapshot,<br/>delivery status"| DRIVER
-    CART_ORDER -->|"orderId, delivered"| REVIEW
-```
+**Bảng 2.3: Kế hoạch phân công công việc và tiến độ thực hiện của nhóm**
 
-<div align="center"><strong><em>Hình 2.2: Sơ đồ phân rã chức năng và phạm vi đảm nhiệm cá nhân</em></strong></div>
+| STT | Hạng mục / Chức năng | Chức năng chi tiết | Người phụ trách | Bắt đầu | Kết thúc | Trạng thái | Ghi chú / Yêu cầu |
+| ---: | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 1. Khởi tạo & Thiết kế | Thống nhất yêu cầu dự án | Cả team | 05/08/2026 | 05/08/2026 | Đã hoàn thành | Thống nhất scope và luồng nghiệp vụ |
+| 2 | 1. Khởi tạo & Thiết kế | Thiết kế Database | Cả team | 05/08/2026 | 05/08/2026 | Đã hoàn thành | Thiết kế schema các bảng |
+| 3 | 1. Khởi tạo & Thiết kế | Thiết kế API và giao diện tổng quan | Cả team | 05/08/2026 | 05/08/2026 | Đã hoàn thành | Thống nhất API endpoints và UI layout |
+| 4 | 2. Authentication | Đăng ký, đăng nhập, đăng xuất | Cường | 05/08/2026 | 08/08/2026 | Đã hoàn thành | Chức năng xác thực người dùng |
+| 5 | 2. Authentication | Phân quyền ba role: Admin, Restaurant Owner, Customer | Cường | 05/08/2026 | 08/08/2026 | Đã hoàn thành | Quản lý quyền hạn hệ thống |
+| 6 | 2. Authentication | Bảo vệ route theo role | Cường | 05/08/2026 | 08/08/2026 | Đã hoàn thành | Middleware và route protection |
+| 7 | 3. Quản lý nhà hàng & Thực đơn | Danh sách nhà hàng với bộ lọc theo danh mục món | Hùng | 05/08/2026 | 08/08/2026 | Đã hoàn thành | Filter theo danh mục món ăn |
+| 8 | 3. Quản lý nhà hàng & Thực đơn | Tìm kiếm nhà hàng theo tên và địa chỉ | Hùng | 05/08/2026 | 08/08/2026 | Đã hoàn thành | Search box tìm kiếm |
+| 9 | 3. Quản lý nhà hàng & Thực đơn | Trang chi tiết nhà hàng: thực đơn, giá, đánh giá | Hùng | 05/08/2026 | 08/08/2026 | Đã hoàn thành | Hiển thị chi tiết menu và mức giá |
+| 10 | 3. Quản lý nhà hàng & Thực đơn | Restaurant Owner: thêm, sửa, xóa món ăn; cập nhật trạng thái kho | Hùng | 05/08/2026 | 08/08/2026 | Đã hoàn thành | CRUD món ăn và trạng thái kho |
+| 11 | 4. Giỏ hàng & Đặt món | Thêm, xóa món; cập nhật số lượng trong giỏ hàng | Khải | 05/08/2026 | 08/08/2026 | Đã hoàn thành | Quản lý giỏ hàng |
+| 12 | 4. Giỏ hàng & Đặt món | Chỉ cho phép đặt món từ một nhà hàng trong một đơn | Khải | 05/08/2026 | 08/08/2026 | Đã hoàn thành | Validation logic giỏ hàng |
+| 13 | 4. Giỏ hàng & Đặt món | Nhập địa chỉ giao hàng; ghi chú đơn hàng | Khải | 05/08/2026 | 08/08/2026 | Đã hoàn thành | Form địa chỉ và ghi chú |
+| 14 | 4. Giỏ hàng & Đặt món | Lịch sử đơn hàng với trạng thái: pending / confirmed | Khải | 05/08/2026 | 08/08/2026 | Đã hoàn thành | Quản lý trạng thái đơn hàng |
+| 15 | 5. Dashboard thống kê | Tổng doanh thu, tổng đơn hàng, món ăn bán chạy | Khải | 05/08/2026 | 08/08/2026 | Đã hoàn thành | Thống kê tổng quan |
+| 16 | 5. Dashboard thống kê | Thống kê doanh thu theo ngày, tháng, năm; theo nhà hàng | Khải | 05/08/2026 | 08/08/2026 | Đã hoàn thành | Bộ lọc thống kê nâng cao |
+| 17 | 5. Dashboard thống kê | Hai loại biểu đồ thống kê | Khải | 05/08/2026 | 08/08/2026 | Đã hoàn thành | Tích hợp thư viện biểu đồ |
+| 18 | 6. Thanh toán & Email | Tìm hiểu và tích hợp cổng thanh toán VNPay / Mock Payment | Cường | 09/08/2026 | 10/08/2026 | Đã hoàn thành | Tích hợp cổng thanh toán |
+| 19 | 6. Thanh toán & Email | Hỗ trợ thanh toán khi nhận hàng (COD) | Cường | 09/08/2026 | 10/08/2026 | Đã hoàn thành | Xử lý luồng COD |
+| 20 | 6. Thanh toán & Email | Gửi email xác nhận đơn hàng sau khi đặt thành công | Cường | 09/08/2026 | 10/08/2026 | Đã hoàn thành | Cấu hình mailer và HTML template |
+| 21 | 7. Tích hợp & Kiểm thử | Tích hợp các chức năng hệ thống | Cả team | 10/08/2026 | 11/08/2026 | Đã hoàn thành | Ghép nối các module |
+| 22 | 7. Tích hợp & Kiểm thử | Kiểm thử phân quyền; luồng đặt món và thanh toán | Cả team | 10/08/2026 | 11/08/2026 | Đã hoàn thành | Kiểm thử End-to-End |
+| 23 | 8. Hoàn thiện & Triển khai | Sửa lỗi (Bug fixing) và hoàn thiện giao diện UI/UX | Cả team | 10/08/2026 | 11/08/2026 | Đã hoàn thành | Tối ưu hóa sản phẩm |
+| 24 | 8. Hoàn thiện & Triển khai | Triển khai sản phẩm (Deployment) | Cả team | 10/08/2026 | 11/08/2026 | Chưa bắt đầu | Deploy Backend và Frontend |
+| 25 | 9. Chức năng nâng cao | Đánh giá nhà hàng: Rating và review sau khi nhận hàng | Hùng | 10/08/2026 | 11/08/2026 | Đã hoàn thành | Phụ trách chính bởi Hùng |
+| 26 | 9. Chức năng nâng cao | Theo dõi đơn hàng realtime | Khải | 10/08/2026 | 11/08/2026 | Đã hoàn thành | Bổ sung nếu kịp tiến độ |
+| 27 | 9. Chức năng nâng cao | Mã giảm giá (Coupon khi thanh toán) | Cường | 10/08/2026 | 11/08/2026 | Đã hoàn thành | Bổ sung nếu kịp tiến độ |
+| 28 | 9. Chức năng nâng cao | Gợi ý món ăn dựa trên lịch sử đặt hàng | Hùng | 10/08/2026 | 11/08/2026 | Chưa bắt đầu | Bổ sung nếu kịp tiến độ |
 
-**Bảng 2.3: Kế hoạch phân công nhiệm vụ và ma trận trách nhiệm RACI**
+Trong kế hoạch trên, em là người phụ trách chính các đầu việc từ STT 11 đến STT 17 và STT 26. Phạm vi này bao gồm quản lý vòng đời giỏ hàng, ràng buộc mỗi đơn chỉ thuộc một nhà hàng, tiếp nhận địa chỉ và ghi chú giao hàng, hiển thị lịch sử đơn, xây dựng dashboard thống kê và theo dõi trạng thái đơn hàng theo thời gian thực.
 
-| Hạng mục | Cart & Order | Auth | Merchant | Driver | Review/QA |
-| --- | :---: | :---: | :---: | :---: | :---: |
-| Xác thực và phân quyền | I | R/A | C | I | C |
-| Nhà hàng và thực đơn | C | I | R/A | I | C |
-| Giỏ hàng, coupon và pricing | **R/A** | C | C | I | C |
-| Checkout và order snapshot | **R/A** | C | C | C | C |
-| Lịch sử, hủy và reorder | **R/A** | C | C | I | C |
-| Merchant order status | C | I | R/A | C | C |
-| Driver dispatch | C | I | C | R/A | C |
-| Socket.IO và đồng bộ trạng thái | **R** | C | C | C | A |
-| Kiểm thử và nghiệm thu contract | R | C | C | C | **R/A** |
+Đối với nhóm Giỏ hàng & Đặt món, em thực hiện các thao tác thêm, xóa và cập nhật số lượng món; kiểm tra xung đột khi người dùng chọn món từ nhiều nhà hàng; xây dựng form địa chỉ giao hàng; lưu ghi chú đơn; và hiển thị lịch sử đơn theo các trạng thái nghiệp vụ. Các chức năng này tạo thành chuỗi nghiệp vụ chính từ lúc khách hàng lựa chọn món đến khi theo dõi đơn hàng.
 
-Với vai trò Responsible/Accountable, em đảm nhiệm toàn bộ phân hệ Giỏ hàng và Đơn hàng. Công việc cụ thể gồm thiết kế schema `Cart`, `Order` và các snapshot liên quan; xây dựng API tính tiền và checkout; kiểm tra coupon và phí giao hàng; xử lý hủy, reorder và trạng thái đơn; tích hợp Socket.IO; xây dựng các màn hình phía client; cập nhật tài liệu và phối hợp kiểm thử.
+Đối với Dashboard thống kê, em phụ trách tổng hợp doanh thu, số lượng đơn hàng, món ăn bán chạy, bộ lọc theo ngày/tháng/năm và nhà hàng, đồng thời tích hợp hai loại biểu đồ để trực quan hóa dữ liệu. Đối với chức năng nâng cao, em triển khai theo dõi đơn hàng realtime bằng Socket.IO, kết hợp cập nhật sự kiện `order:updated` và gọi REST API để đồng bộ lại dữ liệu khi kết nối được thiết lập lại.
 
-Phạm vi cá nhân được giới hạn ở những phần có thể kiểm soát trong module. Driver assignment, inventory decrement nguyên tử, Redis Adapter và Message Queue chưa được xem là kết quả bàn giao hoàn chỉnh. Các phần này được ghi nhận như interface hoặc hướng phát triển để tránh nhầm lẫn giữa chức năng đã hiện thực và chức năng mới dừng ở thiết kế.
+Các đầu việc của Cường tập trung vào Authentication, phân quyền, bảo vệ route, thanh toán VNPay/Mock Payment, COD, email xác nhận và coupon. Các đầu việc của Hùng tập trung vào quản lý nhà hàng, thực đơn, tìm kiếm, trang chi tiết nhà hàng, đánh giá và review. Các nhiệm vụ do cả team phụ trách gồm khởi tạo thiết kế, tích hợp module, kiểm thử End-to-End và hoàn thiện giao diện.
+
+Theo bảng tiến độ, phần lớn chức năng nghiệp vụ đã hoàn thành. Hai đầu việc còn ở trạng thái “Chưa bắt đầu” là triển khai sản phẩm Backend/Frontend và gợi ý món ăn dựa trên lịch sử đặt hàng. Vì vậy, báo cáo phân biệt rõ các chức năng đã hoàn thành với các hạng mục mới dừng ở kế hoạch, không xem Deployment và Recommendation là kết quả đã bàn giao.
 
 # CHƯƠNG 3: THIẾT KẾ VÀ CÀI ĐẶT HỆ THỐNG
 
